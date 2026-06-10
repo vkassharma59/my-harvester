@@ -62,8 +62,11 @@ export function Select({
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <View style={styles.modalRoot}>
+          {/* Backdrop sits BEHIND the sheet so it doesn't intercept the sheet's
+              touches (which would block the search input / list on Android). */}
+          <Pressable style={styles.backdrop} onPress={close} />
+          <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{label}</Text>
               <Pressable onPress={close} hitSlop={8}>
@@ -79,7 +82,6 @@ export function Select({
                 placeholder="Search by name or mobile"
                 placeholderTextColor={colors.textMuted}
                 autoCorrect={false}
-                autoFocus
               />
             ) : null}
 
@@ -108,8 +110,8 @@ export function Select({
                 );
               }}
             />
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -140,7 +142,8 @@ const styles = StyleSheet.create({
   caret: { fontSize: font.size.md, color: colors.textMuted, marginLeft: spacing.sm },
   error: { color: colors.danger, fontSize: font.size.xs, marginTop: spacing.xs },
 
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,

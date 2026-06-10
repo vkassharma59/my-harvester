@@ -113,14 +113,15 @@ export function CustomerLedgerScreen({ route }: Props) {
       )}
 
       <Modal visible={payOpen} transparent animationType="slide" onRequestClose={() => setPayOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setPayOpen(false)}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <View style={styles.modalRoot}>
+          <Pressable style={styles.backdrop} onPress={() => setPayOpen(false)} />
+          <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>Record payment</Text>
             <AmountField label="Amount" value={amount} onChangeText={setAmount} placeholder="0" />
             <TextField label="Notes" value={notes} onChangeText={setNotes} placeholder="Optional" />
             <Button title="Save payment" onPress={onRecord} loading={recordPayment.isPending} />
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </Screen>
   );
@@ -140,7 +141,8 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   plotName: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
   plotAmount: { fontSize: font.size.md, fontWeight: font.weight.bold, color: colors.primary },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
