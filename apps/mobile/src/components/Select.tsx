@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { colors, font, radius, spacing } from '@/theme';
 
 export interface SelectOption {
@@ -62,7 +72,10 @@ export function Select({
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
-        <View style={styles.modalRoot}>
+        <KeyboardAvoidingView
+          style={styles.modalRoot}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           {/* Backdrop sits BEHIND the sheet so it doesn't intercept the sheet's
               touches (which would block the search input / list on Android). */}
           <Pressable style={styles.backdrop} onPress={close} />
@@ -111,7 +124,7 @@ export function Select({
               }}
             />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
