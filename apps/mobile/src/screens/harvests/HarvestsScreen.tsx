@@ -33,16 +33,23 @@ export function HarvestsScreen({ navigation }: Props) {
   if (isLoading) return <Loading />;
   if (isError) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
+  // Show only the 8 most recent jobs (list is sorted newest-first).
+  const recent = (data ?? []).slice(0, 8);
+  const hasMore = (data?.length ?? 0) > recent.length;
+
   return (
     <View style={styles.root}>
       <HarvesterPicker />
       <FlatList
-        data={data}
+        data={recent}
         keyExtractor={(p) => p.id}
         contentContainerStyle={styles.list}
         onRefresh={refetch}
         refreshing={isRefetching}
         ListEmptyComponent={<EmptyState title="No harvesting jobs" subtitle="Add a plot to record a job." />}
+        ListFooterComponent={
+          hasMore ? <Text style={styles.more}>Showing the 8 most recent jobs</Text> : null
+        }
         renderItem={({ item }) => (
           <Card onPress={() => navigation.navigate('HarvestForm', { plotId: item.id })}>
             <View style={styles.rowBetween}>
@@ -71,5 +78,6 @@ const styles = StyleSheet.create({
   title: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text, flex: 1 },
   amount: { fontSize: font.size.md, fontWeight: font.weight.bold, color: colors.primary },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+  more: { fontSize: font.size.xs, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.md },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
 });
