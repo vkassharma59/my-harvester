@@ -11,6 +11,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
+import { useHarvesterAccess } from '@/hooks/useHarvesterAccess';
 import { useHarvesterOptions } from '@/hooks/useHarvesterOptions';
 import { MoreStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
@@ -28,11 +29,14 @@ export function LabourFormScreen({ route, navigation }: Props) {
   const editing = !!labourId;
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const { options: harvesterOptions } = useHarvesterOptions();
+  const { soleHarvesterId } = useHarvesterAccess();
 
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [type, setType] = useState<LabourType>(LabourType.HELPER);
-  const [harvesterId, setHarvesterId] = useState(scopedHarvesterId(selectedId) ?? '');
+  const [harvesterId, setHarvesterId] = useState(
+    soleHarvesterId ?? scopedHarvesterId(selectedId) ?? '',
+  );
   const [dailyWage, setDailyWage] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.PENDING);
@@ -124,13 +128,15 @@ export function LabourFormScreen({ route, navigation }: Props) {
         maxLength={10}
       />
       <Select label="Labour type *" value={type} options={TYPE_OPTIONS} onChange={(v) => setType(v as LabourType)} />
-      <Select
-        label="Harvester *"
-        value={harvesterId}
-        options={harvesterOptions}
-        onChange={setHarvesterId}
-        placeholder="Select harvester"
-      />
+      {!soleHarvesterId ? (
+        <Select
+          label="Harvester *"
+          value={harvesterId}
+          options={harvesterOptions}
+          onChange={setHarvesterId}
+          placeholder="Select harvester"
+        />
+      ) : null}
       <AmountField label="Daily wage" value={dailyWage} onChangeText={setDailyWage} placeholder="e.g. 500" />
       <AmountField
         label="Custom amount (overrides daily wage)"

@@ -11,6 +11,7 @@ import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
+import { useHarvesterAccess } from '@/hooks/useHarvesterAccess';
 import { useHarvesterOptions } from '@/hooks/useHarvesterOptions';
 import { ExpensesStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
@@ -27,8 +28,11 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
   const editing = !!expenseId;
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const { options: harvesterOptions } = useHarvesterOptions();
+  const { soleHarvesterId } = useHarvesterAccess();
 
-  const [harvesterId, setHarvesterId] = useState(scopedHarvesterId(selectedId) ?? '');
+  const [harvesterId, setHarvesterId] = useState(
+    soleHarvesterId ?? scopedHarvesterId(selectedId) ?? '',
+  );
   const [type, setType] = useState<ExpenseType>(ExpenseType.DIESEL);
   const [labourId, setLabourId] = useState('');
   const [amount, setAmount] = useState('');
@@ -113,13 +117,15 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <Select
-        label="Harvester *"
-        value={harvesterId}
-        options={harvesterOptions}
-        onChange={setHarvesterId}
-        placeholder="Select harvester"
-      />
+      {!soleHarvesterId ? (
+        <Select
+          label="Harvester *"
+          value={harvesterId}
+          options={harvesterOptions}
+          onChange={setHarvesterId}
+          placeholder="Select harvester"
+        />
+      ) : null}
       <Select
         label="Expense type *"
         value={type}

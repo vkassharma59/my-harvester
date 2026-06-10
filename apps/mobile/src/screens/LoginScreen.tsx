@@ -46,7 +46,7 @@ export function LoginScreen() {
         onChangeText={setIdentifier}
         autoCapitalize="none"
         autoComplete="username"
-        placeholder="you@example.com or 9876543210"
+        placeholder="Email or mobile"
       />
       <TextField
         label="Password"

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ALL_HARVESTERS, HarvesterStatus } from '@wh/shared';
 import { harvestersApi } from '@/api/endpoints';
+import { useHarvesterAccess } from '@/hooks/useHarvesterAccess';
 import { useSelectedHarvester } from '@/store/harvester';
 import { colors, font, radius, spacing } from '@/theme';
 
@@ -14,11 +15,15 @@ import { colors, font, radius, spacing } from '@/theme';
 export function HarvesterPicker() {
   const [open, setOpen] = useState(false);
   const { selectedId, setSelected } = useSelectedHarvester();
+  const { showPicker } = useHarvesterAccess();
 
   const { data: harvesters = [] } = useQuery({
     queryKey: ['harvesters', HarvesterStatus.ACTIVE],
     queryFn: () => harvestersApi.list(HarvesterStatus.ACTIVE),
   });
+
+  // Staff with a single harvester don't need a switcher — it's auto-scoped.
+  if (!showPicker) return null;
 
   const options = [
     { id: ALL_HARVESTERS, name: 'All Harvesters' },

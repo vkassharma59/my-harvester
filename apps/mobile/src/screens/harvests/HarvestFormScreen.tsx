@@ -11,6 +11,7 @@ import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
+import { useHarvesterAccess } from '@/hooks/useHarvesterAccess';
 import { HarvestsStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { colors, font, radius, spacing } from '@/theme';
@@ -25,6 +26,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const plotId = route.params?.plotId;
   const editing = !!plotId;
   const selectedId = useSelectedHarvester((s) => s.selectedId);
+  const { soleHarvesterId } = useHarvesterAccess();
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const { data: harvesters = [] } = useQuery({
@@ -72,6 +74,11 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   useEffect(() => {
     navigation.setOptions({ title: editing ? 'Edit job' : 'New harvesting job' });
   }, [editing, navigation]);
+
+  // Staff with a single harvester: auto-select it (dropdown is hidden).
+  useEffect(() => {
+    if (!editing && soleHarvesterId) setHarvesterId(soleHarvesterId);
+  }, [editing, soleHarvesterId]);
 
   // Area unit always follows the configured default (Bigha / Acre).
   useEffect(() => {
@@ -159,13 +166,15 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         placeholder="Select customer"
         searchable
       />
-      <Select
-        label="Harvester *"
-        value={harvesterId}
-        options={harvesterOptions}
-        onChange={setHarvesterId}
-        placeholder="Select harvester"
-      />
+      {!soleHarvesterId ? (
+        <Select
+          label="Harvester *"
+          value={harvesterId}
+          options={harvesterOptions}
+          onChange={setHarvesterId}
+          placeholder="Select harvester"
+        />
+      ) : null}
       <TextField label="Plot / Land name *" value={plotName} onChangeText={setPlotName} />
       <TextField
         label={`Area (In ${unit}) *`}
