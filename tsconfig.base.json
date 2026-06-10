@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "declaration": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "paths": {
+      "@wh/shared": ["./packages/shared/src"],
+      "@wh/shared/*": ["./packages/shared/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build"]
+}

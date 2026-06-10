@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Wheat Harvester",
+    "slug": "wheat-harvester",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "wheatharvester",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1B5E20"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wheatharvester.app",
+      "infoPlist": {
+        "NSContactsUsageDescription": "Pick customers directly from your contacts."
+      }
+    },
+    "android": {
+      "package": "com.wheatharvester.app",
+      "permissions": ["READ_CONTACTS"]
+    },
+    "plugins": ["expo-secure-store", "expo-contacts"],
+    "extra": {
+      "apiUrl": "http://localhost:3000/api/v1"
+    }
+  }
+}

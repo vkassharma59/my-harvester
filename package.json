@@ -1,0 +1,23 @@
+{
+  "name": "wheat-harvester",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wheat Harvester Management — monorepo (Expo mobile + NestJS API + shared types)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "shared:build": "npm run build -w @wh/shared",
+    "shared:watch": "npm run watch -w @wh/shared",
+    "api:dev": "npm run start:dev -w @wh/api",
+    "api:build": "npm run build -w @wh/api",
+    "mobile:start": "npm run start -w @wh/mobile",
+    "mobile:android": "npm run android -w @wh/mobile",
+    "mobile:ios": "npm run ios -w @wh/mobile",
+    "build": "npm run shared:build && npm run api:build"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

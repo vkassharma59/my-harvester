@@ -1,0 +1,18 @@
+import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
+
+export class CreateAdminDto {
+  @IsString()
+  @MinLength(2)
+  name!: string;
+
+  @IsEmail()
+  email!: string;
+
+  /** 10-digit mobile number — required and unique (used as a login identity). */
+  @Matches(/^[0-9]{10}$/, { message: 'phone must be a 10-digit mobile number' })
+  phone!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+}

@@ -1,0 +1,84 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Role } from '@wh/shared';
+import { apiErrorMessage } from '@/api/client';
+import { adminsApi } from '@/api/endpoints';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { EmptyState, ErrorState, Loading } from '@/components/States';
+import { MoreStackParamList } from '@/navigation/types';
+import { useAuth } from '@/store/auth';
+import { colors, font, radius, spacing } from '@/theme';
+
+type Props = NativeStackScreenProps<MoreStackParamList, 'Admins'>;
+
+export function AdminsScreen({ navigation }: Props) {
+  const meId = useAuth((s) => s.admin?.id);
+
+  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+    queryKey: ['admins'],
+    queryFn: () => adminsApi.list(),
+  });
+
+  if (isLoading) return <Loading />;
+  if (isError) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
+
+  return (
+    <View style={styles.root}>
+      <FlatList
+        data={data}
+        keyExtractor={(a) => a.id}
+        contentContainerStyle={styles.list}
+        onRefresh={refetch}
+        refreshing={isRefetching}
+        ListEmptyComponent={<EmptyState title="No admins" subtitle="Add staff who can manage your data." />}
+        renderItem={({ item }) => {
+          const isOwner = item.role === Role.SUPER_ADMIN;
+          return (
+            <Card onPress={() => navigation.navigate('AdminForm', { adminId: item.id })}>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.name}>
+                    {item.name}
+                    {item.id === meId ? '  (You)' : ''}
+                  </Text>
+                  <Text style={styles.sub}>{item.email}</Text>
+                  {item.phone ? <Text style={styles.sub}>{item.phone}</Text> : null}
+                </View>
+                <View style={styles.right}>
+                  <View style={[styles.badge, isOwner ? styles.owner : styles.staff]}>
+                    <Text style={[styles.badgeText, isOwner ? styles.ownerText : styles.staffText]}>
+                      {isOwner ? 'Owner' : 'Admin'}
+                    </Text>
+                  </View>
+                  {!item.isActive ? <Text style={styles.inactive}>Inactive</Text> : null}
+                </View>
+              </View>
+            </Card>
+          );
+        }}
+      />
+      <View style={styles.footer}>
+        <Button title="+ Add admin" onPress={() => navigation.navigate('AdminForm')} />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+  list: { padding: spacing.lg, flexGrow: 1 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  name: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
+  sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+  right: { alignItems: 'flex-end', gap: spacing.xs },
+  badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill },
+  owner: { backgroundColor: '#E6F4EA' },
+  staff: { backgroundColor: '#EEF1FB' },
+  badgeText: { fontSize: font.size.xs, fontWeight: font.weight.semibold },
+  ownerText: { color: colors.success },
+  staffText: { color: '#3949AB' },
+  inactive: { fontSize: font.size.xs, color: colors.danger },
+  footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
+});

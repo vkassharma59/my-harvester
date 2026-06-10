@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Expo
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Native
+android/
+ios/
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
