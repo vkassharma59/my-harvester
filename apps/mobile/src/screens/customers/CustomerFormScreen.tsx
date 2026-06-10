@@ -27,9 +27,10 @@ export function CustomerFormScreen({ navigation }: Props) {
       const contact = await Contacts.presentContactPickerAsync();
       if (!contact) return;
       const phone = contact.phoneNumbers?.[0]?.number ?? '';
+      const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim();
       setForm((f) => ({
         ...f,
-        name: contact.name ?? f.name,
+        name: fullName || contact.name || f.name,
         phone: phone.replace(/\s+/g, ''),
         deviceContactId: contact.id,
       }));

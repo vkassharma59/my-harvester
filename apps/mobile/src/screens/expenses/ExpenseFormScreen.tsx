@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { expensesApi, labourApi } from '@/api/endpoints';
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
@@ -136,7 +137,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
         />
       ) : null}
 
-      <TextField label="Amount *" value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0" />
+      <AmountField label="Amount *" value={amount} onChangeText={setAmount} placeholder="0" />
       <DateField label="Date" value={date} onChange={setDate} />
       <TextField label="Notes / Remarks" value={notes} onChangeText={setNotes} multiline />
       <Button

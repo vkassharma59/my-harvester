@@ -5,6 +5,7 @@ import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi, paymentsApi } from '@/api/endpoints';
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -115,7 +116,7 @@ export function CustomerLedgerScreen({ route }: Props) {
         <Pressable style={styles.backdrop} onPress={() => setPayOpen(false)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>Record payment</Text>
-            <TextField label="Amount" value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0" />
+            <AmountField label="Amount" value={amount} onChangeText={setAmount} placeholder="0" />
             <TextField label="Notes" value={notes} onChangeText={setNotes} placeholder="Optional" />
             <Button title="Save payment" onPress={onRecord} loading={recordPayment.isPending} />
           </Pressable>

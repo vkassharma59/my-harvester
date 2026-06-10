@@ -5,6 +5,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { AreaUnit, HarvesterStatus, HarvesterType, HarvestType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi, harvestersApi, plotsApi, settingsApi } from '@/api/endpoints';
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
@@ -181,14 +182,13 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         options={TYPE_OPTIONS}
         onChange={(v) => setHarvestType(v as HarvestType)}
       />
-      <TextField
+      <AmountField
         label={`Rate per ${unit} *`}
         value={ratePerBigha}
         onChangeText={(v) => {
           setRateTouched(true);
           setRatePerBigha(v);
         }}
-        keyboardType="numeric"
       />
 
       {isWithoutBhusa ? (
@@ -200,13 +200,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
             onChange={setBhusaBuyerId}
             placeholder="Select buyer (optional)"
           />
-          <TextField
-            label="Bhusa amount"
-            value={bhusaAmount}
-            onChangeText={setBhusaAmount}
-            keyboardType="numeric"
-            placeholder="0"
-          />
+          <AmountField label="Bhusa amount" value={bhusaAmount} onChangeText={setBhusaAmount} placeholder="0" />
         </>
       ) : null}
 

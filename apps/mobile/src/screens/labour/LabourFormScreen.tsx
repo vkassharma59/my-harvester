@@ -6,6 +6,7 @@ import { Alert } from 'react-native';
 import { LabourType, PaymentStatus } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi } from '@/api/endpoints';
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Select } from '@/components/Select';
@@ -47,7 +48,9 @@ export function LabourFormScreen({ route, navigation }: Props) {
       if (!contact) return;
       const raw = contact.phoneNumbers?.[0]?.number ?? '';
       const digits = raw.replace(/[^0-9]/g, '');
-      setName(contact.name ?? name);
+      // `name` isn't always populated by the picker — build it from first+last.
+      const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim();
+      setName(fullName || contact.name || name);
       // Keep the last 10 digits (drops country code / spacing).
       setMobile(digits.length > 10 ? digits.slice(-10) : digits);
     } catch (e) {
@@ -128,12 +131,11 @@ export function LabourFormScreen({ route, navigation }: Props) {
         onChange={setHarvesterId}
         placeholder="Select harvester"
       />
-      <TextField label="Daily wage" value={dailyWage} onChangeText={setDailyWage} keyboardType="numeric" placeholder="e.g. 500" />
-      <TextField
+      <AmountField label="Daily wage" value={dailyWage} onChangeText={setDailyWage} placeholder="e.g. 500" />
+      <AmountField
         label="Custom amount (overrides daily wage)"
         value={customAmount}
         onChangeText={setCustomAmount}
-        keyboardType="numeric"
         placeholder="Optional"
       />
       <Select

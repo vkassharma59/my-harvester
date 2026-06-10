@@ -5,6 +5,7 @@ import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { HarvesterStatus, HarvesterType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { harvestersApi, HarvesterInput, settingsApi } from '@/api/endpoints';
+import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Select } from '@/components/Select';
@@ -140,27 +141,24 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
 
       {isBhusa ? (
         <>
-          <TextField
+          <AmountField
             label={`Default Rate Per ${unit} (With Bhusa)`}
             value={rateWithBhusa}
             onChangeText={setRateWithBhusa}
-            keyboardType="numeric"
             placeholder="0"
           />
-          <TextField
+          <AmountField
             label={`Default Rate Per ${unit} (Without Bhusa)`}
             value={rateWithoutBhusa}
             onChangeText={setRateWithoutBhusa}
-            keyboardType="numeric"
             placeholder="0"
           />
         </>
       ) : (
-        <TextField
+        <AmountField
           label={`Default Rate Per ${unit}`}
           value={ratePerUnit}
           onChangeText={setRatePerUnit}
-          keyboardType="numeric"
           placeholder="0"
         />
       )}
