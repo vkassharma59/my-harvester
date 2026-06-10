@@ -19,7 +19,6 @@ import { formatCurrency, labelFromEnum } from '@/utils/format';
 type Props = NativeStackScreenProps<HarvestsStackParamList, 'HarvestForm'>;
 
 const TYPE_OPTIONS = Object.values(HarvestType).map((t) => ({ label: labelFromEnum(t), value: t }));
-const UNIT_OPTIONS = Object.values(AreaUnit).map((u) => ({ label: labelFromEnum(u), value: u }));
 
 export function HarvestFormScreen({ route, navigation }: Props) {
   const qc = useQueryClient();
@@ -46,10 +45,8 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const [customerId, setCustomerId] = useState('');
   const [harvesterId, setHarvesterId] = useState(scopedHarvesterId(selectedId) ?? '');
   const [plotName, setPlotName] = useState('');
-  const [village, setVillage] = useState('');
   const [area, setArea] = useState('');
   const [areaUnit, setAreaUnit] = useState<AreaUnit>(AreaUnit.BIGHA);
-  const [unitTouched, setUnitTouched] = useState(false);
   const [harvestDate, setHarvestDate] = useState(new Date());
   const [harvestType, setHarvestType] = useState<HarvestType>(HarvestType.PER_BIGHA_WITH_BHUSA);
   const [ratePerBigha, setRatePerBigha] = useState('');
@@ -58,8 +55,12 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const [remarks, setRemarks] = useState('');
   const [rateTouched, setRateTouched] = useState(false);
 
-  const isWithoutBhusa = harvestType === HarvestType.WITHOUT_BHUSA;
   const selectedHarvester = harvesters.find((h) => h.id === harvesterId);
+  // Bhusa-specific fields only apply to Bhusa harvesters.
+  const isBhusaHarvester = selectedHarvester?.type === HarvesterType.BHUSA;
+  const showBhusa = isBhusaHarvester && harvestType === HarvestType.WITHOUT_BHUSA;
+  // For Combine harvesters there's no "with/without Bhusa" choice.
+  const effectiveHarvestType = isBhusaHarvester ? harvestType : HarvestType.PER_BIGHA_WITH_BHUSA;
   const unit = labelFromEnum(areaUnit);
 
   const { data: existing } = useQuery({
@@ -72,10 +73,10 @@ export function HarvestFormScreen({ route, navigation }: Props) {
     navigation.setOptions({ title: editing ? 'Edit job' : 'New harvesting job' });
   }, [editing, navigation]);
 
-  // Default the area unit from settings (until the user changes it).
+  // Area unit always follows the configured default (Bigha / Acre).
   useEffect(() => {
-    if (!editing && !unitTouched && settings) setAreaUnit(settings.defaultAreaUnit);
-  }, [settings, editing, unitTouched]);
+    if (!editing && settings) setAreaUnit(settings.defaultAreaUnit);
+  }, [settings, editing]);
 
   // Default the rate from the chosen harvester's rate for this harvest type.
   useEffect(() => {
@@ -94,10 +95,8 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       setCustomerId(existing.customerId);
       setHarvesterId(existing.harvesterId);
       setPlotName(existing.plotName);
-      setVillage(existing.village ?? '');
       setArea(String(existing.area));
       setAreaUnit(existing.areaUnit);
-      setUnitTouched(true);
       setHarvestDate(new Date(existing.harvestDate));
       setHarvestType(existing.harvestType);
       setRatePerBigha(String(existing.ratePerBigha));
@@ -112,9 +111,9 @@ export function HarvestFormScreen({ route, navigation }: Props) {
     const a = Number(area) || 0;
     const r = Number(ratePerBigha) || 0;
     const harvesting = Math.round(a * r * 100) / 100;
-    const bhusa = isWithoutBhusa ? Number(bhusaAmount) || 0 : 0;
+    const bhusa = showBhusa ? Number(bhusaAmount) || 0 : 0;
     return { harvesting, bhusa, total: harvesting + bhusa };
-  }, [area, ratePerBigha, bhusaAmount, isWithoutBhusa]);
+  }, [area, ratePerBigha, bhusaAmount, showBhusa]);
 
   const save = useMutation({
     mutationFn: () => {
@@ -122,15 +121,14 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         customerId,
         harvesterId,
         plotName,
-        village: village.trim() || undefined,
         area: Number(area),
         areaUnit,
         harvestDate: harvestDate.toISOString(),
-        harvestType,
+        harvestType: effectiveHarvestType,
         ratePerBigha: Number(ratePerBigha),
         remarks: remarks.trim() || undefined,
-        bhusaBuyerId: isWithoutBhusa && bhusaBuyerId ? bhusaBuyerId : undefined,
-        bhusaAmount: isWithoutBhusa && bhusaAmount ? Number(bhusaAmount) : undefined,
+        bhusaBuyerId: showBhusa && bhusaBuyerId ? bhusaBuyerId : undefined,
+        bhusaAmount: showBhusa && bhusaAmount ? Number(bhusaAmount) : undefined,
       };
       return editing ? plotsApi.update(plotId as string, body) : plotsApi.create(body);
     },
@@ -169,24 +167,24 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         placeholder="Select harvester"
       />
       <TextField label="Plot / Land name *" value={plotName} onChangeText={setPlotName} />
-      <TextField label="Village" value={village} onChangeText={setVillage} />
-      <TextField label="Area *" value={area} onChangeText={setArea} keyboardType="numeric" placeholder="e.g. 5" />
-      <Select
-        label="Area unit"
-        value={areaUnit}
-        options={UNIT_OPTIONS}
-        onChange={(v) => {
-          setUnitTouched(true);
-          setAreaUnit(v as AreaUnit);
-        }}
+      <TextField
+        label={`Area (In ${unit}) *`}
+        value={area}
+        onChangeText={setArea}
+        keyboardType="numeric"
+        placeholder="e.g. 5"
       />
       <DateField label="Harvest date" value={harvestDate} onChange={setHarvestDate} />
-      <Select
-        label="Harvesting type *"
-        value={harvestType}
-        options={TYPE_OPTIONS}
-        onChange={(v) => setHarvestType(v as HarvestType)}
-      />
+
+      {isBhusaHarvester ? (
+        <Select
+          label="Harvesting type *"
+          value={harvestType}
+          options={TYPE_OPTIONS}
+          onChange={(v) => setHarvestType(v as HarvestType)}
+        />
+      ) : null}
+
       <AmountField
         label={`Rate per ${unit} *`}
         value={ratePerBigha}
@@ -196,7 +194,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         }}
       />
 
-      {isWithoutBhusa ? (
+      {showBhusa ? (
         <>
           <Select
             label="Bhusa buyer"
@@ -214,7 +212,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
 
       <View style={styles.preview}>
         <Row label="Harvesting amount" value={formatCurrency(preview.harvesting)} />
-        {isWithoutBhusa ? <Row label="Bhusa sale" value={formatCurrency(preview.bhusa)} /> : null}
+        {showBhusa ? <Row label="Bhusa sale" value={formatCurrency(preview.bhusa)} /> : null}
         <View style={styles.divider} />
         <Row label="Total" value={formatCurrency(preview.total)} bold />
       </View>
