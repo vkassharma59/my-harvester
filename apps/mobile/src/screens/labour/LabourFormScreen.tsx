@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Contacts from 'expo-contacts';
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { LabourType, PaymentStatus } from '@wh/shared';
@@ -34,6 +35,25 @@ export function LabourFormScreen({ route, navigation }: Props) {
   const [dailyWage, setDailyWage] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.PENDING);
+
+  const importFromContacts = async () => {
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow contacts access to pick a labourer.');
+        return;
+      }
+      const contact = await Contacts.presentContactPickerAsync();
+      if (!contact) return;
+      const raw = contact.phoneNumbers?.[0]?.number ?? '';
+      const digits = raw.replace(/[^0-9]/g, '');
+      setName(contact.name ?? name);
+      // Keep the last 10 digits (drops country code / spacing).
+      setMobile(digits.length > 10 ? digits.slice(-10) : digits);
+    } catch (e) {
+      Alert.alert('Contacts', apiErrorMessage(e, 'Could not open contacts.'));
+    }
+  };
 
   const { data: existing } = useQuery({
     queryKey: ['labour-one', labourId],
@@ -86,8 +106,20 @@ export function LabourFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
+      <Button
+        title="📇 Import from contacts"
+        variant="secondary"
+        onPress={importFromContacts}
+        style={{ marginBottom: spacing.lg }}
+      />
       <TextField label="Name *" value={name} onChangeText={setName} />
-      <TextField label="Mobile *" value={mobile} onChangeText={setMobile} keyboardType="phone-pad" />
+      <TextField
+        label="Mobile *"
+        value={mobile}
+        onChangeText={(v) => setMobile(v.replace(/[^0-9]/g, '').slice(0, 10))}
+        keyboardType="number-pad"
+        maxLength={10}
+      />
       <Select label="Labour type *" value={type} options={TYPE_OPTIONS} onChange={(v) => setType(v as LabourType)} />
       <Select
         label="Harvester *"
