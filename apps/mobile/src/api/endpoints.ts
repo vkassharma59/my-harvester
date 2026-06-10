@@ -93,9 +93,14 @@ export interface CustomerInput {
   address?: string;
   deviceContactId?: string;
 }
+export interface CustomerListItem extends Customer {
+  totalBill: number;
+  amountPaid: number;
+  outstanding: number;
+}
 export const customersApi = {
   list: (params?: { page?: number; limit?: number; search?: string }) =>
-    api.get<Paginated<Customer>>('/customers', { params }).then((r) => r.data),
+    api.get<Paginated<CustomerListItem>>('/customers', { params }).then((r) => r.data),
   get: (id: string) => api.get<Customer>(`/customers/${id}`).then((r) => r.data),
   create: (body: CustomerInput) => api.post<Customer>('/customers', body).then((r) => r.data),
   update: (id: string, body: Partial<CustomerInput>) =>

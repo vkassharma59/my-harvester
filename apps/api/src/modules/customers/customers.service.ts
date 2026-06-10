@@ -1,10 +1,21 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
+import { PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { Paginated, PaginationDto } from '../../common/dto/pagination.dto';
+import { Payment, PaymentDocument } from '../payments/payment.schema';
+import { Plot, PlotDocument } from '../plots/plot.schema';
 import { Customer, CustomerDocument } from './customer.schema';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
+
+/** A customer plus their running bill / paid / outstanding totals. */
+export type CustomerWithTotals = Record<string, unknown> & {
+  id: string;
+  totalBill: number;
+  amountPaid: number;
+  outstanding: number;
+};
 
 /** Compare phones by digits only, so "98765 43210" == "9876543210". */
 function normalizePhone(phone: string): string {
@@ -15,6 +26,8 @@ function normalizePhone(phone: string): string {
 export class CustomersService {
   constructor(
     @InjectModel(Customer.name) private readonly model: Model<CustomerDocument>,
+    @InjectModel(Plot.name) private readonly plots: Model<PlotDocument>,
+    @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
   ) {}
 
   /** Rejects a customer whose phone already exists in this tenant. */
@@ -46,14 +59,15 @@ export class CustomersService {
     });
   }
 
-  async findAll(query: PaginationDto, tenantId: string): Promise<Paginated<CustomerDocument>> {
-    const filter: FilterQuery<CustomerDocument> = { tenantId: new Types.ObjectId(tenantId) };
+  async findAll(query: PaginationDto, tenantId: string): Promise<Paginated<CustomerWithTotals>> {
+    const tenant = new Types.ObjectId(tenantId);
+    const filter: FilterQuery<CustomerDocument> = { tenantId: tenant };
     if (query.search) {
       const rx = new RegExp(query.search.trim(), 'i');
       filter.$or = [{ name: rx }, { phone: rx }, { village: rx }];
     }
     const { page, limit } = query;
-    const [items, total] = await Promise.all([
+    const [docs, total] = await Promise.all([
       this.model
         .find(filter)
         .sort({ createdAt: -1 })
@@ -62,6 +76,34 @@ export class CustomersService {
         .exec(),
       this.model.countDocuments(filter).exec(),
     ]);
+
+    // Bill (sum of plot harvesting charges) and amount paid, per customer on this page.
+    const ids = docs.map((d) => d._id);
+    const [billRows, paidRows] = await Promise.all([
+      this.plots.aggregate<{ _id: Types.ObjectId; bill: number }>([
+        { $match: { tenantId: tenant, customerId: { $in: ids } } },
+        { $group: { _id: '$customerId', bill: { $sum: '$harvestingAmount' } } },
+      ]),
+      this.payments.aggregate<{ _id: Types.ObjectId; paid: number }>([
+        { $match: { tenantId: tenant, partyType: PartyType.CUSTOMER, partyId: { $in: ids } } },
+        { $group: { _id: '$partyId', paid: { $sum: '$amount' } } },
+      ]),
+    ]);
+    const billMap = new Map(billRows.map((r) => [r._id.toString(), r.bill]));
+    const paidMap = new Map(paidRows.map((r) => [r._id.toString(), r.paid]));
+
+    const items: CustomerWithTotals[] = docs.map((d) => {
+      const totalBill = billMap.get(d.id) ?? 0;
+      const amountPaid = paidMap.get(d.id) ?? 0;
+      return {
+        ...(d.toJSON() as Record<string, unknown>),
+        id: d.id,
+        totalBill,
+        amountPaid,
+        outstanding: totalBill - amountPaid,
+      };
+    });
+
     return { items, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
