@@ -64,20 +64,28 @@ export class CustomersService {
     const tenant = new Types.ObjectId(user.tenantId);
     const hFilter = harvesterFilter(user);
     const filter: FilterQuery<CustomerDocument> = { tenantId: tenant };
+    const and: FilterQuery<CustomerDocument>[] = [];
 
-    // Staff only see customers who have a job on their assigned harvester(s).
+    // Staff see customers who have a job on their harvester(s) OR that they
+    // added themselves (so a newly added customer is visible/selectable).
     if (user.role !== Role.SUPER_ADMIN) {
       const rows = await this.plots.aggregate<{ _id: Types.ObjectId }>([
         { $match: { tenantId: tenant, ...hFilter } },
         { $group: { _id: '$customerId' } },
       ]);
-      filter._id = { $in: rows.map((r) => r._id) };
+      and.push({
+        $or: [
+          { _id: { $in: rows.map((r) => r._id) } },
+          { createdBy: new Types.ObjectId(user.id) },
+        ],
+      });
     }
 
     if (query.search) {
       const rx = new RegExp(query.search.trim(), 'i');
-      filter.$or = [{ name: rx }, { phone: rx }, { village: rx }];
+      and.push({ $or: [{ name: rx }, { phone: rx }, { village: rx }] });
     }
+    if (and.length) filter.$and = and;
     const { page, limit } = query;
     const [docs, total] = await Promise.all([
       this.model
