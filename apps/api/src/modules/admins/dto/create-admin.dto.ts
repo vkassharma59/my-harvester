@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
+import { IsArray, IsEmail, IsMongoId, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class CreateAdminDto {
   @IsString()
@@ -15,4 +15,10 @@ export class CreateAdminDto {
   @IsString()
   @MinLength(8)
   password!: string;
+
+  /** Harvesters this staff admin may access. */
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  harvesterIds?: string[];
 }

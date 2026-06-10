@@ -9,11 +9,11 @@ export class DashboardController {
   /** Consolidated summary for the tenant. `harvesterId=ALL` or omitted = all. */
   @Get('dashboard/summary')
   summary(@CurrentUser() user: AuthUser, @Query('harvesterId') harvesterId?: string) {
-    return this.dashboard.summary(user.tenantId, harvesterId);
+    return this.dashboard.summary(user, harvesterId);
   }
 
   @Get('customers/:id/ledger')
   customerLedger(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.dashboard.customerLedger(id, user.tenantId);
+    return this.dashboard.customerLedger(id, user);
   }
 }

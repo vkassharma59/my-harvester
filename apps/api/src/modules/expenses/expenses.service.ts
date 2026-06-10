@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { ExpenseType, PaymentStatus } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Labour, LabourDocument } from '../labour/labour.schema';
 import { Expense, ExpenseDocument } from './expense.schema';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expense.dto';
@@ -22,6 +23,7 @@ export class ExpensesService {
   ) {}
 
   async create(dto: CreateExpenseDto, user: AuthUser): Promise<ExpenseDocument> {
+    assertCanUseHarvester(user, dto.harvesterId);
     const tenantId = new Types.ObjectId(user.tenantId);
     const labourId =
       dto.type === ExpenseType.LABOUR && dto.labourId ? new Types.ObjectId(dto.labourId) : null;
@@ -40,13 +42,13 @@ export class ExpensesService {
     return expense;
   }
 
-  findAll(filter: ExpenseFilter, tenantId: string): Promise<ExpenseDocument[]> {
-    return this.model.find(this.buildFilter(filter, tenantId)).sort({ date: -1 }).exec();
+  findAll(filter: ExpenseFilter, user: AuthUser): Promise<ExpenseDocument[]> {
+    return this.model.find(this.buildFilter(filter, user)).sort({ date: -1 }).exec();
   }
 
-  async findOne(id: string, tenantId: string): Promise<ExpenseDocument> {
+  async findOne(id: string, user: AuthUser): Promise<ExpenseDocument> {
     const doc = await this.model
-      .findOne({ _id: id, tenantId: new Types.ObjectId(tenantId) })
+      .findOne({ _id: id, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) })
       .exec();
     if (!doc) throw new NotFoundException('Expense not found');
     return doc;
@@ -54,7 +56,10 @@ export class ExpensesService {
 
   async update(id: string, dto: UpdateExpenseDto, user: AuthUser): Promise<ExpenseDocument> {
     const tenantId = new Types.ObjectId(user.tenantId);
-    const existing = await this.model.findOne({ _id: id, tenantId }).exec();
+    if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
+    const existing = await this.model
+      .findOne({ _id: id, tenantId, ...harvesterFilter(user) })
+      .exec();
     if (!existing) throw new NotFoundException('Expense not found');
     const previousLabourId = existing.labourId ?? null;
 
@@ -84,7 +89,9 @@ export class ExpensesService {
 
   async remove(id: string, user: AuthUser): Promise<void> {
     const tenantId = new Types.ObjectId(user.tenantId);
-    const doc = await this.model.findOneAndDelete({ _id: id, tenantId }).exec();
+    const doc = await this.model
+      .findOneAndDelete({ _id: id, tenantId, ...harvesterFilter(user) })
+      .exec();
     if (!doc) throw new NotFoundException('Expense not found');
     if (doc.labourId) await this.recomputeLabourStatus(doc.labourId, tenantId, user.id);
   }
@@ -118,9 +125,11 @@ export class ExpensesService {
     await labour.save();
   }
 
-  private buildFilter(f: ExpenseFilter, tenantId: string): FilterQuery<ExpenseDocument> {
-    const filter: FilterQuery<ExpenseDocument> = { tenantId: new Types.ObjectId(tenantId) };
-    if (f.harvesterId) filter.harvesterId = new Types.ObjectId(f.harvesterId);
+  private buildFilter(f: ExpenseFilter, user: AuthUser): FilterQuery<ExpenseDocument> {
+    const filter: FilterQuery<ExpenseDocument> = {
+      tenantId: new Types.ObjectId(user.tenantId),
+      ...harvesterFilter(user, f.harvesterId),
+    };
     if (f.type) filter.type = f.type;
     if (f.from || f.to) {
       filter.date = {};

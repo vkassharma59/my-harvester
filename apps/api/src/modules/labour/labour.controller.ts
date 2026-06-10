@@ -25,12 +25,12 @@ export class LabourController {
 
   @Get()
   findAll(@CurrentUser() user: AuthUser, @Query('harvesterId') harvesterId?: string) {
-    return this.labour.findAll(user.tenantId, harvesterId);
+    return this.labour.findAll(user, harvesterId);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.labour.findOne(id, user.tenantId);
+    return this.labour.findOne(id, user);
   }
 
   @Patch(':id')
@@ -41,6 +41,6 @@ export class LabourController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.labour.remove(id, user.tenantId);
+    return this.labour.remove(id, user);
   }
 }

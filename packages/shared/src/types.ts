@@ -29,6 +29,8 @@ export interface Admin extends AuditFields {
   phone?: string;
   role: Role;
   isActive: boolean;
+  /** Harvesters a staff ADMIN may access. Ignored for SUPER_ADMIN (sees all). */
+  harvesterIds?: string[];
   // passwordHash is never sent to the client
 }
 

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Labour, LabourDocument } from './labour.schema';
 import { CreateLabourDto, UpdateLabourDto } from './dto/labour.dto';
 
@@ -12,6 +13,7 @@ export class LabourService {
   ) {}
 
   create(dto: CreateLabourDto, user: AuthUser): Promise<LabourDocument> {
+    assertCanUseHarvester(user, dto.harvesterId);
     return this.model.create({
       ...dto,
       tenantId: new Types.ObjectId(user.tenantId),
@@ -21,36 +23,44 @@ export class LabourService {
     });
   }
 
-  findAll(tenantId: string, harvesterId?: string): Promise<LabourDocument[]> {
-    const filter: FilterQuery<LabourDocument> = { tenantId: new Types.ObjectId(tenantId) };
-    if (harvesterId) filter.harvesterId = new Types.ObjectId(harvesterId);
+  findAll(user: AuthUser, harvesterId?: string): Promise<LabourDocument[]> {
+    const filter: FilterQuery<LabourDocument> = {
+      tenantId: new Types.ObjectId(user.tenantId),
+      ...harvesterFilter(user, harvesterId),
+    };
     return this.model.find(filter).sort({ createdAt: -1 }).exec();
   }
 
-  async findOne(id: string, tenantId: string): Promise<LabourDocument> {
+  async findOne(id: string, user: AuthUser): Promise<LabourDocument> {
     const doc = await this.model
-      .findOne({ _id: id, tenantId: new Types.ObjectId(tenantId) })
+      .findOne({ _id: id, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) })
       .exec();
     if (!doc) throw new NotFoundException('Labour record not found');
     return doc;
   }
 
   async update(id: string, dto: UpdateLabourDto, user: AuthUser): Promise<LabourDocument> {
+    if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
     const update: Record<string, unknown> = { ...dto, updatedBy: new Types.ObjectId(user.id) };
     if (dto.harvesterId) update.harvesterId = new Types.ObjectId(dto.harvesterId);
     const doc = await this.model
-      .findOneAndUpdate({ _id: id, tenantId: new Types.ObjectId(user.tenantId) }, update, {
-        new: true,
-        runValidators: true,
-      })
+      .findOneAndUpdate(
+        { _id: id, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) },
+        update,
+        { new: true, runValidators: true },
+      )
       .exec();
     if (!doc) throw new NotFoundException('Labour record not found');
     return doc;
   }
 
-  async remove(id: string, tenantId: string): Promise<void> {
+  async remove(id: string, user: AuthUser): Promise<void> {
     const res = await this.model
-      .findOneAndDelete({ _id: id, tenantId: new Types.ObjectId(tenantId) })
+      .findOneAndDelete({
+        _id: id,
+        tenantId: new Types.ObjectId(user.tenantId),
+        ...harvesterFilter(user),
+      })
       .exec();
     if (!res) throw new NotFoundException('Labour record not found');
   }

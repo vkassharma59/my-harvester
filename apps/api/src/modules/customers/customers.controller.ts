@@ -15,7 +15,7 @@ export class CustomersController {
 
   @Get()
   findAll(@Query() query: PaginationDto, @CurrentUser() user: AuthUser) {
-    return this.customers.findAll(query, user.tenantId);
+    return this.customers.findAll(query, user);
   }
 
   @Get(':id')

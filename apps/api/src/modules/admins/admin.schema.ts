@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 import { Role } from '@wh/shared';
 import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
 
@@ -26,6 +26,10 @@ export class Admin extends AuditedDocument {
 
   @Prop({ default: true })
   isActive!: boolean;
+
+  /** Harvesters a staff ADMIN may access (empty/ignored for SUPER_ADMIN). */
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Harvester' }], default: [] })
+  harvesterIds!: Types.ObjectId[];
 }
 
 export const AdminSchema = SchemaFactory.createForClass(Admin);

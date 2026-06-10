@@ -1,9 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { HarvesterStatus } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { adminsApi } from '@/api/endpoints';
+import { adminsApi, harvestersApi } from '@/api/endpoints';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
@@ -26,6 +27,15 @@ export function AdminFormScreen({ route, navigation }: Props) {
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [harvesterIds, setHarvesterIds] = useState<string[]>([]);
+
+  const { data: harvesters = [] } = useQuery({
+    queryKey: ['harvesters', HarvesterStatus.ACTIVE],
+    queryFn: () => harvestersApi.list(HarvesterStatus.ACTIVE),
+  });
+
+  const toggleHarvester = (id: string) =>
+    setHarvesterIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
 
   const { data: existing } = useQuery({
     queryKey: ['admins', adminId],
@@ -43,16 +53,17 @@ export function AdminFormScreen({ route, navigation }: Props) {
       setEmail(existing.email);
       setPhone(existing.phone ?? '');
       setIsActive(existing.isActive);
+      setHarvesterIds(existing.harvesterIds ?? []);
     }
   }, [existing]);
 
   const save = useMutation({
     mutationFn: async () => {
       if (editing) {
-        await adminsApi.update(adminId, { name, email, phone, isActive });
+        await adminsApi.update(adminId, { name, email, phone, isActive, harvesterIds });
         if (newPassword.trim()) await adminsApi.changePassword(adminId, newPassword);
       } else {
-        await adminsApi.create({ name, email, password, phone });
+        await adminsApi.create({ name, email, password, phone, harvesterIds });
       }
     },
     onSuccess: () => {
@@ -129,6 +140,28 @@ export function AdminFormScreen({ route, navigation }: Props) {
         </>
       )}
 
+      <Text style={styles.sectionLabel}>Assigned harvesters</Text>
+      <Text style={styles.sectionHint}>
+        This admin can only see and manage data for the harvesters you select.
+      </Text>
+      <View style={styles.harvesterBox}>
+        {harvesters.length === 0 ? (
+          <Text style={styles.empty}>No active harvesters to assign.</Text>
+        ) : (
+          harvesters.map((h) => {
+            const on = harvesterIds.includes(h.id);
+            return (
+              <Pressable key={h.id} style={styles.harvesterRow} onPress={() => toggleHarvester(h.id)}>
+                <View style={[styles.checkbox, on && styles.checkboxOn]}>
+                  {on ? <Text style={styles.checkboxTick}>✓</Text> : null}
+                </View>
+                <Text style={styles.harvesterName}>{h.name}</Text>
+              </Pressable>
+            );
+          })
+        )}
+      </View>
+
       <Button
         title={editing ? 'Save changes' : 'Add admin'}
         onPress={onSave}
@@ -154,4 +187,41 @@ const styles = StyleSheet.create({
   statusValue: { fontSize: font.size.md, fontWeight: font.weight.semibold },
   active: { color: colors.success },
   inactive: { color: colors.danger },
+  sectionLabel: {
+    fontSize: font.size.sm,
+    color: colors.textMuted,
+    fontWeight: font.weight.medium,
+    marginTop: spacing.sm,
+  },
+  sectionHint: { fontSize: font.size.xs, color: colors.textMuted, marginTop: 2, marginBottom: spacing.sm },
+  harvesterBox: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  harvesterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkboxTick: { color: colors.white, fontSize: font.size.sm, fontWeight: font.weight.bold },
+  harvesterName: { fontSize: font.size.md, color: colors.text },
+  empty: { fontSize: font.size.sm, color: colors.textMuted, padding: spacing.md },
 });
+

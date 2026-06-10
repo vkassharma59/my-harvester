@@ -1,8 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
-import { PartyType } from '@wh/shared';
+import { PartyType, Role } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { harvesterFilter } from '../../common/scope';
 import { Paginated, PaginationDto } from '../../common/dto/pagination.dto';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
 import { Plot, PlotDocument } from '../plots/plot.schema';
@@ -59,9 +60,20 @@ export class CustomersService {
     });
   }
 
-  async findAll(query: PaginationDto, tenantId: string): Promise<Paginated<CustomerWithTotals>> {
-    const tenant = new Types.ObjectId(tenantId);
+  async findAll(query: PaginationDto, user: AuthUser): Promise<Paginated<CustomerWithTotals>> {
+    const tenant = new Types.ObjectId(user.tenantId);
+    const hFilter = harvesterFilter(user);
     const filter: FilterQuery<CustomerDocument> = { tenantId: tenant };
+
+    // Staff only see customers who have a job on their assigned harvester(s).
+    if (user.role !== Role.SUPER_ADMIN) {
+      const rows = await this.plots.aggregate<{ _id: Types.ObjectId }>([
+        { $match: { tenantId: tenant, ...hFilter } },
+        { $group: { _id: '$customerId' } },
+      ]);
+      filter._id = { $in: rows.map((r) => r._id) };
+    }
+
     if (query.search) {
       const rx = new RegExp(query.search.trim(), 'i');
       filter.$or = [{ name: rx }, { phone: rx }, { village: rx }];
@@ -77,11 +89,12 @@ export class CustomersService {
       this.model.countDocuments(filter).exec(),
     ]);
 
-    // Bill (sum of plot harvesting charges) and amount paid, per customer on this page.
+    // Bill (sum of plot harvesting charges, scoped to the user's harvesters) and
+    // amount paid (customer-level), per customer on this page.
     const ids = docs.map((d) => d._id);
     const [billRows, paidRows] = await Promise.all([
       this.plots.aggregate<{ _id: Types.ObjectId; bill: number }>([
-        { $match: { tenantId: tenant, customerId: { $in: ids } } },
+        { $match: { tenantId: tenant, ...hFilter, customerId: { $in: ids } } },
         { $group: { _id: '$customerId', bill: { $sum: '$harvestingAmount' } } },
       ]),
       this.payments.aggregate<{ _id: Types.ObjectId; paid: number }>([

@@ -46,12 +46,14 @@ export interface CreateAdminInput {
   email: string;
   password: string;
   phone: string;
+  harvesterIds?: string[];
 }
 export interface UpdateAdminInput {
   name?: string;
   email?: string;
   phone?: string;
   isActive?: boolean;
+  harvesterIds?: string[];
 }
 export const adminsApi = {
   list: () => api.get<Admin[]>('/admins').then((r) => r.data),

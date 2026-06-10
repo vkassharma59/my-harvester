@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Payment, PaymentDocument } from './payment.schema';
 import { CreatePaymentDto, QueryPaymentDto, UpdatePaymentDto } from './dto/payment.dto';
 
@@ -17,6 +18,7 @@ export class PaymentsService {
   }
 
   create(dto: CreatePaymentDto, user: AuthUser): Promise<PaymentDocument> {
+    if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
     return this.model.create({
       tenantId: new Types.ObjectId(user.tenantId),
       partyType: dto.partyType,
@@ -31,11 +33,13 @@ export class PaymentsService {
     });
   }
 
-  findAll(query: QueryPaymentDto, tenantId: string): Promise<PaymentDocument[]> {
-    const filter: FilterQuery<PaymentDocument> = { tenantId: new Types.ObjectId(tenantId) };
+  findAll(query: QueryPaymentDto, user: AuthUser): Promise<PaymentDocument[]> {
+    const filter: FilterQuery<PaymentDocument> = {
+      tenantId: new Types.ObjectId(user.tenantId),
+      ...harvesterFilter(user, query.harvesterId),
+    };
     if (query.partyType) filter.partyType = query.partyType;
     if (query.partyId) filter.partyId = new Types.ObjectId(query.partyId);
-    if (query.harvesterId) filter.harvesterId = new Types.ObjectId(query.harvesterId);
     return this.model.find(filter).sort({ date: -1 }).exec();
   }
 

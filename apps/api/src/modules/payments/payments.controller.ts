@@ -25,7 +25,7 @@ export class PaymentsController {
 
   @Get()
   findAll(@Query() query: QueryPaymentDto, @CurrentUser() user: AuthUser) {
-    return this.payments.findAll(query, user.tenantId);
+    return this.payments.findAll(query, user);
   }
 
   @Get(':id')

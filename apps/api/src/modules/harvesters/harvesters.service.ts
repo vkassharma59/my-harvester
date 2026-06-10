@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { HarvesterStatus } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { allowedHarvesterIds } from '../../common/scope';
 import { Harvester, HarvesterDocument } from './harvester.schema';
 import { CreateHarvesterDto, UpdateHarvesterDto } from './dto/harvester.dto';
 
@@ -21,9 +22,12 @@ export class HarvestersService {
     });
   }
 
-  findAll(tenantId: string, status?: HarvesterStatus): Promise<HarvesterDocument[]> {
-    const filter: FilterQuery<HarvesterDocument> = { tenantId: new Types.ObjectId(tenantId) };
+  findAll(user: AuthUser, status?: HarvesterStatus): Promise<HarvesterDocument[]> {
+    const filter: FilterQuery<HarvesterDocument> = { tenantId: new Types.ObjectId(user.tenantId) };
     if (status) filter.status = status;
+    // Staff admins only see the harvesters assigned to them.
+    const allowed = allowedHarvesterIds(user);
+    if (allowed) filter._id = { $in: allowed };
     return this.model.find(filter).sort({ createdAt: -1 }).exec();
   }
 

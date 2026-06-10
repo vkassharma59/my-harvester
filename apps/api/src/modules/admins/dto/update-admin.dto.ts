@@ -1,4 +1,13 @@
-import { IsBoolean, IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsEmail,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class UpdateAdminDto {
   @IsOptional()
@@ -17,6 +26,11 @@ export class UpdateAdminDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  harvesterIds?: string[];
 }
 
 export class ChangePasswordDto {

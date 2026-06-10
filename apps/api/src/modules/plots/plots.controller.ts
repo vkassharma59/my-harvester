@@ -29,12 +29,12 @@ export class PlotsController {
     @Query('harvesterId') harvesterId?: string,
     @Query('customerId') customerId?: string,
   ) {
-    return this.plots.findAll(user.tenantId, { harvesterId, customerId });
+    return this.plots.findAll(user, { harvesterId, customerId });
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.plots.findOne(id, user.tenantId);
+    return this.plots.findOne(id, user);
   }
 
   @Patch(':id')
@@ -45,6 +45,6 @@ export class PlotsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.plots.remove(id, user.tenantId);
+    return this.plots.remove(id, user);
   }
 }

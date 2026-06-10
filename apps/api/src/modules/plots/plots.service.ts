@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { HarvesterType, HarvestType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Harvester, HarvesterDocument } from '../harvesters/harvester.schema';
 import { Plot, PlotDocument } from './plot.schema';
 import { CreatePlotDto, UpdatePlotDto } from './dto/plot.dto';
@@ -59,6 +60,7 @@ export class PlotsService {
   }
 
   async create(dto: CreatePlotDto, user: AuthUser): Promise<PlotDocument> {
+    assertCanUseHarvester(user, dto.harvesterId);
     let ratePerBigha = dto.ratePerBigha;
     if (ratePerBigha == null) {
       const harvester = await this.harvesters
@@ -90,25 +92,28 @@ export class PlotsService {
   }
 
   findAll(
-    tenantId: string,
+    user: AuthUser,
     filter: { harvesterId?: string; customerId?: string },
   ): Promise<PlotDocument[]> {
-    const q: FilterQuery<PlotDocument> = { tenantId: new Types.ObjectId(tenantId) };
-    if (filter.harvesterId) q.harvesterId = new Types.ObjectId(filter.harvesterId);
+    const q: FilterQuery<PlotDocument> = {
+      tenantId: new Types.ObjectId(user.tenantId),
+      ...harvesterFilter(user, filter.harvesterId),
+    };
     if (filter.customerId) q.customerId = new Types.ObjectId(filter.customerId);
     return this.model.find(q).sort({ harvestDate: -1 }).exec();
   }
 
-  async findOne(id: string, tenantId: string): Promise<PlotDocument> {
+  async findOne(id: string, user: AuthUser): Promise<PlotDocument> {
     const doc = await this.model
-      .findOne({ _id: id, tenantId: new Types.ObjectId(tenantId) })
+      .findOne({ _id: id, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) })
       .exec();
     if (!doc) throw new NotFoundException('Plot not found');
     return doc;
   }
 
   async update(id: string, dto: UpdatePlotDto, user: AuthUser): Promise<PlotDocument> {
-    const existing = await this.findOne(id, user.tenantId);
+    if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
+    const existing = await this.findOne(id, user);
 
     const harvestType = dto.harvestType ?? existing.harvestType;
     const area = dto.area ?? existing.area;
@@ -141,9 +146,13 @@ export class PlotsService {
     return existing.save();
   }
 
-  async remove(id: string, tenantId: string): Promise<void> {
+  async remove(id: string, user: AuthUser): Promise<void> {
     const res = await this.model
-      .findOneAndDelete({ _id: id, tenantId: new Types.ObjectId(tenantId) })
+      .findOneAndDelete({
+        _id: id,
+        tenantId: new Types.ObjectId(user.tenantId),
+        ...harvesterFilter(user),
+      })
       .exec();
     if (!res) throw new NotFoundException('Plot not found');
   }

@@ -106,6 +106,7 @@ export class AdminsService implements OnModuleInit {
       passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
       role: Role.ADMIN,
       isActive: true,
+      harvesterIds: (dto.harvesterIds ?? []).map((id) => new Types.ObjectId(id)),
       createdBy: new Types.ObjectId(actor.id),
       updatedBy: new Types.ObjectId(actor.id),
     });

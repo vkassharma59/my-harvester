@@ -9,6 +9,8 @@ import {
   PartyType,
   PaymentStatus,
 } from '@wh/shared';
+import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { harvesterFilter } from '../../common/scope';
 import { Customer, CustomerDocument } from '../customers/customer.schema';
 import { Expense, ExpenseDocument } from '../expenses/expense.schema';
 import { Labour, LabourDocument } from '../labour/labour.schema';
@@ -37,12 +39,12 @@ export class DashboardService {
     @InjectModel(Customer.name) private readonly customers: Model<CustomerDocument>,
   ) {}
 
-  async summary(tenantId: string, harvesterId?: string): Promise<DashboardSummary> {
-    // Base scope is the tenant; optionally narrow to one harvester.
-    const hMatch: Record<string, unknown> = { tenantId: new Types.ObjectId(tenantId) };
-    if (harvesterId && harvesterId !== ALL_HARVESTERS) {
-      hMatch.harvesterId = new Types.ObjectId(harvesterId);
-    }
+  async summary(user: AuthUser, harvesterId?: string): Promise<DashboardSummary> {
+    // Scope by tenant + the user's harvester access (staff see only theirs).
+    const hMatch: Record<string, unknown> = {
+      tenantId: new Types.ObjectId(user.tenantId),
+      ...harvesterFilter(user, harvesterId),
+    };
 
     const totalEarnings = await sum(this.plots, hMatch, 'totalAmount');
     const totalExpenses = await sum(this.expenses, hMatch, 'amount');
@@ -110,15 +112,20 @@ export class DashboardService {
     };
   }
 
-  async customerLedger(customerId: string, tenantId: string): Promise<CustomerLedger> {
-    const tenant = new Types.ObjectId(tenantId);
+  async customerLedger(customerId: string, user: AuthUser): Promise<CustomerLedger> {
+    const tenant = new Types.ObjectId(user.tenantId);
     const customer = await this.customers.findOne({ _id: customerId, tenantId: tenant }).exec();
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
 
+    // Staff only see this customer's jobs on their assigned harvesters.
     const plots = await this.plots
-      .find({ tenantId: tenant, customerId: new Types.ObjectId(customerId) })
+      .find({
+        tenantId: tenant,
+        customerId: new Types.ObjectId(customerId),
+        ...harvesterFilter(user),
+      })
       .sort({ harvestDate: -1 })
       .exec();
 

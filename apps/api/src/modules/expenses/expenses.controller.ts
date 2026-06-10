@@ -26,12 +26,12 @@ export class ExpensesController {
 
   @Get()
   findAll(@Query() query: QueryExpenseDto, @CurrentUser() user: AuthUser) {
-    return this.expenses.findAll(query, user.tenantId);
+    return this.expenses.findAll(query, user);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.expenses.findOne(id, user.tenantId);
+    return this.expenses.findOne(id, user);
   }
 
   @Patch(':id')

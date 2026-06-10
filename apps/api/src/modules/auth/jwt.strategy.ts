@@ -38,6 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: admin.email,
       role: admin.role,
       tenantId: admin.tenantId.toString(),
+      harvesterIds: (admin.harvesterIds ?? []).map((h) => h.toString()),
     };
   }
 }
