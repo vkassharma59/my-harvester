@@ -34,9 +34,13 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   });
   const { data: customers } = useQuery({
     queryKey: ['customers', 'lookup'],
-    queryFn: () => customersApi.list({ limit: 100 }),
+    queryFn: () => customersApi.list({ limit: 500 }),
   });
-  const customerOptions = (customers?.items ?? []).map((c) => ({ label: c.name, value: c.id }));
+  const customerOptions = (customers?.items ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+    description: [c.phone, c.village].filter(Boolean).join(' · '),
+  }));
   const harvesterOptions = harvesters.map((h) => ({ label: h.name, value: h.id }));
 
   const [customerId, setCustomerId] = useState('');
@@ -155,6 +159,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         options={customerOptions}
         onChange={setCustomerId}
         placeholder="Select customer"
+        searchable
       />
       <Select
         label="Harvester *"
@@ -199,6 +204,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
             options={customerOptions}
             onChange={setBhusaBuyerId}
             placeholder="Select buyer (optional)"
+            searchable
           />
           <AmountField label="Bhusa amount" value={bhusaAmount} onChangeText={setBhusaAmount} placeholder="0" />
         </>
