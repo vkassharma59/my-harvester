@@ -25,3 +25,5 @@ export class Customer extends AuditedDocument {
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);
 CustomerSchema.index({ name: 'text', village: 'text' });
+// Mobile number is a unique identity per tenant (enforced at the DB level).
+CustomerSchema.index({ tenantId: 1, phone: 1 }, { unique: true });

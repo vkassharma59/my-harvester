@@ -10,6 +10,7 @@
     "start:prod": "node dist/main.js",
     "seed:owner": "ts-node src/scripts/seed-super-admin.ts",
     "migrate:tenant": "ts-node src/scripts/backfill-tenant.ts",
+    "dedupe:customers": "ts-node src/scripts/dedupe-customers.ts",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "jest"
   },
