@@ -142,9 +142,8 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         <Text style={styles.name}>{data.customer.name}</Text>
         <View style={styles.phoneRow}>
           <Text style={styles.sub}>{data.customer.phone}</Text>
-          <Pressable onPress={callCustomer} hitSlop={8} style={styles.callBtn}>
-            <Ionicons name="call" size={15} color={colors.primary} />
-            <Text style={styles.callText}>{t('customerLedger.call')}</Text>
+          <Pressable onPress={callCustomer} hitSlop={10} style={styles.callBtn}>
+            <Ionicons name="call" size={24} color={colors.primary} />
           </Pressable>
         </View>
         {data.customer.village ? <Text style={styles.sub}>{data.customer.village}</Text> : null}
@@ -242,8 +241,7 @@ const styles = StyleSheet.create({
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
   phoneRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  callBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
-  callText: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.primary },
+  callBtn: { paddingVertical: spacing.xs, paddingLeft: spacing.md },
   reminderInput: { minHeight: 150, textAlignVertical: 'top' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   sectionTitle: {
