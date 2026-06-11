@@ -36,6 +36,10 @@ void i18n.use(initReactI18next).init({
   },
   lng: 'en',
   fallbackLng: 'en',
+  // Hermes has no Intl.PluralRules; v3 uses i18next's built-in plural rules and
+  // avoids the runtime probe (we don't use plural keys, so this is purely to
+  // silence the startup warning).
+  compatibilityJSON: 'v3',
   interpolation: { escapeValue: false },
   returnNull: false,
 });
