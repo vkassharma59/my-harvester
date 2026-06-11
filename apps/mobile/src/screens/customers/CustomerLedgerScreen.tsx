@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { customersApi, paymentsApi } from '@/api/endpoints';
+import { customersApi, paymentsApi, settingsApi } from '@/api/endpoints';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -36,6 +36,8 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     queryKey: ['customer-ledger', customerId],
     queryFn: () => customersApi.ledger(customerId),
   });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
+  const areaUnit = settings?.defaultAreaUnit;
 
   const closeSheet = () => {
     setPayOpen(false);
@@ -127,7 +129,10 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
           value={formatCurrency(data.outstanding)}
           tone={data.outstanding > 0 ? 'negative' : 'positive'}
         />
-        <StatTile label={t('customerLedger.totalArea')} value={String(data.totalHarvestedArea)} />
+        <StatTile
+          label={t('customerLedger.totalArea')}
+          value={areaUnit ? `${data.totalHarvestedArea} ${tEnum('areaUnit', areaUnit)}` : String(data.totalHarvestedArea)}
+        />
       </View>
 
       <Button title={t('customerLedger.recordPayment')} onPress={openRecord} style={{ marginVertical: spacing.md }} />
