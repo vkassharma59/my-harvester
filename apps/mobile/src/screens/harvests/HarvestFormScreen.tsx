@@ -61,18 +61,25 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const [agentEnabled, setAgentEnabled] = useState(false);
   const [agentId, setAgentId] = useState('');
 
-  // Commission agents available for the chosen harvester.
+  // Commission agents for the chosen harvester (the list includes inactive ones).
   const { data: agents = [] } = useQuery({
     queryKey: ['agents', harvesterId],
     queryFn: () => agentsApi.list(harvesterId || undefined),
     enabled: !!harvesterId,
   });
-  const agentOptions = agents.map((a) => ({
+  // Only active agents are selectable, plus the agent already on this job (so
+  // editing an old job keeps its agent even if it was later deactivated).
+  const assignedAgent = agents.find((a) => a.id === agentId);
+  const agentChoices =
+    assignedAgent && !assignedAgent.isActive
+      ? [assignedAgent, ...agents.filter((a) => a.isActive)]
+      : agents.filter((a) => a.isActive);
+  const agentOptions = agentChoices.map((a) => ({
     label: a.name,
     value: a.id,
     description: `${formatCurrency(a.commissionRate)} ${t('agents.perUnit')}`,
   }));
-  const selectedAgent = agents.find((a) => a.id === agentId);
+  const selectedAgent = assignedAgent;
 
   const selectedHarvester = harvesters.find((h) => h.id === harvesterId);
   // Bhusa-specific fields only apply to Bhusa harvesters.
@@ -133,12 +140,14 @@ export function HarvestFormScreen({ route, navigation }: Props) {
     }
   }, [existing]);
 
-  // When the toggle is on and the harvester has exactly one agent, auto-select it.
+  // When the toggle is on and the harvester has exactly one active agent, auto-select it.
   useEffect(() => {
-    if (agentEnabled && agents.length === 1) setAgentId(agents[0].id);
-  }, [agentEnabled, agents]);
+    if (!agentEnabled) return;
+    const active = agents.filter((a) => a.isActive);
+    if (active.length === 1 && !agentId) setAgentId(active[0].id);
+  }, [agentEnabled, agents, agentId]);
 
-  // Drop a selected agent that doesn't belong to the chosen harvester.
+  // Drop a selected agent that no longer belongs to the chosen harvester.
   useEffect(() => {
     if (agentId && agents.length && !agents.some((a) => a.id === agentId)) setAgentId('');
   }, [agents, agentId]);
@@ -211,13 +220,27 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         />
       ) : null}
       <TextField label={t('harvestForm.plotLabel')} value={plotName} onChangeText={setPlotName} />
-      <TextField
-        label={t('harvestForm.areaLabel', { unit })}
-        value={area}
-        onChangeText={setArea}
-        keyboardType="numeric"
-        placeholder={t('harvestForm.areaPlaceholder')}
-      />
+      <View style={styles.fieldRow}>
+        <View style={styles.fieldHalf}>
+          <TextField
+            label={t('harvestForm.areaLabel', { unit })}
+            value={area}
+            onChangeText={setArea}
+            keyboardType="numeric"
+            placeholder={t('harvestForm.areaPlaceholder')}
+          />
+        </View>
+        <View style={styles.fieldHalf}>
+          <AmountField
+            label={t('harvestForm.rateLabel', { unit })}
+            value={ratePerBigha}
+            onChangeText={(v) => {
+              setRateTouched(true);
+              setRatePerBigha(v);
+            }}
+          />
+        </View>
+      </View>
       <DateField label={t('harvestForm.harvestDate')} value={harvestDate} onChange={setHarvestDate} />
 
       {isBhusaHarvester ? (
@@ -228,15 +251,6 @@ export function HarvestFormScreen({ route, navigation }: Props) {
           onChange={(v) => setHarvestType(v as HarvestType)}
         />
       ) : null}
-
-      <AmountField
-        label={t('harvestForm.rateLabel', { unit })}
-        value={ratePerBigha}
-        onChangeText={(v) => {
-          setRateTouched(true);
-          setRatePerBigha(v);
-        }}
-      />
 
       {showBhusa ? (
         <>
@@ -254,7 +268,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
 
       <TextField label={t('harvestForm.remarksLabel')} value={remarks} onChangeText={setRemarks} multiline />
 
-      {agents.length >= 1 ? (
+      {agentChoices.length >= 1 ? (
         <View style={styles.agentBox}>
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>{t('harvestForm.agentApplicable')}</Text>
@@ -265,7 +279,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
               thumbColor={agentEnabled ? colors.primary : colors.surface}
             />
           </View>
-          {agentEnabled && agents.length > 1 ? (
+          {agentEnabled && agentChoices.length > 1 ? (
             <Select
               label={t('harvestForm.agentLabel')}
               value={agentId}
@@ -274,9 +288,9 @@ export function HarvestFormScreen({ route, navigation }: Props) {
               placeholder={t('harvestForm.agentPlaceholder')}
             />
           ) : null}
-          {agentEnabled && agents.length === 1 ? (
+          {agentEnabled && agentChoices.length === 1 ? (
             <Text style={styles.agentSingle}>
-              {agents[0].name} · {formatCurrency(agents[0].commissionRate)} {t('agents.perUnit')}
+              {agentChoices[0].name} · {formatCurrency(agentChoices[0].commissionRate)} {t('agents.perUnit')}
             </Text>
           ) : null}
         </View>
@@ -320,6 +334,8 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginTop: spacing.md,
   },
+  fieldRow: { flexDirection: 'row', gap: spacing.md },
+  fieldHalf: { flex: 1 },
   agentBox: { marginTop: spacing.sm },
   switchRow: {
     flexDirection: 'row',
