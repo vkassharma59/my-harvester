@@ -10,7 +10,7 @@ export const part = {
       addCustomer: '+ Add customer',
     },
     customerLedger: {
-      viewJobs: 'View harvesting jobs →',
+      editJob: 'Edit job →',
       totalBill: 'Total Bill',
       amountPaid: 'Amount Paid',
       outstanding: 'Outstanding',
@@ -52,7 +52,7 @@ export const part = {
       addCustomer: '+ ग्राहक जोड़ें',
     },
     customerLedger: {
-      viewJobs: 'कटाई के काम देखें →',
+      editJob: 'काम संपादित करें →',
       totalBill: 'कुल बिल',
       amountPaid: 'भुगतान की गई राशि',
       outstanding: 'बकाया',
@@ -94,7 +94,7 @@ export const part = {
       addCustomer: '+ ਗਾਹਕ ਜੋੜੋ',
     },
     customerLedger: {
-      viewJobs: 'ਵਾਢੀ ਦੇ ਕੰਮ ਵੇਖੋ →',
+      editJob: 'ਕੰਮ ਸੋਧੋ →',
       totalBill: 'ਕੁੱਲ ਬਿੱਲ',
       amountPaid: 'ਅਦਾ ਕੀਤੀ ਰਕਮ',
       outstanding: 'ਬਕਾਇਆ',

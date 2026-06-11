@@ -98,11 +98,10 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     else recordPayment.mutate();
   };
 
-  const viewHarvestingJobs = () => {
-    if (!data) return;
+  const editJob = (plotId: string) => {
     navigation.getParent<BottomTabNavigationProp<AppTabsParamList>>()?.navigate('HarvestsTab', {
-      screen: 'HarvestsList',
-      params: { customerId, customerName: data.customer.name },
+      screen: 'HarvestForm',
+      params: { plotId },
     });
   };
 
@@ -116,9 +115,6 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         <Text style={styles.sub}>{data.customer.phone}</Text>
         {data.customer.village ? <Text style={styles.sub}>{data.customer.village}</Text> : null}
         {data.customer.address ? <Text style={styles.sub}>{data.customer.address}</Text> : null}
-        <Pressable onPress={viewHarvestingJobs} hitSlop={8}>
-          <Text style={styles.jobsLink}>{t('customerLedger.viewJobs')}</Text>
-        </Pressable>
       </Card>
 
       <View style={styles.grid}>
@@ -139,7 +135,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
 
       <Text style={styles.sectionTitle}>{t('customerLedger.harvestingRecords', { count: data.plots.length })}</Text>
       {data.plots.map((p) => (
-        <Card key={p.id}>
+        <Card key={p.id} onPress={() => editJob(p.id)}>
           <View style={styles.rowBetween}>
             <Text style={styles.plotName}>{p.plotName}</Text>
             <Text style={styles.plotAmount}>{formatCurrency(p.harvestingAmount)}</Text>
@@ -149,6 +145,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
           </Text>
           <Text style={styles.sub}>{harvestTypeLabel(p.harvesterId, p.harvestType)}</Text>
           {p.remarks ? <Text style={styles.sub}>{p.remarks}</Text> : null}
+          <Text style={styles.editHint}>{t('customerLedger.editJob')}</Text>
         </Card>
       ))}
 
