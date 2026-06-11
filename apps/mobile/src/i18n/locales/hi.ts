@@ -47,7 +47,7 @@ export const hi = {
     areaUnit: { BIGHA: 'बीघा', ACRE: 'एकड़', HECTARE: 'हेक्टेयर' },
     harvestType: {
       PER_BIGHA_WITH_BHUSA: 'प्रति बीघा (भूसे सहित)',
-      WITHOUT_BHUSA: 'भूसे बिना',
+      WITHOUT_BHUSA: 'प्रति बीघा (भूसे बिना)',
     },
     expenseType: { DIESEL: 'डीज़ल', LABOUR: 'कामगार', SPARE_PARTS: 'स्पेयर पार्ट्स', OTHER: 'अन्य' },
     labourType: { HARVESTER_DRIVER: 'हार्वेस्टर चालक', TRACTOR_DRIVER: 'ट्रैक्टर चालक', HELPER: 'सहायक' },

@@ -47,7 +47,7 @@ export const pa = {
     areaUnit: { BIGHA: 'ਬਿੱਘਾ', ACRE: 'ਏਕੜ', HECTARE: 'ਹੈਕਟੇਅਰ' },
     harvestType: {
       PER_BIGHA_WITH_BHUSA: 'ਪ੍ਰਤੀ ਬਿੱਘਾ (ਤੂੜੀ ਸਮੇਤ)',
-      WITHOUT_BHUSA: 'ਤੂੜੀ ਤੋਂ ਬਿਨਾਂ',
+      WITHOUT_BHUSA: 'ਪ੍ਰਤੀ ਬਿੱਘਾ (ਤੂੜੀ ਤੋਂ ਬਿਨਾਂ)',
     },
     expenseType: { DIESEL: 'ਡੀਜ਼ਲ', LABOUR: 'ਕਾਮੇ', SPARE_PARTS: 'ਸਪੇਅਰ ਪਾਰਟਸ', OTHER: 'ਹੋਰ' },
     labourType: { HARVESTER_DRIVER: 'ਹਾਰਵੈਸਟਰ ਚਾਲਕ', TRACTOR_DRIVER: 'ਟਰੈਕਟਰ ਚਾਲਕ', HELPER: 'ਸਹਾਇਕ' },

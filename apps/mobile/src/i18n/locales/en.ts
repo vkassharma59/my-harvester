@@ -47,7 +47,7 @@ export const en = {
     areaUnit: { BIGHA: 'Bigha', ACRE: 'Acre', HECTARE: 'Hectare' },
     harvestType: {
       PER_BIGHA_WITH_BHUSA: 'Per Bigha (with Bhusa)',
-      WITHOUT_BHUSA: 'Without Bhusa',
+      WITHOUT_BHUSA: 'Per Bigha (without Bhusa)',
     },
     expenseType: { DIESEL: 'Diesel', LABOUR: 'Worker', SPARE_PARTS: 'Spare Parts', OTHER: 'Other' },
     labourType: { HARVESTER_DRIVER: 'Harvester Driver', TRACTOR_DRIVER: 'Tractor Driver', HELPER: 'Helper' },
