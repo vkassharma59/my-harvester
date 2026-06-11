@@ -116,6 +116,7 @@ export const customersApi = {
 export interface SettingsInput {
   currency?: string;
   defaultAreaUnit?: AreaUnit;
+  firmName?: string;
 }
 export const settingsApi = {
   get: () => api.get<AppSettings>('/settings').then((r) => r.data),

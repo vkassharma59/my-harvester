@@ -55,6 +55,8 @@ export const hi = {
   },
   settings: {
     language: 'भाषा',
+    firmName: 'फर्म का नाम',
+    firmNamePlaceholder: 'आपकी फर्म / व्यवसाय का नाम',
     currency: 'मुद्रा',
     defaultAreaUnit: 'डिफ़ॉल्ट क्षेत्रफल इकाई',
     rateHint:

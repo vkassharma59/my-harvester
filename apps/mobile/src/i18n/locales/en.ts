@@ -55,6 +55,8 @@ export const en = {
   },
   settings: {
     language: 'Language',
+    firmName: 'Firm name',
+    firmNamePlaceholder: 'Your firm / business name',
     currency: 'Currency',
     defaultAreaUnit: 'Default area unit',
     rateHint:

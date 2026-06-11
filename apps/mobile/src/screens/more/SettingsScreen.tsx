@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { AreaUnit, Role } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { maintenanceApi, settingsApi } from '@/api/endpoints';
+import { harvestersApi, maintenanceApi, settingsApi } from '@/api/endpoints';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Select } from '@/components/Select';
 import { Loading } from '@/components/States';
+import { TextField } from '@/components/TextField';
 import { LANGUAGES, LanguageCode, setLanguage, tEnum } from '@/i18n';
 import { useAuth } from '@/store/auth';
 import { colors, font, radius, spacing } from '@/theme';
@@ -23,22 +24,31 @@ export function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const isSuperAdmin = useAuth((s) => s.admin?.role) === Role.SUPER_ADMIN;
+  const myHarvesterIds = useAuth((s) => s.admin?.harvesterIds) ?? [];
   const { data, isLoading } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
+  const { data: harvesters = [] } = useQuery({
+    queryKey: ['harvesters', 'all'],
+    queryFn: () => harvestersApi.list(),
+  });
 
   const unitOptions = Object.values(AreaUnit).map((u) => ({ label: tEnum('areaUnit', u), value: u }));
+  // Firm name defaults to the staff admin's harvester name; empty for the owner.
+  const defaultFirm = isSuperAdmin ? '' : harvesters.find((h) => myHarvesterIds.includes(h.id))?.name ?? '';
 
   const [currency, setCurrency] = useState('INR');
   const [unit, setUnit] = useState<AreaUnit>(AreaUnit.BIGHA);
+  const [firmName, setFirmName] = useState('');
 
   useEffect(() => {
     if (data) {
       setCurrency(data.currency);
       setUnit(data.defaultAreaUnit);
+      setFirmName(data.firmName || defaultFirm);
     }
-  }, [data]);
+  }, [data, defaultFirm]);
 
   const save = useMutation({
-    mutationFn: () => settingsApi.update({ currency, defaultAreaUnit: unit }),
+    mutationFn: () => settingsApi.update({ currency, defaultAreaUnit: unit, firmName: firmName.trim() }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['settings'] });
       Alert.alert(t('common.saved'), t('settings.savedBody'));
@@ -71,6 +81,12 @@ export function SettingsScreen() {
         value={i18n.language}
         options={LANGUAGE_OPTIONS}
         onChange={(v) => void setLanguage(v as LanguageCode)}
+      />
+      <TextField
+        label={t('settings.firmName')}
+        value={firmName}
+        onChangeText={setFirmName}
+        placeholder={t('settings.firmNamePlaceholder')}
       />
       <Select label={t('settings.currency')} value={currency} options={CURRENCY_OPTIONS} onChange={setCurrency} />
       <Select

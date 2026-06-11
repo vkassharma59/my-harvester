@@ -137,6 +137,8 @@ export interface Payment extends AuditFields {
 export interface AppSettings extends AuditFields {
   currency: string; // e.g. "INR"
   defaultAreaUnit: AreaUnit;
+  /** Business/firm name shown in payment reminders. */
+  firmName?: string;
 }
 
 // ---------- Aggregated read models (dashboard / ledger) ----------

@@ -1,9 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi, paymentsApi, settingsApi } from '@/api/endpoints';
@@ -38,6 +39,20 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const areaUnit = settings?.defaultAreaUnit;
+
+  // Editable payment-reminder draft, prefilled from a template.
+  const [reminder, setReminder] = useState('');
+  useEffect(() => {
+    if (!data) return;
+    setReminder(
+      t('customerLedger.reminderTemplate', {
+        name: data.customer.name,
+        amount: formatCurrency(data.outstanding),
+        firm: settings?.firmName || '',
+        link: t('customerLedger.paymentLinkPlaceholder'),
+      }),
+    );
+  }, [data, settings, t]);
 
   const closeSheet = () => {
     setPayOpen(false);
@@ -108,11 +123,26 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
+  const callCustomer = () => void Linking.openURL(`tel:${data.customer.phone}`).catch(() => {});
+  const sendWhatsApp = () => {
+    const digits = data.customer.phone.replace(/[^0-9]/g, '');
+    const intl = digits.length === 10 ? `91${digits}` : digits; // assume India for 10-digit numbers
+    Linking.openURL(`https://wa.me/${intl}?text=${encodeURIComponent(reminder)}`).catch(() =>
+      Alert.alert(t('common.error'), t('customerLedger.whatsappError')),
+    );
+  };
+
   return (
     <Screen refreshing={isRefetching} onRefresh={refetch}>
       <Card>
         <Text style={styles.name}>{data.customer.name}</Text>
-        <Text style={styles.sub}>{data.customer.phone}</Text>
+        <View style={styles.phoneRow}>
+          <Text style={styles.sub}>{data.customer.phone}</Text>
+          <Pressable onPress={callCustomer} hitSlop={8} style={styles.callBtn}>
+            <Ionicons name="call" size={15} color={colors.primary} />
+            <Text style={styles.callText}>{t('customerLedger.call')}</Text>
+          </Pressable>
+        </View>
         {data.customer.village ? <Text style={styles.sub}>{data.customer.village}</Text> : null}
         {data.customer.address ? <Text style={styles.sub}>{data.customer.address}</Text> : null}
       </Card>
@@ -165,6 +195,16 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         ))
       )}
 
+      <Text style={styles.sectionTitle}>{t('customerLedger.reminderTitle')}</Text>
+      <TextField
+        label={t('customerLedger.reminderLabel')}
+        value={reminder}
+        onChangeText={setReminder}
+        multiline
+        style={styles.reminderInput}
+      />
+      <Button title={t('customerLedger.sendWhatsapp')} onPress={sendWhatsApp} style={{ marginTop: spacing.sm }} />
+
       <Modal visible={payOpen} transparent animationType="slide" onRequestClose={closeSheet}>
         <KeyboardAvoidingView
           style={styles.modalRoot}
@@ -197,12 +237,10 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
-  jobsLink: {
-    fontSize: font.size.sm,
-    fontWeight: font.weight.semibold,
-    color: colors.primary,
-    marginTop: spacing.sm,
-  },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  callBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
+  callText: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.primary },
+  reminderInput: { minHeight: 150, textAlignVertical: 'top' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   sectionTitle: {
     fontSize: font.size.md,

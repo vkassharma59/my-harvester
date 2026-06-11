@@ -13,6 +13,10 @@ export class AppSettings extends AuditedDocument {
 
   @Prop({ type: String, enum: AreaUnit, default: AreaUnit.BIGHA })
   defaultAreaUnit!: AreaUnit;
+
+  /** Business/firm name shown in payment reminders. */
+  @Prop({ trim: true, default: '' })
+  firmName!: string;
 }
 
 export const AppSettingsSchema = SchemaFactory.createForClass(AppSettings);

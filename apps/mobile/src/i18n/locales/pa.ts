@@ -55,6 +55,8 @@ export const pa = {
   },
   settings: {
     language: 'ਭਾਸ਼ਾ',
+    firmName: 'ਫਰਮ ਦਾ ਨਾਮ',
+    firmNamePlaceholder: 'ਤੁਹਾਡੀ ਫਰਮ / ਕਾਰੋਬਾਰ ਦਾ ਨਾਮ',
     currency: 'ਮੁਦਰਾ',
     defaultAreaUnit: 'ਮੂਲ ਖੇਤਰ ਇਕਾਈ',
     rateHint:

@@ -11,6 +11,14 @@ export const part = {
     },
     customerLedger: {
       editJob: 'Edit job →',
+      call: 'Call',
+      reminderTitle: 'Payment reminder',
+      reminderLabel: 'Reminder message',
+      paymentLinkPlaceholder: '[payment link]',
+      sendWhatsapp: 'Send on WhatsApp',
+      whatsappError: 'Could not open WhatsApp.',
+      reminderTemplate:
+        'Dear {{name}},\n\n{{amount}} is pending. Kindly complete the payment using the link below:\n\n{{link}}\n\nThank you,\n{{firm}}',
       totalBill: 'Total Bill',
       amountPaid: 'Amount Paid',
       outstanding: 'Outstanding',
@@ -53,6 +61,14 @@ export const part = {
     },
     customerLedger: {
       editJob: 'काम संपादित करें →',
+      call: 'कॉल',
+      reminderTitle: 'भुगतान अनुस्मारक',
+      reminderLabel: 'अनुस्मारक संदेश',
+      paymentLinkPlaceholder: '[भुगतान लिंक]',
+      sendWhatsapp: 'WhatsApp पर भेजें',
+      whatsappError: 'WhatsApp नहीं खोल सके।',
+      reminderTemplate:
+        'प्रिय {{name}},\n\n{{amount}} बकाया है। कृपया नीचे दिए लिंक से भुगतान पूरा करें:\n\n{{link}}\n\nधन्यवाद,\n{{firm}}',
       totalBill: 'कुल बिल',
       amountPaid: 'भुगतान की गई राशि',
       outstanding: 'बकाया',
@@ -95,6 +111,14 @@ export const part = {
     },
     customerLedger: {
       editJob: 'ਕੰਮ ਸੋਧੋ →',
+      call: 'ਕਾਲ',
+      reminderTitle: 'ਭੁਗਤਾਨ ਯਾਦ-ਪੱਤਰ',
+      reminderLabel: 'ਯਾਦ-ਪੱਤਰ ਸੁਨੇਹਾ',
+      paymentLinkPlaceholder: '[ਭੁਗਤਾਨ ਲਿੰਕ]',
+      sendWhatsapp: 'WhatsApp ਤੇ ਭੇਜੋ',
+      whatsappError: 'WhatsApp ਨਹੀਂ ਖੋਲ੍ਹ ਸਕੇ।',
+      reminderTemplate:
+        'ਪਿਆਰੇ {{name}},\n\n{{amount}} ਬਕਾਇਆ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਹੇਠਾਂ ਦਿੱਤੇ ਲਿੰਕ ਤੋਂ ਭੁਗਤਾਨ ਪੂਰਾ ਕਰੋ:\n\n{{link}}\n\nਧੰਨਵਾਦ,\n{{firm}}',
       totalBill: 'ਕੁੱਲ ਬਿੱਲ',
       amountPaid: 'ਅਦਾ ਕੀਤੀ ਰਕਮ',
       outstanding: 'ਬਕਾਇਆ',

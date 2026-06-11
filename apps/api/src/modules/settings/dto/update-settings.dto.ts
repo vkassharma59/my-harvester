@@ -9,4 +9,8 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsEnum(AreaUnit)
   defaultAreaUnit?: AreaUnit;
+
+  @IsOptional()
+  @IsString()
+  firmName?: string;
 }
