@@ -88,6 +88,8 @@ export function AgentFormScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agents'] });
+      qc.invalidateQueries({ queryKey: ['agent-one', agentId] });
+      qc.invalidateQueries({ queryKey: ['agent-ledger', agentId] });
       navigation.goBack();
     },
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),

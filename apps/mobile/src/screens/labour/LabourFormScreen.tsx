@@ -102,6 +102,7 @@ export function LabourFormScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['labour'] });
+      qc.invalidateQueries({ queryKey: ['labour-one', labourId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       navigation.goBack();
     },
