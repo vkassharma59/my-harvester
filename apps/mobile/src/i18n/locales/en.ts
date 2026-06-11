@@ -49,7 +49,7 @@ export const en = {
       PER_BIGHA_WITH_BHUSA: 'Per Bigha (with Bhusa)',
       WITHOUT_BHUSA: 'Without Bhusa',
     },
-    expenseType: { DIESEL: 'Diesel', LABOUR: 'Labour', SPARE_PARTS: 'Spare Parts', OTHER: 'Other' },
+    expenseType: { DIESEL: 'Diesel', LABOUR: 'Worker', SPARE_PARTS: 'Spare Parts', OTHER: 'Other' },
     labourType: { HARVESTER_DRIVER: 'Harvester Driver', TRACTOR_DRIVER: 'Tractor Driver', HELPER: 'Helper' },
     role: { SUPER_ADMIN: 'Super Admin', STAFF_ADMIN: 'Staff Admin' },
   },

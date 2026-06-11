@@ -49,7 +49,7 @@ export const hi = {
       PER_BIGHA_WITH_BHUSA: 'प्रति बीघा (भूसे सहित)',
       WITHOUT_BHUSA: 'भूसे बिना',
     },
-    expenseType: { DIESEL: 'डीज़ल', LABOUR: 'मज़दूरी', SPARE_PARTS: 'स्पेयर पार्ट्स', OTHER: 'अन्य' },
+    expenseType: { DIESEL: 'डीज़ल', LABOUR: 'कामगार', SPARE_PARTS: 'स्पेयर पार्ट्स', OTHER: 'अन्य' },
     labourType: { HARVESTER_DRIVER: 'हार्वेस्टर चालक', TRACTOR_DRIVER: 'ट्रैक्टर चालक', HELPER: 'सहायक' },
     role: { SUPER_ADMIN: 'सुपर एडमिन', STAFF_ADMIN: 'स्टाफ़ एडमिन' },
   },

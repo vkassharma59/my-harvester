@@ -49,7 +49,7 @@ export const pa = {
       PER_BIGHA_WITH_BHUSA: 'ਪ੍ਰਤੀ ਬਿੱਘਾ (ਤੂੜੀ ਸਮੇਤ)',
       WITHOUT_BHUSA: 'ਤੂੜੀ ਤੋਂ ਬਿਨਾਂ',
     },
-    expenseType: { DIESEL: 'ਡੀਜ਼ਲ', LABOUR: 'ਮਜ਼ਦੂਰੀ', SPARE_PARTS: 'ਸਪੇਅਰ ਪਾਰਟਸ', OTHER: 'ਹੋਰ' },
+    expenseType: { DIESEL: 'ਡੀਜ਼ਲ', LABOUR: 'ਕਾਮੇ', SPARE_PARTS: 'ਸਪੇਅਰ ਪਾਰਟਸ', OTHER: 'ਹੋਰ' },
     labourType: { HARVESTER_DRIVER: 'ਹਾਰਵੈਸਟਰ ਚਾਲਕ', TRACTOR_DRIVER: 'ਟਰੈਕਟਰ ਚਾਲਕ', HELPER: 'ਸਹਾਇਕ' },
     role: { SUPER_ADMIN: 'ਸੁਪਰ ਐਡਮਿਨ', STAFF_ADMIN: 'ਸਟਾਫ਼ ਐਡਮਿਨ' },
   },
