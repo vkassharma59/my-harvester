@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Contacts from 'expo-contacts';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
@@ -38,6 +39,25 @@ export function AdminFormScreen({ route, navigation }: Props) {
 
   const toggleHarvester = (id: string) =>
     setHarvesterIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+
+  const importFromContacts = async () => {
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(t('adminForm.permissionNeeded'), t('adminForm.permissionMessage'));
+        return;
+      }
+      const contact = await Contacts.presentContactPickerAsync();
+      if (!contact) return;
+      const raw = contact.phoneNumbers?.[0]?.number ?? '';
+      const digits = raw.replace(/[^0-9]/g, '');
+      const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim();
+      setName(fullName || contact.name || name);
+      setPhone(digits.length > 10 ? digits.slice(-10) : digits);
+    } catch (e) {
+      Alert.alert(t('adminForm.contacts'), apiErrorMessage(e, t('adminForm.contactsError')));
+    }
+  };
 
   const { data: existing } = useQuery({
     queryKey: ['admins', adminId],
@@ -89,6 +109,12 @@ export function AdminFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
+      <Button
+        title={t('adminForm.importContacts')}
+        variant="secondary"
+        onPress={importFromContacts}
+        style={{ marginBottom: spacing.lg }}
+      />
       <TextField label={t('adminForm.nameLabel')} value={name} onChangeText={setName} />
       <TextField
         label={t('adminForm.emailLabel')}
