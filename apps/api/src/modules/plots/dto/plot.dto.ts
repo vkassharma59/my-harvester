@@ -61,6 +61,12 @@ export class CreatePlotDto {
   @IsNumber()
   @Min(0)
   bhusaAmount?: number;
+
+  /** Optional commission agent for this job (must belong to the same harvester).
+   *  null/empty clears any existing agent. */
+  @IsOptional()
+  @IsMongoId()
+  agentId?: string | null;
 }
 
 export class UpdatePlotDto extends PartialType(CreatePlotDto) {}

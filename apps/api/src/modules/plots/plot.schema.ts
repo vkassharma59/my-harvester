@@ -51,6 +51,13 @@ export class Plot extends AuditedDocument {
 
   @Prop({ required: true, min: 0 })
   totalAmount!: number;
+
+  // Optional commission agent for this job.
+  @Prop({ type: Types.ObjectId, ref: 'Agent', default: null })
+  agentId?: Types.ObjectId | null;
+
+  @Prop({ min: 0, default: 0 })
+  commissionAmount?: number;
 }
 
 export const PlotSchema = SchemaFactory.createForClass(Plot);

@@ -56,6 +56,7 @@ export enum PartyType {
   CUSTOMER = 'CUSTOMER',
   BHUSA_BUYER = 'BHUSA_BUYER',
   LABOUR = 'LABOUR',
+  AGENT = 'AGENT',
 }
 
 export enum HarvesterStatus {

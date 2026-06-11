@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Agent, AgentSchema } from '../agents/agent.schema';
 import { Harvester, HarvesterSchema } from '../harvesters/harvester.schema';
 import { Plot, PlotSchema } from './plot.schema';
 import { PlotsController } from './plots.controller';
@@ -10,6 +11,7 @@ import { PlotsService } from './plots.service';
     MongooseModule.forFeature([
       { name: Plot.name, schema: PlotSchema },
       { name: Harvester.name, schema: HarvesterSchema },
+      { name: Agent.name, schema: AgentSchema },
     ]),
   ],
   controllers: [PlotsController],

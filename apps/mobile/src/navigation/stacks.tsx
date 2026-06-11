@@ -2,6 +2,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { AdminFormScreen } from '@/screens/admins/AdminFormScreen';
 import { AdminsScreen } from '@/screens/admins/AdminsScreen';
+import { AgentFormScreen } from '@/screens/agents/AgentFormScreen';
+import { AgentLedgerScreen } from '@/screens/agents/AgentLedgerScreen';
+import { AgentsScreen } from '@/screens/agents/AgentsScreen';
 import { CustomerFormScreen } from '@/screens/customers/CustomerFormScreen';
 import { CustomerLedgerScreen } from '@/screens/customers/CustomerLedgerScreen';
 import { CustomersScreen } from '@/screens/customers/CustomersScreen';
@@ -91,6 +94,13 @@ export function MoreStack() {
       <More.Screen name="HarvesterForm" component={HarvesterFormScreen} options={{ title: t('nav.addHarvester') }} />
       <More.Screen name="Labour" component={LabourScreen} options={{ title: t('nav.labour') }} />
       <More.Screen name="LabourForm" component={LabourFormScreen} options={{ title: t('nav.addLabour') }} />
+      <More.Screen name="Agents" component={AgentsScreen} options={{ title: t('nav.agents') }} />
+      <More.Screen name="AgentForm" component={AgentFormScreen} options={{ title: t('nav.addAgent') }} />
+      <More.Screen
+        name="AgentLedger"
+        component={AgentLedgerScreen}
+        options={({ route }) => ({ title: route.params.name })}
+      />
       <More.Screen name="Admins" component={AdminsScreen} options={{ title: t('nav.staffAdmins') }} />
       <More.Screen name="AdminForm" component={AdminFormScreen} options={{ title: t('nav.addAdmin') }} />
       <More.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />

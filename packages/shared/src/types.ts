@@ -81,6 +81,17 @@ export interface Labour extends AuditFields {
   paymentStatus: PaymentStatus;
 }
 
+/** A commission agent attached to a single harvester. Earns a per-unit-area
+ *  commission on the harvesting jobs they are assigned to. */
+export interface Agent extends AuditFields {
+  name: string;
+  phone?: string;
+  harvesterId: string;
+  /** Commission amount per unit of area (e.g. 200 per bigha/acre). */
+  commissionRate: number;
+  isActive: boolean;
+}
+
 /** A plot of land for a harvesting job. Carries the commercial terms. */
 export interface Plot extends AuditFields {
   customerId: string;
@@ -104,6 +115,11 @@ export interface Plot extends AuditFields {
 
   /** harvestingAmount + (bhusaAmount ?? 0) */
   totalAmount: number;
+
+  // Optional commission agent for this job.
+  agentId?: string | null;
+  /** computed = agent.commissionRate * area (0 when no agent). */
+  commissionAmount?: number;
 }
 
 export interface Payment extends AuditFields {
@@ -151,6 +167,17 @@ export interface CustomerLedger {
   totalHarvestedArea: number;
   plots: Plot[];
   totalBillAmount: number;
+  amountPaid: number;
+  outstanding: number;
+  payments: Payment[];
+}
+
+/** Commission ledger for an agent: earned (from jobs) vs paid. */
+export interface AgentLedger {
+  agent: Agent;
+  /** Jobs this agent earned commission on (newest first). */
+  plots: Plot[];
+  totalCommission: number;
   amountPaid: number;
   outstanding: number;
   payments: Payment[];

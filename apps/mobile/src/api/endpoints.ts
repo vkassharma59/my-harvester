@@ -1,5 +1,7 @@
 import {
   Admin,
+  Agent,
+  AgentLedger,
   AppSettings,
   AreaUnit,
   Customer,
@@ -159,6 +161,24 @@ export const labourApi = {
   remove: (id: string) => api.delete(`/labour/${id}`).then(() => undefined),
 };
 
+// ---------- Agents (commission) ----------
+export interface AgentInput {
+  name: string;
+  phone?: string;
+  harvesterId: string;
+  commissionRate: number;
+  isActive?: boolean;
+}
+export const agentsApi = {
+  list: (harvesterId?: string) =>
+    api.get<Agent[]>('/agents', { params: { harvesterId } }).then((r) => r.data),
+  create: (body: AgentInput) => api.post<Agent>('/agents', body).then((r) => r.data),
+  update: (id: string, body: Partial<AgentInput>) =>
+    api.patch<Agent>(`/agents/${id}`, body).then((r) => r.data),
+  remove: (id: string) => api.delete(`/agents/${id}`).then(() => undefined),
+  ledger: (id: string) => api.get<AgentLedger>(`/agents/${id}/ledger`).then((r) => r.data),
+};
+
 // ---------- Plots (harvesting jobs) ----------
 export interface PlotInput {
   customerId: string;
@@ -173,6 +193,8 @@ export interface PlotInput {
   ratePerBigha?: number;
   bhusaBuyerId?: string;
   bhusaAmount?: number;
+  /** Commission agent for this job; null clears it. */
+  agentId?: string | null;
 }
 export const plotsApi = {
   list: (params?: { harvesterId?: string; customerId?: string }) =>

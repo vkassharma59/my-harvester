@@ -117,6 +117,8 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
       return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.selectLabourer'));
     const value = Number(amount);
     if (!value || value <= 0) return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.enterAmount'));
+    if (type === ExpenseType.OTHER && !notes.trim())
+      return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.remarkRequired'));
     save.mutate();
   };
 
@@ -154,7 +156,12 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
 
       <AmountField label={t('expenseForm.amountLabel')} value={amount} onChangeText={setAmount} placeholder="0" />
       <DateField label={t('expenseForm.dateLabel')} value={date} onChange={setDate} />
-      <TextField label={t('expenseForm.notesLabel')} value={notes} onChangeText={setNotes} multiline />
+      <TextField
+        label={type === ExpenseType.OTHER ? `${t('expenseForm.notesLabel')} *` : t('expenseForm.notesLabel')}
+        value={notes}
+        onChangeText={setNotes}
+        multiline
+      />
       <Button
         title={editing ? t('expenseForm.saveChanges') : t('expenseForm.addTitle')}
         onPress={onSave}

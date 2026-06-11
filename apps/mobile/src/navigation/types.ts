@@ -22,6 +22,9 @@ export type MoreStackParamList = {
   HarvesterForm: { harvesterId?: string } | undefined;
   Labour: undefined;
   LabourForm: { labourId?: string } | undefined;
+  Agents: undefined;
+  AgentForm: { agentId?: string } | undefined;
+  AgentLedger: { agentId: string; name: string };
   Admins: undefined;
   AdminForm: { adminId?: string } | undefined;
   Reports: undefined;

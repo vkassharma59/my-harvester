@@ -2,10 +2,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { AreaUnit, HarvesterStatus, HarvesterType, HarvestType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { customersApi, harvestersApi, plotsApi, settingsApi } from '@/api/endpoints';
+import { agentsApi, customersApi, harvestersApi, plotsApi, settingsApi } from '@/api/endpoints';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
@@ -58,6 +58,21 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const [bhusaAmount, setBhusaAmount] = useState('');
   const [remarks, setRemarks] = useState('');
   const [rateTouched, setRateTouched] = useState(false);
+  const [agentEnabled, setAgentEnabled] = useState(false);
+  const [agentId, setAgentId] = useState('');
+
+  // Commission agents available for the chosen harvester.
+  const { data: agents = [] } = useQuery({
+    queryKey: ['agents', harvesterId],
+    queryFn: () => agentsApi.list(harvesterId || undefined),
+    enabled: !!harvesterId,
+  });
+  const agentOptions = agents.map((a) => ({
+    label: a.name,
+    value: a.id,
+    description: `${formatCurrency(a.commissionRate)} ${t('agents.perUnit')}`,
+  }));
+  const selectedAgent = agents.find((a) => a.id === agentId);
 
   const selectedHarvester = harvesters.find((h) => h.id === harvesterId);
   // Bhusa-specific fields only apply to Bhusa harvesters.
@@ -113,8 +128,20 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       setBhusaBuyerId(existing.bhusaBuyerId ?? '');
       setBhusaAmount(existing.bhusaAmount != null ? String(existing.bhusaAmount) : '');
       setRemarks(existing.remarks ?? '');
+      setAgentEnabled(!!existing.agentId);
+      setAgentId(existing.agentId ?? '');
     }
   }, [existing]);
+
+  // When the toggle is on and the harvester has exactly one agent, auto-select it.
+  useEffect(() => {
+    if (agentEnabled && agents.length === 1) setAgentId(agents[0].id);
+  }, [agentEnabled, agents]);
+
+  // Drop a selected agent that doesn't belong to the chosen harvester.
+  useEffect(() => {
+    if (agentId && agents.length && !agents.some((a) => a.id === agentId)) setAgentId('');
+  }, [agents, agentId]);
 
   const preview = useMemo(() => {
     const a = Number(area) || 0;
@@ -123,6 +150,11 @@ export function HarvestFormScreen({ route, navigation }: Props) {
     const bhusa = showBhusa ? Number(bhusaAmount) || 0 : 0;
     return { harvesting, bhusa, total: harvesting + bhusa };
   }, [area, ratePerBigha, bhusaAmount, showBhusa]);
+
+  const commission =
+    agentEnabled && selectedAgent
+      ? Math.round((Number(area) || 0) * selectedAgent.commissionRate * 100) / 100
+      : 0;
 
   const save = useMutation({
     mutationFn: () => {
@@ -138,6 +170,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         remarks: remarks.trim() || undefined,
         bhusaBuyerId: showBhusa && bhusaBuyerId ? bhusaBuyerId : undefined,
         bhusaAmount: showBhusa && bhusaAmount ? Number(bhusaAmount) : undefined,
+        agentId: agentEnabled && agentId ? agentId : null,
       };
       return editing ? plotsApi.update(plotId as string, body) : plotsApi.create(body);
     },
@@ -221,11 +254,42 @@ export function HarvestFormScreen({ route, navigation }: Props) {
 
       <TextField label={t('harvestForm.remarksLabel')} value={remarks} onChangeText={setRemarks} multiline />
 
+      {agents.length >= 1 ? (
+        <View style={styles.agentBox}>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>{t('harvestForm.agentApplicable')}</Text>
+            <Switch
+              value={agentEnabled}
+              onValueChange={setAgentEnabled}
+              trackColor={{ true: colors.primaryLight, false: colors.border }}
+              thumbColor={agentEnabled ? colors.primary : colors.surface}
+            />
+          </View>
+          {agentEnabled && agents.length > 1 ? (
+            <Select
+              label={t('harvestForm.agentLabel')}
+              value={agentId}
+              options={agentOptions}
+              onChange={setAgentId}
+              placeholder={t('harvestForm.agentPlaceholder')}
+            />
+          ) : null}
+          {agentEnabled && agents.length === 1 ? (
+            <Text style={styles.agentSingle}>
+              {agents[0].name} · {formatCurrency(agents[0].commissionRate)} {t('agents.perUnit')}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
       <View style={styles.preview}>
         <Row label={t('harvestForm.harvestingAmount')} value={formatCurrency(preview.harvesting)} />
         {showBhusa ? <Row label={t('harvestForm.bhusaSale')} value={formatCurrency(preview.bhusa)} /> : null}
         <View style={styles.divider} />
         <Row label={t('harvestForm.total')} value={formatCurrency(preview.total)} bold />
+        {agentEnabled && selectedAgent ? (
+          <Row label={t('harvestForm.agentCommission')} value={formatCurrency(commission)} />
+        ) : null}
       </View>
 
       <Button
@@ -256,6 +320,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginTop: spacing.md,
   },
+  agentBox: { marginTop: spacing.sm },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  switchLabel: { fontSize: font.size.md, color: colors.text, fontWeight: font.weight.medium, flex: 1, paddingRight: spacing.md },
+  agentSingle: { fontSize: font.size.sm, color: colors.textMuted, paddingBottom: spacing.sm },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
   rowLabel: { fontSize: font.size.sm, color: colors.textMuted },
   rowValue: { fontSize: font.size.sm, color: colors.text },

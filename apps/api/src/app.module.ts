@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import configuration, { AppConfig } from './config/configuration';
 import { AdminsModule } from './modules/admins/admins.module';
+import { AgentsModule } from './modules/agents/agents.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -32,6 +33,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     SettingsModule,
     ExpensesModule,
     LabourModule,
+    AgentsModule,
     PlotsModule,
     PaymentsModule,
     DashboardModule,

@@ -4,6 +4,7 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { HarvesterType, HarvestType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
+import { Agent, AgentDocument } from '../agents/agent.schema';
 import { Harvester, HarvesterDocument } from '../harvesters/harvester.schema';
 import { Plot, PlotDocument } from './plot.schema';
 import { CreatePlotDto, UpdatePlotDto } from './dto/plot.dto';
@@ -21,7 +22,30 @@ export class PlotsService {
   constructor(
     @InjectModel(Plot.name) private readonly model: Model<PlotDocument>,
     @InjectModel(Harvester.name) private readonly harvesters: Model<HarvesterDocument>,
+    @InjectModel(Agent.name) private readonly agents: Model<AgentDocument>,
   ) {}
+
+  /** Resolves the commission for an optional agent on a job. The agent must
+   *  belong to the same harvester. Returns null/0 when no agent is set. */
+  private async resolveCommission(
+    agentId: string | null | undefined,
+    harvesterId: string,
+    area: number,
+    user: AuthUser,
+  ): Promise<{ agentId: Types.ObjectId | null; commissionAmount: number }> {
+    if (!agentId) return { agentId: null, commissionAmount: 0 };
+    const agent = await this.agents
+      .findOne({ _id: new Types.ObjectId(agentId), tenantId: new Types.ObjectId(user.tenantId) })
+      .exec();
+    if (!agent) throw new BadRequestException('Agent not found');
+    if (agent.harvesterId.toString() !== harvesterId.toString()) {
+      throw new BadRequestException('Agent does not belong to this harvester');
+    }
+    return {
+      agentId: agent._id as Types.ObjectId,
+      commissionAmount: Math.round(agent.commissionRate * area * 100) / 100,
+    };
+  }
 
   /** The applicable per-unit rate for a harvester + harvest type. */
   private rateFromHarvester(
@@ -78,6 +102,7 @@ export class PlotsService {
       bhusaBuyerId: dto.bhusaBuyerId,
       bhusaAmount: dto.bhusaAmount,
     });
+    const commission = await this.resolveCommission(dto.agentId, dto.harvesterId, dto.area, user);
 
     return this.model.create({
       ...dto,
@@ -86,6 +111,7 @@ export class PlotsService {
       harvesterId: new Types.ObjectId(dto.harvesterId),
       ratePerBigha,
       ...computed,
+      ...commission,
       createdBy: new Types.ObjectId(user.id),
       updatedBy: new Types.ObjectId(user.id),
     });
@@ -132,6 +158,11 @@ export class PlotsService {
       bhusaAmount,
     });
 
+    const harvesterId = dto.harvesterId ?? existing.harvesterId.toString();
+    const agentIdInput =
+      dto.agentId !== undefined ? dto.agentId : existing.agentId?.toString() ?? null;
+    const commission = await this.resolveCommission(agentIdInput, harvesterId, area, user);
+
     Object.assign(existing, {
       ...dto,
       ...(dto.customerId ? { customerId: new Types.ObjectId(dto.customerId) } : {}),
@@ -140,6 +171,7 @@ export class PlotsService {
       ratePerBigha,
       harvestType,
       ...computed,
+      ...commission,
       updatedBy: new Types.ObjectId(user.id),
     });
 

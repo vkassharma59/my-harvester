@@ -15,6 +15,7 @@ type MenuItem = { labelKey: string; icon: string; route: keyof MoreStackParamLis
 const ITEMS: MenuItem[] = [
   { labelKey: 'more.harvesters', icon: '🚜', route: 'Harvesters' },
   { labelKey: 'more.labour', icon: '👷', route: 'Labour' },
+  { labelKey: 'more.agents', icon: '🤝', route: 'Agents' },
   { labelKey: 'more.staffAdmins', icon: '🧑‍💼', route: 'Admins', superAdminOnly: true },
   { labelKey: 'more.reports', icon: '📊', route: 'Reports' },
   { labelKey: 'more.settings', icon: '⚙️', route: 'Settings' },
