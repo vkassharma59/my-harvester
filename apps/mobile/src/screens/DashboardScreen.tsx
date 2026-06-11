@@ -72,6 +72,10 @@ export function DashboardScreen() {
               <Text style={styles.lineValue}>{money(data.expenses[type])}</Text>
             </View>
           ))}
+          <View style={styles.lineRow}>
+            <Text style={styles.lineLabel}>{t('dashboard.agentCommission')}</Text>
+            <Text style={styles.lineValue}>{money(data.financial.agentCommission)}</Text>
+          </View>
         </Card>
       </Section>
 

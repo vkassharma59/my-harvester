@@ -145,9 +145,12 @@ export interface DashboardSummary {
   harvesterId: string | 'ALL';
   financial: {
     totalEarnings: number;
+    /** Recorded expenses + agent commission. */
     totalExpenses: number;
     netProfit: number;
     pendingReceivables: number;
+    /** Commission earned by agents on jobs (also included in totalExpenses). */
+    agentCommission: number;
   };
   harvesting: {
     totalCustomers: number;

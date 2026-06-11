@@ -47,7 +47,10 @@ export class DashboardService {
     };
 
     const totalEarnings = await sum(this.plots, hMatch, 'totalAmount');
-    const totalExpenses = await sum(this.expenses, hMatch, 'amount');
+    const expenseTotal = await sum(this.expenses, hMatch, 'amount');
+    // Agent commission is a real cost: include it among expenses / net profit.
+    const agentCommission = await sum(this.plots, hMatch, 'commissionAmount');
+    const totalExpenses = expenseTotal + agentCommission;
 
     const receivedFromCustomers = await sum(
       this.payments,
@@ -97,6 +100,7 @@ export class DashboardService {
         totalExpenses,
         netProfit: totalEarnings - totalExpenses,
         pendingReceivables: Math.max(0, totalEarnings - receivedFromCustomers),
+        agentCommission,
       },
       harvesting: {
         totalCustomers: hStats?.customers.length ?? 0,
