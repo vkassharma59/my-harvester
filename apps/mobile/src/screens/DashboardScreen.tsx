@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { dashboardApi, settingsApi } from '@/api/endpoints';
+import { agentsApi, dashboardApi, settingsApi } from '@/api/endpoints';
 import { Card } from '@/components/Card';
 import { HarvesterPicker } from '@/components/HarvesterPicker';
 import { Screen } from '@/components/Screen';
@@ -26,6 +26,13 @@ export function DashboardScreen() {
     queryKey: ['dashboard', selectedId],
     queryFn: () => dashboardApi.summary(harvesterId),
   });
+
+  // Show the commission row only when the (scoped) harvester has an active agent.
+  const agentsQ = useQuery({
+    queryKey: ['agents', selectedId],
+    queryFn: () => agentsApi.list(harvesterId),
+  });
+  const hasActiveAgent = (agentsQ.data ?? []).some((a) => a.isActive);
 
   if (isLoading) return <Loading />;
   if (isError || !data) {
@@ -66,16 +73,18 @@ export function DashboardScreen() {
 
       <Section title={t('dashboard.expensesByCategory')}>
         <Card>
+          {hasActiveAgent ? (
+            <View style={styles.lineRow}>
+              <Text style={styles.lineLabel}>{t('dashboard.agentCommission')}</Text>
+              <Text style={styles.lineValue}>{money(data.financial.agentCommission)}</Text>
+            </View>
+          ) : null}
           {(Object.keys(data.expenses) as ExpenseType[]).map((type) => (
             <View key={type} style={styles.lineRow}>
               <Text style={styles.lineLabel}>{tEnum('expenseType', type)}</Text>
               <Text style={styles.lineValue}>{money(data.expenses[type])}</Text>
             </View>
           ))}
-          <View style={styles.lineRow}>
-            <Text style={styles.lineLabel}>{t('dashboard.agentCommission')}</Text>
-            <Text style={styles.lineValue}>{money(data.financial.agentCommission)}</Text>
-          </View>
         </Card>
       </Section>
 
