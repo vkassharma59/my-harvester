@@ -266,7 +266,13 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         </>
       ) : null}
 
-      <TextField label={t('harvestForm.remarksLabel')} value={remarks} onChangeText={setRemarks} multiline />
+      <TextField
+        label={t('harvestForm.remarksLabel')}
+        value={remarks}
+        onChangeText={setRemarks}
+        placeholder={t('harvestForm.remarksPlaceholder')}
+        multiline
+      />
 
       {agentChoices.length >= 1 ? (
         <View style={styles.agentBox}>
