@@ -4,6 +4,8 @@ export type CustomersStackParamList = {
   CustomersList: undefined;
   CustomerLedger: { customerId: string; name: string };
   CustomerForm: { customerId?: string } | undefined;
+  // Edit a job from a customer's ledger without leaving the Customers tab.
+  HarvestForm: { plotId?: string } | undefined;
 };
 
 export type HarvestsStackParamList = {

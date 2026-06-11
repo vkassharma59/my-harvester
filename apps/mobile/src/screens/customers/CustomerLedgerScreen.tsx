@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -17,7 +16,7 @@ import { ErrorState, Loading } from '@/components/States';
 import { TextField } from '@/components/TextField';
 import { useHarvestTypeLabel } from '@/hooks/useHarvestTypeLabel';
 import { tEnum } from '@/i18n';
-import { AppTabsParamList, CustomersStackParamList } from '@/navigation/types';
+import { CustomersStackParamList } from '@/navigation/types';
 import { colors, font, radius, spacing } from '@/theme';
 import { formatCurrency, formatDate } from '@/utils/format';
 
@@ -118,12 +117,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     else recordPayment.mutate();
   };
 
-  const editJob = (plotId: string) => {
-    navigation.getParent<BottomTabNavigationProp<AppTabsParamList>>()?.navigate('HarvestsTab', {
-      screen: 'HarvestForm',
-      params: { plotId },
-    });
-  };
+  const editJob = (plotId: string) => navigation.navigate('HarvestForm', { plotId });
 
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;

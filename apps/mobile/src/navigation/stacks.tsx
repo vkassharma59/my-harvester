@@ -69,6 +69,7 @@ export function CustomersStack() {
         options={({ route }) => ({ title: route.params.name })}
       />
       <Customers.Screen name="CustomerForm" component={CustomerFormScreen} options={{ title: t('nav.addCustomer') }} />
+      <Customers.Screen name="HarvestForm" component={HarvestFormScreen} options={{ title: t('nav.newJob') }} />
     </Customers.Navigator>
   );
 }

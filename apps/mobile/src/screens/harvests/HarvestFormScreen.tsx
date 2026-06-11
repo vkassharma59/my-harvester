@@ -14,12 +14,13 @@ import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
 import { useHarvesterAccess } from '@/hooks/useHarvesterAccess';
 import { tEnum } from '@/i18n';
-import { HarvestsStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { colors, font, radius, spacing } from '@/theme';
 import { formatCurrency } from '@/utils/format';
 
-type Props = NativeStackScreenProps<HarvestsStackParamList, 'HarvestForm'>;
+// Registered in both the Harvests and Customers stacks, so keep the param list local.
+type HarvestFormParamList = { HarvestForm: { plotId?: string } | undefined };
+type Props = NativeStackScreenProps<HarvestFormParamList, 'HarvestForm'>;
 
 export function HarvestFormScreen({ route, navigation }: Props) {
   const { t } = useTranslation();
