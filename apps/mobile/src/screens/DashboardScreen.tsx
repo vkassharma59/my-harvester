@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
@@ -8,11 +9,13 @@ import { HarvesterPicker } from '@/components/HarvesterPicker';
 import { Screen } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { ErrorState, Loading } from '@/components/States';
+import { tEnum } from '@/i18n';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { colors, font, spacing } from '@/theme';
-import { formatCurrency, labelFromEnum } from '@/utils/format';
+import { formatCurrency } from '@/utils/format';
 
 export function DashboardScreen() {
+  const { t } = useTranslation();
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const harvesterId = scopedHarvesterId(selectedId);
 
@@ -39,43 +42,43 @@ export function DashboardScreen() {
     <View style={styles.flex}>
       <HarvesterPicker />
       <Screen refreshing={isRefetching} onRefresh={refetch}>
-      <Section title="Financial summary">
+      <Section title={t('dashboard.financialSummary')}>
         <View style={styles.grid}>
-          <StatTile label="Total Earnings" value={money(data.financial.totalEarnings)} tone="positive" />
-          <StatTile label="Total Expenses" value={money(data.financial.totalExpenses)} tone="negative" />
+          <StatTile label={t('dashboard.totalEarnings')} value={money(data.financial.totalEarnings)} tone="positive" />
+          <StatTile label={t('dashboard.totalExpenses')} value={money(data.financial.totalExpenses)} tone="negative" />
           <StatTile
-            label="Net Profit"
+            label={t('dashboard.netProfit')}
             value={money(data.financial.netProfit)}
             tone={data.financial.netProfit >= 0 ? 'positive' : 'negative'}
           />
-          <StatTile label="Pending Receivables" value={money(data.financial.pendingReceivables)} tone="accent" />
+          <StatTile label={t('dashboard.pendingReceivables')} value={money(data.financial.pendingReceivables)} tone="accent" />
         </View>
       </Section>
 
-      <Section title="Harvesting summary">
+      <Section title={t('dashboard.harvestingSummary')}>
         <View style={styles.grid}>
-          <StatTile label="Customers" value={String(data.harvesting.totalCustomers)} />
-          <StatTile label="Plots Harvested" value={String(data.harvesting.totalPlots)} />
-          <StatTile label="Area Harvested" value={`${data.harvesting.totalArea}`} />
-          <StatTile label="Jobs Completed" value={String(data.harvesting.totalJobsCompleted)} />
+          <StatTile label={t('dashboard.customers')} value={String(data.harvesting.totalCustomers)} />
+          <StatTile label={t('dashboard.plotsHarvested')} value={String(data.harvesting.totalPlots)} />
+          <StatTile label={t('dashboard.areaHarvested')} value={`${data.harvesting.totalArea}`} />
+          <StatTile label={t('dashboard.jobsCompleted')} value={String(data.harvesting.totalJobsCompleted)} />
         </View>
       </Section>
 
-      <Section title="Expenses by category">
+      <Section title={t('dashboard.expensesByCategory')}>
         <Card>
           {(Object.keys(data.expenses) as ExpenseType[]).map((type) => (
             <View key={type} style={styles.lineRow}>
-              <Text style={styles.lineLabel}>{labelFromEnum(type)}</Text>
+              <Text style={styles.lineLabel}>{tEnum('expenseType', type)}</Text>
               <Text style={styles.lineValue}>{money(data.expenses[type])}</Text>
             </View>
           ))}
         </Card>
       </Section>
 
-      <Section title="Labour summary">
+      <Section title={t('dashboard.labourSummary')}>
         <View style={styles.grid}>
-          <StatTile label="Total Labour Cost" value={money(data.labour.totalCost)} tone="negative" />
-          <StatTile label="Pending Payments" value={String(data.labour.pendingPayments)} tone="accent" />
+          <StatTile label={t('dashboard.totalLabourCost')} value={money(data.labour.totalCost)} tone="negative" />
+          <StatTile label={t('dashboard.pendingPayments')} value={String(data.labour.pendingPayments)} tone="accent" />
         </View>
       </Section>
       </Screen>

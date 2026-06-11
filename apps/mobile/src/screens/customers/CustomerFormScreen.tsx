@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Contacts from 'expo-contacts';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi, CustomerInput } from '@/api/endpoints';
@@ -14,6 +15,7 @@ import { spacing } from '@/theme';
 type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomerForm'>;
 
 export function CustomerFormScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [form, setForm] = useState<CustomerInput>({ name: '', phone: '', village: '', address: '' });
 
@@ -21,7 +23,7 @@ export function CustomerFormScreen({ navigation }: Props) {
     try {
       const { status } = await Contacts.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Allow contacts access to import a customer.');
+        Alert.alert(t('customerForm.permissionTitle'), t('customerForm.permissionBody'));
         return;
       }
       const contact = await Contacts.presentContactPickerAsync();
@@ -35,7 +37,7 @@ export function CustomerFormScreen({ navigation }: Props) {
         deviceContactId: contact.id,
       }));
     } catch (e) {
-      Alert.alert('Contacts', apiErrorMessage(e, 'Could not open contacts.'));
+      Alert.alert(t('customerForm.contactsTitle'), apiErrorMessage(e, t('customerForm.contactsError')));
     }
   };
 
@@ -45,12 +47,12 @@ export function CustomerFormScreen({ navigation }: Props) {
       qc.invalidateQueries({ queryKey: ['customers'] });
       navigation.goBack();
     },
-    onError: (e) => Alert.alert('Error', apiErrorMessage(e)),
+    onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const onSave = () => {
     if (!form.name.trim() || !form.phone.trim()) {
-      Alert.alert('Required', 'Name and phone number are required.');
+      Alert.alert(t('customerForm.requiredTitle'), t('customerForm.requiredBody'));
       return;
     }
     save.mutate();
@@ -59,26 +61,39 @@ export function CustomerFormScreen({ navigation }: Props) {
   return (
     <Screen>
       <Button
-        title="📇 Import from contacts"
+        title={t('customerForm.importFromContacts')}
         variant="secondary"
         onPress={importFromContacts}
         style={{ marginBottom: spacing.lg }}
       />
-      <TextField label="Name *" value={form.name} onChangeText={(name) => setForm((f) => ({ ...f, name }))} />
       <TextField
-        label="Phone *"
+        label={t('customerForm.nameLabel')}
+        value={form.name}
+        onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+      />
+      <TextField
+        label={t('customerForm.phoneLabel')}
         value={form.phone}
         onChangeText={(phone) => setForm((f) => ({ ...f, phone }))}
         keyboardType="phone-pad"
       />
-      <TextField label="Village" value={form.village} onChangeText={(village) => setForm((f) => ({ ...f, village }))} />
       <TextField
-        label="Address"
+        label={t('customerForm.villageLabel')}
+        value={form.village}
+        onChangeText={(village) => setForm((f) => ({ ...f, village }))}
+      />
+      <TextField
+        label={t('customerForm.addressLabel')}
         value={form.address}
         onChangeText={(address) => setForm((f) => ({ ...f, address }))}
         multiline
       />
-      <Button title="Add customer" onPress={onSave} loading={save.isPending} style={{ marginTop: spacing.sm }} />
+      <Button
+        title={t('customerForm.addCustomer')}
+        onPress={onSave}
+        loading={save.isPending}
+        style={{ marginTop: spacing.sm }}
+      />
     </Screen>
   );
 }

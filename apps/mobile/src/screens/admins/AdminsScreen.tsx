@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Role } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
@@ -14,6 +15,7 @@ import { colors, font, radius, spacing } from '@/theme';
 type Props = NativeStackScreenProps<MoreStackParamList, 'Admins'>;
 
 export function AdminsScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const meId = useAuth((s) => s.admin?.id);
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
@@ -39,7 +41,7 @@ export function AdminsScreen({ navigation }: Props) {
         contentContainerStyle={styles.list}
         onRefresh={refetch}
         refreshing={isRefetching}
-        ListEmptyComponent={<EmptyState title="No admins" subtitle="Add staff who can manage your data." />}
+        ListEmptyComponent={<EmptyState title={t('admins.emptyTitle')} subtitle={t('admins.emptySubtitle')} />}
         renderItem={({ item }) => {
           const isOwner = item.role === Role.SUPER_ADMIN;
           const assigned = harvesterNames(item.harvesterIds);
@@ -49,25 +51,25 @@ export function AdminsScreen({ navigation }: Props) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>
                     {item.name}
-                    {item.id === meId ? '  (You)' : ''}
+                    {item.id === meId ? `  ${t('admins.youSuffix')}` : ''}
                   </Text>
                   <Text style={styles.sub}>{item.email}</Text>
                   {item.phone ? <Text style={styles.sub}>{item.phone}</Text> : null}
                   {isOwner ? (
-                    <Text style={styles.harvesters}>Admin of all harvesters</Text>
+                    <Text style={styles.harvesters}>{t('admins.adminOfAll')}</Text>
                   ) : assigned ? (
-                    <Text style={styles.harvesters}>Admin of {assigned}</Text>
+                    <Text style={styles.harvesters}>{t('admins.adminOf', { harvesters: assigned })}</Text>
                   ) : (
-                    <Text style={styles.noHarvester}>No harvester assigned</Text>
+                    <Text style={styles.noHarvester}>{t('admins.noHarvesterAssigned')}</Text>
                   )}
                 </View>
                 <View style={styles.right}>
                   <View style={[styles.badge, isOwner ? styles.owner : styles.staff]}>
                     <Text style={[styles.badgeText, isOwner ? styles.ownerText : styles.staffText]}>
-                      {isOwner ? 'Owner' : 'Admin'}
+                      {isOwner ? t('admins.owner') : t('admins.admin')}
                     </Text>
                   </View>
-                  {!item.isActive ? <Text style={styles.inactive}>Inactive</Text> : null}
+                  {!item.isActive ? <Text style={styles.inactive}>{t('admins.inactive')}</Text> : null}
                 </View>
               </View>
             </Card>
@@ -75,7 +77,7 @@ export function AdminsScreen({ navigation }: Props) {
         }}
       />
       <View style={styles.footer}>
-        <Button title="+ Add admin" onPress={() => navigation.navigate('AdminForm')} />
+        <Button title={t('admins.addAdmin')} onPress={() => navigation.navigate('AdminForm')} />
       </View>
     </View>
   );

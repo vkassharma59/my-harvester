@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { Loading } from '@/components/States';
 import { LoginScreen } from '@/screens/LoginScreen';
@@ -10,6 +11,7 @@ import { AppTabs } from './AppTabs';
 const RootStack = createNativeStackNavigator();
 
 export function RootNavigator() {
+  const { t } = useTranslation();
   const { token, bootstrapping, restore } = useAuth();
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export function RootNavigator() {
   if (bootstrapping) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Loading label="Starting…" />
+        <Loading label={t('common.starting')} />
       </View>
     );
   }

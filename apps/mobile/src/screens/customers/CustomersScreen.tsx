@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi } from '@/api/endpoints';
@@ -16,6 +17,7 @@ import { formatCurrency } from '@/utils/format';
 type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomersList'>;
 
 export function CustomersScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const currency = useCurrency();
 
@@ -28,10 +30,10 @@ export function CustomersScreen({ navigation }: Props) {
     <View style={styles.root}>
       <View style={styles.searchBar}>
         <TextField
-          label="Search"
+          label={t('common.search')}
           value={search}
           onChangeText={setSearch}
-          placeholder="Name, phone or village"
+          placeholder={t('customers.searchPlaceholder')}
         />
       </View>
 
@@ -46,7 +48,7 @@ export function CustomersScreen({ navigation }: Props) {
           contentContainerStyle={styles.list}
           onRefresh={refetch}
           refreshing={isRefetching}
-          ListEmptyComponent={<EmptyState title="No customers" subtitle="Add a customer to get started." />}
+          ListEmptyComponent={<EmptyState title={t('customers.emptyTitle')} subtitle={t('customers.emptySubtitle')} />}
           renderItem={({ item }) => (
             <Card onPress={() => navigation.navigate('CustomerLedger', { customerId: item.id, name: item.name })}>
               <View style={styles.row}>
@@ -56,14 +58,16 @@ export function CustomersScreen({ navigation }: Props) {
                   {item.village ? <Text style={styles.sub}>{item.village}</Text> : null}
                 </View>
                 <View style={styles.right}>
-                  <Text style={styles.amountLabel}>Outstanding</Text>
+                  <Text style={styles.amountLabel}>{t('customers.outstanding')}</Text>
                   <Text
                     style={[styles.amount, item.outstanding > 0 ? styles.due : styles.clear]}
                     numberOfLines={1}
                   >
                     {formatCurrency(item.outstanding, currency)}
                   </Text>
-                  <Text style={styles.billLabel}>Bill {formatCurrency(item.totalBill, currency)}</Text>
+                  <Text style={styles.billLabel}>
+                    {t('customers.billLabel', { amount: formatCurrency(item.totalBill, currency) })}
+                  </Text>
                 </View>
               </View>
             </Card>
@@ -72,7 +76,7 @@ export function CustomersScreen({ navigation }: Props) {
       )}
 
       <View style={styles.footer}>
-        <Button title="+ Add customer" onPress={() => navigation.navigate('CustomerForm')} />
+        <Button title={t('customers.addCustomer')} onPress={() => navigation.navigate('CustomerForm')} />
       </View>
     </View>
   );

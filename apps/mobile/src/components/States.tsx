@@ -1,12 +1,14 @@
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { colors, font, spacing } from '@/theme';
 import { Button } from './Button';
 
-export function Loading({ label = 'Loading…' }: { label?: string }) {
+export function Loading({ label }: { label?: string }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.center}>
       <ActivityIndicator color={colors.primary} size="large" />
-      <Text style={styles.muted}>{label}</Text>
+      <Text style={styles.muted}>{label ?? t('common.loading')}</Text>
     </View>
   );
 }
@@ -21,11 +23,12 @@ export function EmptyState({ title, subtitle }: { title: string; subtitle?: stri
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.center}>
-      <Text style={[styles.title, { color: colors.danger }]}>Something went wrong</Text>
+      <Text style={[styles.title, { color: colors.danger }]}>{t('states.somethingWentWrong')}</Text>
       <Text style={styles.muted}>{message}</Text>
-      {onRetry ? <Button title="Retry" variant="secondary" onPress={onRetry} style={styles.retry} /> : null}
+      {onRetry ? <Button title={t('common.retry')} variant="secondary" onPress={onRetry} style={styles.retry} /> : null}
     </View>
   );
 }

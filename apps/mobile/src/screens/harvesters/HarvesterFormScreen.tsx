@@ -1,9 +1,11 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { HarvesterStatus, HarvesterType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
+import { tEnum } from '@/i18n';
 import { harvestersApi, HarvesterInput, settingsApi } from '@/api/endpoints';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
@@ -12,25 +14,24 @@ import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
 import { MoreStackParamList } from '@/navigation/types';
 import { colors, font, radius, spacing } from '@/theme';
-import { labelFromEnum } from '@/utils/format';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'HarvesterForm'>;
-
-const TYPE_OPTIONS = [
-  { label: 'Combine Harvester', value: HarvesterType.COMBINE },
-  { label: 'Bhusa Harvester', value: HarvesterType.BHUSA },
-];
 
 type FormState = HarvesterInput;
 
 export function HarvesterFormScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
+  const TYPE_OPTIONS = [
+    { label: tEnum('harvesterType', HarvesterType.COMBINE), value: HarvesterType.COMBINE },
+    { label: tEnum('harvesterType', HarvesterType.BHUSA), value: HarvesterType.BHUSA },
+  ];
   const qc = useQueryClient();
   const harvesterId = route.params?.harvesterId;
   const editing = !!harvesterId;
 
   // Unit label (Bigha/Acre) for the rate fields comes from settings.
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
-  const unit = labelFromEnum(settings?.defaultAreaUnit ?? 'BIGHA');
+  const unit = tEnum('areaUnit', settings?.defaultAreaUnit ?? 'BIGHA');
 
   const [form, setForm] = useState<FormState>({
     name: '',
@@ -53,8 +54,8 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
   });
 
   useEffect(() => {
-    navigation.setOptions({ title: editing ? 'Edit harvester' : 'Add harvester' });
-  }, [editing, navigation]);
+    navigation.setOptions({ title: editing ? t('harvesterForm.titleEdit') : t('harvesterForm.titleAdd') });
+  }, [editing, navigation, t]);
 
   useEffect(() => {
     if (existing) {
@@ -98,7 +99,7 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       qc.invalidateQueries({ queryKey: ['harvesters'] });
       navigation.goBack();
     },
-    onError: (e) => Alert.alert('Error', apiErrorMessage(e)),
+    onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const toggleStatus = useMutation({
@@ -110,13 +111,13 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['harvesters'] }),
     onError: (e) => {
       setStatus((s) => (s === HarvesterStatus.ACTIVE ? HarvesterStatus.INACTIVE : HarvesterStatus.ACTIVE));
-      Alert.alert('Error', apiErrorMessage(e));
+      Alert.alert(t('common.error'), apiErrorMessage(e));
     },
   });
 
   const onSave = () => {
     if (!form.name.trim()) {
-      Alert.alert('Required', 'Harvester name is required.');
+      Alert.alert(t('harvesterForm.required'), t('harvesterForm.requiredName'));
       return;
     }
     save.mutate();
@@ -127,13 +128,13 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
   return (
     <Screen>
       <TextField
-        label="Name *"
+        label={t('harvesterForm.name')}
         value={form.name}
         onChangeText={(name) => setForm((f) => ({ ...f, name }))}
-        placeholder="Harvester 1"
+        placeholder={t('harvesterForm.namePlaceholder')}
       />
       <Select
-        label="Harvester type *"
+        label={t('harvesterForm.harvesterType')}
         value={form.type}
         options={TYPE_OPTIONS}
         onChange={(v) => setForm((f) => ({ ...f, type: v as HarvesterType }))}
@@ -142,13 +143,13 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       {isBhusa ? (
         <>
           <AmountField
-            label={`Default Rate Per ${unit} (With Bhusa)`}
+            label={t('harvesterForm.rateWithBhusa', { unit })}
             value={rateWithBhusa}
             onChangeText={setRateWithBhusa}
             placeholder="0"
           />
           <AmountField
-            label={`Default Rate Per ${unit} (Without Bhusa)`}
+            label={t('harvesterForm.rateWithoutBhusa', { unit })}
             value={rateWithoutBhusa}
             onChangeText={setRateWithoutBhusa}
             placeholder="0"
@@ -156,7 +157,7 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
         </>
       ) : (
         <AmountField
-          label={`Default Rate Per ${unit}`}
+          label={t('harvesterForm.ratePerUnit', { unit })}
           value={ratePerUnit}
           onChangeText={setRatePerUnit}
           placeholder="0"
@@ -164,19 +165,19 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       )}
 
       <TextField
-        label="Registration No."
+        label={t('harvesterForm.registrationNo')}
         value={form.registrationNo}
         onChangeText={(v) => setForm((f) => ({ ...f, registrationNo: v.toUpperCase() }))}
         autoCapitalize="characters"
-        placeholder="RJ-01-AB-1234"
+        placeholder={t('harvesterForm.registrationPlaceholder')}
       />
       <TextField
-        label="Model"
+        label={t('harvesterForm.model')}
         value={form.model}
         onChangeText={(model) => setForm((f) => ({ ...f, model }))}
       />
       <TextField
-        label="Notes"
+        label={t('harvesterForm.notes')}
         value={form.notes}
         onChangeText={(notes) => setForm((f) => ({ ...f, notes }))}
         multiline
@@ -185,9 +186,9 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       {editing ? (
         <View style={styles.statusCard}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.statusLabel}>Status</Text>
+            <Text style={styles.statusLabel}>{t('harvesterForm.status')}</Text>
             <Text style={[styles.statusValue, isActive ? styles.activeText : styles.inactiveText]}>
-              {isActive ? 'Active' : 'Inactive'}
+              {isActive ? t('harvesterForm.active') : t('harvesterForm.inactive')}
             </Text>
           </View>
           <Switch
@@ -203,7 +204,7 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       ) : null}
 
       <Button
-        title={editing ? 'Save changes' : 'Add harvester'}
+        title={editing ? t('harvesterForm.saveChanges') : t('harvesterForm.addHarvester')}
         onPress={onSave}
         loading={save.isPending}
         style={{ marginTop: spacing.sm }}

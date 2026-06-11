@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { AdminFormScreen } from '@/screens/admins/AdminFormScreen';
 import { AdminsScreen } from '@/screens/admins/AdminsScreen';
 import { CustomerFormScreen } from '@/screens/customers/CustomerFormScreen';
@@ -34,61 +35,66 @@ const screenOptions = {
 
 const Dashboard = createNativeStackNavigator<DashboardStackParamList>();
 export function DashboardStack() {
+  const { t } = useTranslation();
   return (
     <Dashboard.Navigator screenOptions={screenOptions}>
-      <Dashboard.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Dashboard' }} />
+      <Dashboard.Screen name="Dashboard" component={DashboardScreen} options={{ title: t('tabs.dashboard') }} />
     </Dashboard.Navigator>
   );
 }
 
 const Harvests = createNativeStackNavigator<HarvestsStackParamList>();
 export function HarvestsStack() {
+  const { t } = useTranslation();
   return (
     <Harvests.Navigator screenOptions={screenOptions}>
-      <Harvests.Screen name="HarvestsList" component={HarvestsScreen} options={{ title: 'Harvesting Jobs' }} />
-      <Harvests.Screen name="HarvestForm" component={HarvestFormScreen} options={{ title: 'New job' }} />
+      <Harvests.Screen name="HarvestsList" component={HarvestsScreen} options={{ title: t('nav.harvestingJobs') }} />
+      <Harvests.Screen name="HarvestForm" component={HarvestFormScreen} options={{ title: t('nav.newJob') }} />
     </Harvests.Navigator>
   );
 }
 
 const Customers = createNativeStackNavigator<CustomersStackParamList>();
 export function CustomersStack() {
+  const { t } = useTranslation();
   return (
     <Customers.Navigator screenOptions={screenOptions}>
-      <Customers.Screen name="CustomersList" component={CustomersScreen} options={{ title: 'Customers' }} />
+      <Customers.Screen name="CustomersList" component={CustomersScreen} options={{ title: t('nav.customers') }} />
       <Customers.Screen
         name="CustomerLedger"
         component={CustomerLedgerScreen}
         options={({ route }) => ({ title: route.params.name })}
       />
-      <Customers.Screen name="CustomerForm" component={CustomerFormScreen} options={{ title: 'Add customer' }} />
+      <Customers.Screen name="CustomerForm" component={CustomerFormScreen} options={{ title: t('nav.addCustomer') }} />
     </Customers.Navigator>
   );
 }
 
 const Expenses = createNativeStackNavigator<ExpensesStackParamList>();
 export function ExpensesStack() {
+  const { t } = useTranslation();
   return (
     <Expenses.Navigator screenOptions={screenOptions}>
-      <Expenses.Screen name="ExpensesList" component={ExpensesScreen} options={{ title: 'Expenses' }} />
-      <Expenses.Screen name="ExpenseForm" component={ExpenseFormScreen} options={{ title: 'Add expense' }} />
+      <Expenses.Screen name="ExpensesList" component={ExpensesScreen} options={{ title: t('nav.expenses') }} />
+      <Expenses.Screen name="ExpenseForm" component={ExpenseFormScreen} options={{ title: t('nav.addExpense') }} />
     </Expenses.Navigator>
   );
 }
 
 const More = createNativeStackNavigator<MoreStackParamList>();
 export function MoreStack() {
+  const { t } = useTranslation();
   return (
     <More.Navigator screenOptions={screenOptions}>
-      <More.Screen name="MoreMenu" component={MoreMenuScreen} options={{ title: 'More' }} />
-      <More.Screen name="Harvesters" component={HarvestersScreen} options={{ title: 'Harvesters' }} />
-      <More.Screen name="HarvesterForm" component={HarvesterFormScreen} options={{ title: 'Add harvester' }} />
-      <More.Screen name="Labour" component={LabourScreen} options={{ title: 'Labour' }} />
-      <More.Screen name="LabourForm" component={LabourFormScreen} options={{ title: 'Add labour' }} />
-      <More.Screen name="Admins" component={AdminsScreen} options={{ title: 'Staff Admins' }} />
-      <More.Screen name="AdminForm" component={AdminFormScreen} options={{ title: 'Add admin' }} />
-      <More.Screen name="Reports" component={ReportsScreen} options={{ title: 'Reports' }} />
-      <More.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+      <More.Screen name="MoreMenu" component={MoreMenuScreen} options={{ title: t('nav.more') }} />
+      <More.Screen name="Harvesters" component={HarvestersScreen} options={{ title: t('nav.harvesters') }} />
+      <More.Screen name="HarvesterForm" component={HarvesterFormScreen} options={{ title: t('nav.addHarvester') }} />
+      <More.Screen name="Labour" component={LabourScreen} options={{ title: t('nav.labour') }} />
+      <More.Screen name="LabourForm" component={LabourFormScreen} options={{ title: t('nav.addLabour') }} />
+      <More.Screen name="Admins" component={AdminsScreen} options={{ title: t('nav.staffAdmins') }} />
+      <More.Screen name="AdminForm" component={AdminFormScreen} options={{ title: t('nav.addAdmin') }} />
+      <More.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />
+      <More.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
     </More.Navigator>
   );
 }

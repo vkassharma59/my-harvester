@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
@@ -13,17 +14,20 @@ import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
 import { useHarvesterAccess } from '@/hooks/useHarvesterAccess';
 import { useHarvesterOptions } from '@/hooks/useHarvesterOptions';
+import { tEnum } from '@/i18n';
 import { ExpensesStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { spacing } from '@/theme';
-import { labelFromEnum } from '@/utils/format';
 
 type Props = NativeStackScreenProps<ExpensesStackParamList, 'ExpenseForm'>;
 
-const TYPE_OPTIONS = Object.values(ExpenseType).map((t) => ({ label: labelFromEnum(t), value: t }));
-
 export function ExpenseFormScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
+  const typeOptions = Object.values(ExpenseType).map((value) => ({
+    label: tEnum('expenseType', value),
+    value,
+  }));
   const expenseId = route.params?.expenseId;
   const editing = !!expenseId;
   const selectedId = useSelectedHarvester((s) => s.selectedId);
@@ -47,7 +51,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     queryFn: () => labourApi.list(harvesterId || undefined),
   });
   const labourOptions = labourList.map((l) => ({
-    label: `${l.name} · ${labelFromEnum(l.type)}`,
+    label: `${l.name} · ${tEnum('labourType', l.type)}`,
     value: l.id,
   }));
 
@@ -58,8 +62,8 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
   });
 
   useEffect(() => {
-    navigation.setOptions({ title: editing ? 'Edit expense' : 'Add expense' });
-  }, [editing, navigation]);
+    navigation.setOptions({ title: editing ? t('expenseForm.editTitle') : t('expenseForm.addTitle') });
+  }, [editing, navigation, t]);
 
   useEffect(() => {
     if (existing) {
@@ -104,14 +108,15 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       navigation.goBack();
     },
-    onError: (e) => Alert.alert('Error', apiErrorMessage(e)),
+    onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const onSave = () => {
-    if (!harvesterId) return Alert.alert('Required', 'Select a harvester.');
-    if (isLabour && !labourId) return Alert.alert('Required', 'Select the labourer this payment is for.');
+    if (!harvesterId) return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.selectHarvester'));
+    if (isLabour && !labourId)
+      return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.selectLabourer'));
     const value = Number(amount);
-    if (!value || value <= 0) return Alert.alert('Required', 'Enter a valid amount.');
+    if (!value || value <= 0) return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.enterAmount'));
     save.mutate();
   };
 
@@ -119,35 +124,39 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     <Screen>
       {!soleHarvesterId ? (
         <Select
-          label="Harvester *"
+          label={t('expenseForm.harvesterLabel')}
           value={harvesterId}
           options={harvesterOptions}
           onChange={setHarvesterId}
-          placeholder="Select harvester"
+          placeholder={t('expenseForm.harvesterPlaceholder')}
         />
       ) : null}
       <Select
-        label="Expense type *"
+        label={t('expenseForm.typeLabel')}
         value={type}
-        options={TYPE_OPTIONS}
+        options={typeOptions}
         onChange={(v) => onTypeChange(v as ExpenseType)}
       />
 
       {isLabour ? (
         <Select
-          label="Labourer *"
+          label={t('expenseForm.labourerLabel')}
           value={labourId}
           options={labourOptions}
           onChange={onLabourChange}
-          placeholder={labourOptions.length ? 'Select labourer' : 'No labour for this harvester'}
+          placeholder={
+            labourOptions.length
+              ? t('expenseForm.labourerPlaceholder')
+              : t('expenseForm.noLabour')
+          }
         />
       ) : null}
 
-      <AmountField label="Amount *" value={amount} onChangeText={setAmount} placeholder="0" />
-      <DateField label="Date" value={date} onChange={setDate} />
-      <TextField label="Notes / Remarks" value={notes} onChangeText={setNotes} multiline />
+      <AmountField label={t('expenseForm.amountLabel')} value={amount} onChangeText={setAmount} placeholder="0" />
+      <DateField label={t('expenseForm.dateLabel')} value={date} onChange={setDate} />
+      <TextField label={t('expenseForm.notesLabel')} value={notes} onChangeText={setNotes} multiline />
       <Button
-        title={editing ? 'Save changes' : 'Add expense'}
+        title={editing ? t('expenseForm.saveChanges') : t('expenseForm.addTitle')}
         onPress={onSave}
         loading={save.isPending}
         style={{ marginTop: spacing.sm }}

@@ -1,6 +1,8 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Role } from '@wh/shared';
+import { tEnum } from '@/i18n';
 import { Screen } from '@/components/Screen';
 import { MoreStackParamList } from '@/navigation/types';
 import { useAuth } from '@/store/auth';
@@ -8,33 +10,34 @@ import { colors, font, radius, spacing } from '@/theme';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'MoreMenu'>;
 
-type MenuItem = { label: string; icon: string; route: keyof MoreStackParamList; superAdminOnly?: boolean };
+type MenuItem = { labelKey: string; icon: string; route: keyof MoreStackParamList; superAdminOnly?: boolean };
 
 const ITEMS: MenuItem[] = [
-  { label: 'Harvesters', icon: '🚜', route: 'Harvesters' },
-  { label: 'Labour', icon: '👷', route: 'Labour' },
-  { label: 'Staff Admins', icon: '🧑‍💼', route: 'Admins', superAdminOnly: true },
-  { label: 'Reports', icon: '📊', route: 'Reports' },
-  { label: 'Settings', icon: '⚙️', route: 'Settings' },
+  { labelKey: 'more.harvesters', icon: '🚜', route: 'Harvesters' },
+  { labelKey: 'more.labour', icon: '👷', route: 'Labour' },
+  { labelKey: 'more.staffAdmins', icon: '🧑‍💼', route: 'Admins', superAdminOnly: true },
+  { labelKey: 'more.reports', icon: '📊', route: 'Reports' },
+  { labelKey: 'more.settings', icon: '⚙️', route: 'Settings' },
 ];
 
 export function MoreMenuScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const admin = useAuth((s) => s.admin);
   const logout = useAuth((s) => s.logout);
   const items = ITEMS.filter((i) => !i.superAdminOnly || admin?.role === Role.SUPER_ADMIN);
 
   const confirmLogout = () =>
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void logout() },
+    Alert.alert(t('more.signOut'), t('more.signOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('more.signOut'), style: 'destructive', onPress: () => void logout() },
     ]);
 
   return (
     <Screen>
       <View style={styles.profile}>
-        <Text style={styles.name}>{admin?.name ?? 'Admin'}</Text>
+        <Text style={styles.name}>{admin?.name ?? t('more.admin')}</Text>
         <Text style={styles.sub}>{admin?.email}</Text>
-        {admin?.role ? <Text style={styles.role}>{admin.role.replace('_', ' ')}</Text> : null}
+        {admin?.role ? <Text style={styles.role}>{tEnum('role', admin.role)}</Text> : null}
       </View>
 
       <View style={styles.menu}>
@@ -45,14 +48,14 @@ export function MoreMenuScreen({ navigation }: Props) {
             onPress={() => navigation.navigate(item.route as never)}
           >
             <Text style={styles.icon}>{item.icon}</Text>
-            <Text style={styles.itemLabel}>{item.label}</Text>
+            <Text style={styles.itemLabel}>{t(item.labelKey)}</Text>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
         ))}
       </View>
 
       <Pressable style={({ pressed }) => [styles.logout, pressed && styles.pressed]} onPress={confirmLogout}>
-        <Text style={styles.logoutText}>Sign out</Text>
+        <Text style={styles.logoutText}>{t('more.signOut')}</Text>
       </Pressable>
     </Screen>
   );

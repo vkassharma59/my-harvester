@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { apiErrorMessage } from '@/api/client';
 import { authApi } from '@/api/endpoints';
@@ -9,6 +10,7 @@ import { useAuth } from '@/store/auth';
 import { colors, font, spacing } from '@/theme';
 
 export function LoginScreen() {
+  const { t } = useTranslation();
   const login = useAuth((s) => s.login);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +20,7 @@ export function LoginScreen() {
   const onSubmit = async () => {
     setError(null);
     if (!identifier.trim() || !password) {
-      setError('Enter your email / mobile and password.');
+      setError(t('login.missingCredentials'));
       return;
     }
     setLoading(true);
@@ -26,7 +28,7 @@ export function LoginScreen() {
       const result = await authApi.login(identifier.trim(), password);
       await login(result.accessToken, result.admin);
     } catch (e) {
-      setError(apiErrorMessage(e, 'Login failed'));
+      setError(apiErrorMessage(e, t('login.loginFailed')));
     } finally {
       setLoading(false);
     }
@@ -36,20 +38,20 @@ export function LoginScreen() {
     <Screen>
       <View style={styles.header}>
         <Text style={styles.logo}>🌾</Text>
-        <Text style={styles.title}>Wheat Harvester</Text>
-        <Text style={styles.subtitle}>Owner / Admin sign in</Text>
+        <Text style={styles.title}>{t('login.title')}</Text>
+        <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
       </View>
 
       <TextField
-        label="Email or mobile number"
+        label={t('login.identifierLabel')}
         value={identifier}
         onChangeText={setIdentifier}
         autoCapitalize="none"
         autoComplete="username"
-        placeholder="Email or mobile"
+        placeholder={t('login.identifierPlaceholder')}
       />
       <TextField
-        label="Password"
+        label={t('login.passwordLabel')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -59,7 +61,7 @@ export function LoginScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button title="Sign in" onPress={onSubmit} loading={loading} style={{ marginTop: spacing.sm }} />
+      <Button title={t('login.signIn')} onPress={onSubmit} loading={loading} style={{ marginTop: spacing.sm }} />
     </Screen>
   );
 }

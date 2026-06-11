@@ -2,10 +2,12 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Contacts from 'expo-contacts';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { LabourType, PaymentStatus } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi } from '@/api/endpoints';
+import { tEnum } from '@/i18n';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
@@ -20,10 +22,11 @@ import { labelFromEnum } from '@/utils/format';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'LabourForm'>;
 
-const TYPE_OPTIONS = Object.values(LabourType).map((t) => ({ label: labelFromEnum(t), value: t }));
 const STATUS_OPTIONS = Object.values(PaymentStatus).map((s) => ({ label: labelFromEnum(s), value: s }));
 
 export function LabourFormScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
+  const TYPE_OPTIONS = Object.values(LabourType).map((v) => ({ label: tEnum('labourType', v), value: v }));
   const qc = useQueryClient();
   const labourId = route.params?.labourId;
   const editing = !!labourId;
@@ -45,7 +48,7 @@ export function LabourFormScreen({ route, navigation }: Props) {
     try {
       const { status } = await Contacts.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Allow contacts access to pick a labourer.');
+        Alert.alert(t('labourForm.permissionNeeded'), t('labourForm.permissionMessage'));
         return;
       }
       const contact = await Contacts.presentContactPickerAsync();
@@ -58,7 +61,7 @@ export function LabourFormScreen({ route, navigation }: Props) {
       // Keep the last 10 digits (drops country code / spacing).
       setMobile(digits.length > 10 ? digits.slice(-10) : digits);
     } catch (e) {
-      Alert.alert('Contacts', apiErrorMessage(e, 'Could not open contacts.'));
+      Alert.alert(t('labourForm.contacts'), apiErrorMessage(e, t('labourForm.contactsError')));
     }
   };
 
@@ -69,8 +72,8 @@ export function LabourFormScreen({ route, navigation }: Props) {
   });
 
   useEffect(() => {
-    navigation.setOptions({ title: editing ? 'Edit labour' : 'Add labour' });
-  }, [editing, navigation]);
+    navigation.setOptions({ title: editing ? t('labourForm.titleEdit') : t('labourForm.titleAdd') });
+  }, [editing, navigation, t]);
 
   useEffect(() => {
     if (existing) {
@@ -102,56 +105,57 @@ export function LabourFormScreen({ route, navigation }: Props) {
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       navigation.goBack();
     },
-    onError: (e) => Alert.alert('Error', apiErrorMessage(e)),
+    onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const onSave = () => {
-    if (!name.trim() || !mobile.trim()) return Alert.alert('Required', 'Name and mobile are required.');
-    if (!harvesterId) return Alert.alert('Required', 'Select a harvester.');
+    if (!name.trim() || !mobile.trim())
+      return Alert.alert(t('labourForm.required'), t('labourForm.requiredNameMobile'));
+    if (!harvesterId) return Alert.alert(t('labourForm.required'), t('labourForm.requiredHarvester'));
     save.mutate();
   };
 
   return (
     <Screen>
       <Button
-        title="📇 Import from contacts"
+        title={t('labourForm.importContacts')}
         variant="secondary"
         onPress={importFromContacts}
         style={{ marginBottom: spacing.lg }}
       />
-      <TextField label="Name *" value={name} onChangeText={setName} />
+      <TextField label={t('labourForm.name')} value={name} onChangeText={setName} />
       <TextField
-        label="Mobile *"
+        label={t('labourForm.mobile')}
         value={mobile}
         onChangeText={(v) => setMobile(v.replace(/[^0-9]/g, '').slice(0, 10))}
         keyboardType="number-pad"
         maxLength={10}
       />
-      <Select label="Labour type *" value={type} options={TYPE_OPTIONS} onChange={(v) => setType(v as LabourType)} />
+      <Select label={t('labourForm.labourType')} value={type} options={TYPE_OPTIONS} onChange={(v) => setType(v as LabourType)} />
       {!soleHarvesterId ? (
         <Select
-          label="Harvester *"
+          label={t('labourForm.harvester')}
           value={harvesterId}
           options={harvesterOptions}
           onChange={setHarvesterId}
-          placeholder="Select harvester"
+          placeholder={t('labourForm.selectHarvester')}
         />
       ) : null}
-      <AmountField label="Daily wage" value={dailyWage} onChangeText={setDailyWage} placeholder="e.g. 500" />
+      <AmountField label={t('labourForm.dailyWage')} value={dailyWage} onChangeText={setDailyWage} placeholder={t('labourForm.dailyWagePlaceholder')} />
       <AmountField
-        label="Custom amount (overrides daily wage)"
+        label={t('labourForm.customAmount')}
         value={customAmount}
         onChangeText={setCustomAmount}
-        placeholder="Optional"
+        placeholder={t('common.optional')}
       />
       <Select
-        label="Payment status"
+        label={t('labourForm.paymentStatus')}
         value={paymentStatus}
         options={STATUS_OPTIONS}
         onChange={(v) => setPaymentStatus(v as PaymentStatus)}
       />
       <Button
-        title={editing ? 'Save changes' : 'Add labour'}
+        title={editing ? t('labourForm.saveChanges') : t('labourForm.addLabour')}
         onPress={onSave}
         loading={save.isPending}
         style={{ marginTop: spacing.sm }}

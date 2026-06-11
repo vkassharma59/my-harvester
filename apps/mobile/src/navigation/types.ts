@@ -7,7 +7,7 @@ export type CustomersStackParamList = {
 };
 
 export type HarvestsStackParamList = {
-  HarvestsList: undefined;
+  HarvestsList: { customerId?: string; customerName?: string } | undefined;
   HarvestForm: { plotId?: string } | undefined;
 };
 

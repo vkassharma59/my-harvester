@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
@@ -7,9 +8,10 @@ import { Card } from '@/components/Card';
 import { HarvesterPicker } from '@/components/HarvesterPicker';
 import { Screen } from '@/components/Screen';
 import { ErrorState, Loading } from '@/components/States';
+import { tEnum } from '@/i18n';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { colors, font, spacing } from '@/theme';
-import { formatCurrency, labelFromEnum } from '@/utils/format';
+import { formatCurrency } from '@/utils/format';
 
 /**
  * Reports hub. For the MVP these are on-screen summaries derived from the
@@ -17,6 +19,7 @@ import { formatCurrency, labelFromEnum } from '@/utils/format';
  * (PDF/CSV export is a planned enhancement.)
  */
 export function ReportsScreen() {
+  const { t } = useTranslation();
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const harvesterId = scopedHarvesterId(selectedId);
 
@@ -36,32 +39,32 @@ export function ReportsScreen() {
     <View style={styles.flex}>
       <HarvesterPicker />
       <Screen refreshing={isRefetching} onRefresh={refetch}>
-      <ReportCard title="Profit & Loss">
-        <Line label="Total income" value={money(data.financial.totalEarnings)} />
-        <Line label="Total expenses" value={money(data.financial.totalExpenses)} />
-        <Line label="Net profit" value={money(data.financial.netProfit)} strong />
+      <ReportCard title={t('reports.profitLoss')}>
+        <Line label={t('reports.totalIncome')} value={money(data.financial.totalEarnings)} />
+        <Line label={t('reports.totalExpenses')} value={money(data.financial.totalExpenses)} />
+        <Line label={t('reports.netProfit')} value={money(data.financial.netProfit)} strong />
       </ReportCard>
 
-      <ReportCard title="Customer outstanding">
-        <Line label="Pending receivables" value={money(data.financial.pendingReceivables)} strong />
+      <ReportCard title={t('reports.customerOutstanding')}>
+        <Line label={t('reports.pendingReceivables')} value={money(data.financial.pendingReceivables)} strong />
       </ReportCard>
 
-      <ReportCard title="Expense report">
-        {(Object.keys(data.expenses) as ExpenseType[]).map((t) => (
-          <Line key={t} label={labelFromEnum(t)} value={money(data.expenses[t])} />
+      <ReportCard title={t('reports.expenseReport')}>
+        {(Object.keys(data.expenses) as ExpenseType[]).map((key) => (
+          <Line key={key} label={tEnum('expenseType', key)} value={money(data.expenses[key])} />
         ))}
       </ReportCard>
 
-      <ReportCard title="Labour payment report">
-        <Line label="Total labour cost" value={money(data.labour.totalCost)} />
-        <Line label="Unpaid / partial" value={String(data.labour.pendingPayments)} />
+      <ReportCard title={t('reports.labourPaymentReport')}>
+        <Line label={t('reports.totalLabourCost')} value={money(data.labour.totalCost)} />
+        <Line label={t('reports.unpaidPartial')} value={String(data.labour.pendingPayments)} />
       </ReportCard>
 
-      <ReportCard title="Harvesting report">
-        <Line label="Customers" value={String(data.harvesting.totalCustomers)} />
-        <Line label="Plots harvested" value={String(data.harvesting.totalPlots)} />
-        <Line label="Area harvested" value={String(data.harvesting.totalArea)} />
-        <Line label="Jobs completed" value={String(data.harvesting.totalJobsCompleted)} />
+      <ReportCard title={t('reports.harvestingReport')}>
+        <Line label={t('reports.customers')} value={String(data.harvesting.totalCustomers)} />
+        <Line label={t('reports.plotsHarvested')} value={String(data.harvesting.totalPlots)} />
+        <Line label={t('reports.areaHarvested')} value={String(data.harvesting.totalArea)} />
+        <Line label={t('reports.jobsCompleted')} value={String(data.harvesting.totalJobsCompleted)} />
       </ReportCard>
       </Screen>
     </View>

@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { AreaUnit, HarvesterStatus, HarvesterType, HarvestType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
@@ -12,17 +13,18 @@ import { Screen } from '@/components/Screen';
 import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
 import { useHarvesterAccess } from '@/hooks/useHarvesterAccess';
+import { tEnum } from '@/i18n';
 import { HarvestsStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { colors, font, radius, spacing } from '@/theme';
-import { formatCurrency, labelFromEnum } from '@/utils/format';
+import { formatCurrency } from '@/utils/format';
 
 type Props = NativeStackScreenProps<HarvestsStackParamList, 'HarvestForm'>;
 
-const TYPE_OPTIONS = Object.values(HarvestType).map((t) => ({ label: labelFromEnum(t), value: t }));
-
 export function HarvestFormScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
+  const TYPE_OPTIONS = Object.values(HarvestType).map((v) => ({ label: tEnum('harvestType', v), value: v }));
   const plotId = route.params?.plotId;
   const editing = !!plotId;
   const selectedId = useSelectedHarvester((s) => s.selectedId);
@@ -63,7 +65,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const showBhusa = isBhusaHarvester && harvestType === HarvestType.WITHOUT_BHUSA;
   // For Combine harvesters there's no "with/without Bhusa" choice.
   const effectiveHarvestType = isBhusaHarvester ? harvestType : HarvestType.PER_BIGHA_WITH_BHUSA;
-  const unit = labelFromEnum(areaUnit);
+  const unit = tEnum('areaUnit', areaUnit);
 
   const { data: existing } = useQuery({
     queryKey: ['plot', plotId],
@@ -72,8 +74,8 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   });
 
   useEffect(() => {
-    navigation.setOptions({ title: editing ? 'Edit job' : 'New harvesting job' });
-  }, [editing, navigation]);
+    navigation.setOptions({ title: editing ? t('harvestForm.titleEdit') : t('harvestForm.titleNew') });
+  }, [editing, navigation, t]);
 
   // Staff with a single harvester: auto-select it (dropdown is hidden).
   useEffect(() => {
@@ -145,49 +147,49 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       qc.invalidateQueries({ queryKey: ['customer-ledger'] });
       navigation.goBack();
     },
-    onError: (e) => Alert.alert('Error', apiErrorMessage(e)),
+    onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const onSave = () => {
-    if (!customerId) return Alert.alert('Required', 'Select a customer.');
-    if (!harvesterId) return Alert.alert('Required', 'Select a harvester.');
-    if (!plotName.trim()) return Alert.alert('Required', 'Enter a plot / land name.');
-    if (!Number(area)) return Alert.alert('Required', 'Enter the area.');
+    if (!customerId) return Alert.alert(t('harvestForm.required'), t('harvestForm.selectCustomer'));
+    if (!harvesterId) return Alert.alert(t('harvestForm.required'), t('harvestForm.selectHarvester'));
+    if (!plotName.trim()) return Alert.alert(t('harvestForm.required'), t('harvestForm.enterPlot'));
+    if (!Number(area)) return Alert.alert(t('harvestForm.required'), t('harvestForm.enterArea'));
     save.mutate();
   };
 
   return (
     <Screen>
       <Select
-        label="Customer *"
+        label={t('harvestForm.customerLabel')}
         value={customerId}
         options={customerOptions}
         onChange={setCustomerId}
-        placeholder="Select customer"
+        placeholder={t('harvestForm.customerPlaceholder')}
         searchable
       />
       {!soleHarvesterId ? (
         <Select
-          label="Harvester *"
+          label={t('harvestForm.harvesterLabel')}
           value={harvesterId}
           options={harvesterOptions}
           onChange={setHarvesterId}
-          placeholder="Select harvester"
+          placeholder={t('harvestForm.harvesterPlaceholder')}
         />
       ) : null}
-      <TextField label="Plot / Land name *" value={plotName} onChangeText={setPlotName} />
+      <TextField label={t('harvestForm.plotLabel')} value={plotName} onChangeText={setPlotName} />
       <TextField
-        label={`Area (In ${unit}) *`}
+        label={t('harvestForm.areaLabel', { unit })}
         value={area}
         onChangeText={setArea}
         keyboardType="numeric"
-        placeholder="e.g. 5"
+        placeholder={t('harvestForm.areaPlaceholder')}
       />
-      <DateField label="Harvest date" value={harvestDate} onChange={setHarvestDate} />
+      <DateField label={t('harvestForm.harvestDate')} value={harvestDate} onChange={setHarvestDate} />
 
       {isBhusaHarvester ? (
         <Select
-          label="Harvesting type *"
+          label={t('harvestForm.harvestTypeLabel')}
           value={harvestType}
           options={TYPE_OPTIONS}
           onChange={(v) => setHarvestType(v as HarvestType)}
@@ -195,7 +197,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       ) : null}
 
       <AmountField
-        label={`Rate per ${unit} *`}
+        label={t('harvestForm.rateLabel', { unit })}
         value={ratePerBigha}
         onChangeText={(v) => {
           setRateTouched(true);
@@ -206,28 +208,28 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       {showBhusa ? (
         <>
           <Select
-            label="Bhusa buyer"
+            label={t('harvestForm.bhusaBuyerLabel')}
             value={bhusaBuyerId}
             options={customerOptions}
             onChange={setBhusaBuyerId}
-            placeholder="Select buyer (optional)"
+            placeholder={t('harvestForm.bhusaBuyerPlaceholder')}
             searchable
           />
-          <AmountField label="Bhusa amount" value={bhusaAmount} onChangeText={setBhusaAmount} placeholder="0" />
+          <AmountField label={t('harvestForm.bhusaAmountLabel')} value={bhusaAmount} onChangeText={setBhusaAmount} placeholder="0" />
         </>
       ) : null}
 
-      <TextField label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
+      <TextField label={t('harvestForm.remarksLabel')} value={remarks} onChangeText={setRemarks} multiline />
 
       <View style={styles.preview}>
-        <Row label="Harvesting amount" value={formatCurrency(preview.harvesting)} />
-        {showBhusa ? <Row label="Bhusa sale" value={formatCurrency(preview.bhusa)} /> : null}
+        <Row label={t('harvestForm.harvestingAmount')} value={formatCurrency(preview.harvesting)} />
+        {showBhusa ? <Row label={t('harvestForm.bhusaSale')} value={formatCurrency(preview.bhusa)} /> : null}
         <View style={styles.divider} />
-        <Row label="Total" value={formatCurrency(preview.total)} bold />
+        <Row label={t('harvestForm.total')} value={formatCurrency(preview.total)} bold />
       </View>
 
       <Button
-        title={editing ? 'Save changes' : 'Add job'}
+        title={editing ? t('harvestForm.saveChanges') : t('harvestForm.addJob')}
         onPress={onSave}
         loading={save.isPending}
         style={{ marginTop: spacing.md }}

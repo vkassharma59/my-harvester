@@ -198,6 +198,8 @@ export const paymentsApi = {
   list: (params?: { partyType?: PartyType; partyId?: string; harvesterId?: string }) =>
     api.get<Payment[]>('/payments', { params }).then((r) => r.data),
   create: (body: PaymentInput) => api.post<Payment>('/payments', body).then((r) => r.data),
+  update: (id: string, body: Partial<PaymentInput>) =>
+    api.patch<Payment>(`/payments/${id}`, body).then((r) => r.data),
   remove: (id: string) => api.delete(`/payments/${id}`).then(() => undefined),
 };
 

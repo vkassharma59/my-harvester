@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HarvesterStatus } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
@@ -14,6 +15,7 @@ import { colors, font, radius, spacing } from '@/theme';
 type Props = NativeStackScreenProps<MoreStackParamList, 'Harvesters'>;
 
 export function HarvestersScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const { isSuperAdmin } = useHarvesterAccess();
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['harvesters', 'all'],
@@ -31,7 +33,7 @@ export function HarvestersScreen({ navigation }: Props) {
         contentContainerStyle={styles.list}
         onRefresh={refetch}
         refreshing={isRefetching}
-        ListEmptyComponent={<EmptyState title="No harvesters yet" subtitle="Add your first harvester." />}
+        ListEmptyComponent={<EmptyState title={t('harvesters.emptyTitle')} subtitle={t('harvesters.emptySubtitle')} />}
         renderItem={({ item }) => {
           const active = item.status === HarvesterStatus.ACTIVE;
           const openEdit = () => navigation.navigate('HarvesterForm', { harvesterId: item.id });
@@ -46,7 +48,7 @@ export function HarvestersScreen({ navigation }: Props) {
                 <View style={styles.right}>
                   <View style={[styles.badge, active ? styles.badgeActive : styles.badgeInactive]}>
                     <Text style={[styles.badgeText, active ? styles.badgeTextActive : styles.badgeTextInactive]}>
-                      {active ? 'Active' : 'Inactive'}
+                      {active ? t('harvesters.active') : t('harvesters.inactive')}
                     </Text>
                   </View>
                   {isSuperAdmin ? (
@@ -62,7 +64,7 @@ export function HarvestersScreen({ navigation }: Props) {
       />
       {isSuperAdmin ? (
         <View style={styles.footer}>
-          <Button title="+ Add harvester" onPress={() => navigation.navigate('HarvesterForm')} />
+          <Button title={t('harvesters.addHarvester')} onPress={() => navigation.navigate('HarvesterForm')} />
         </View>
       ) : null}
     </View>

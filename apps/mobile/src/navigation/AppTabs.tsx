@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, font } from '@/theme';
 import { CustomersStack, DashboardStack, ExpensesStack, HarvestsStack, MoreStack } from './stacks';
 import { AppTabsParamList } from './types';
@@ -21,6 +22,7 @@ function tabIcon(name: keyof AppTabsParamList) {
 }
 
 export function AppTabs() {
+  const { t } = useTranslation();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -33,24 +35,24 @@ export function AppTabs() {
       <Tab.Screen
         name="DashboardTab"
         component={DashboardStack}
-        options={{ title: 'Dashboard', tabBarIcon: tabIcon('DashboardTab') }}
+        options={{ title: t('tabs.dashboard'), tabBarIcon: tabIcon('DashboardTab') }}
       />
       <Tab.Screen
         name="HarvestsTab"
         component={HarvestsStack}
-        options={{ title: 'Harvests', tabBarIcon: tabIcon('HarvestsTab') }}
+        options={{ title: t('tabs.harvests'), tabBarIcon: tabIcon('HarvestsTab') }}
       />
       <Tab.Screen
         name="CustomersTab"
         component={CustomersStack}
-        options={{ title: 'Customers', tabBarIcon: tabIcon('CustomersTab') }}
+        options={{ title: t('tabs.customers'), tabBarIcon: tabIcon('CustomersTab') }}
       />
       <Tab.Screen
         name="ExpensesTab"
         component={ExpensesStack}
-        options={{ title: 'Expenses', tabBarIcon: tabIcon('ExpensesTab') }}
+        options={{ title: t('tabs.expenses'), tabBarIcon: tabIcon('ExpensesTab') }}
       />
-      <Tab.Screen name="MoreTab" component={MoreStack} options={{ title: 'More', tabBarIcon: tabIcon('MoreTab') }} />
+      <Tab.Screen name="MoreTab" component={MoreStack} options={{ title: t('tabs.more'), tabBarIcon: tabIcon('MoreTab') }} />
     </Tab.Navigator>
   );
 }

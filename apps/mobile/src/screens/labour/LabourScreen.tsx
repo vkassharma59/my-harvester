@@ -1,9 +1,11 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { PaymentStatus } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi } from '@/api/endpoints';
+import { tEnum } from '@/i18n';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HarvesterPicker } from '@/components/HarvesterPicker';
@@ -22,6 +24,7 @@ const statusTone: Record<PaymentStatus, { bg: string; fg: string }> = {
 };
 
 export function LabourScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const harvesterId = scopedHarvesterId(selectedId);
 
@@ -42,7 +45,7 @@ export function LabourScreen({ navigation }: Props) {
         contentContainerStyle={styles.list}
         onRefresh={refetch}
         refreshing={isRefetching}
-        ListEmptyComponent={<EmptyState title="No labour records" subtitle="Add drivers and helpers." />}
+        ListEmptyComponent={<EmptyState title={t('labour.emptyTitle')} subtitle={t('labour.emptySubtitle')} />}
         renderItem={({ item }) => {
           const tone = statusTone[item.paymentStatus];
           const wage = item.customAmount ?? item.dailyWage ?? 0;
@@ -54,16 +57,16 @@ export function LabourScreen({ navigation }: Props) {
                   <Text style={[styles.badgeText, { color: tone.fg }]}>{labelFromEnum(item.paymentStatus)}</Text>
                 </View>
               </View>
-              <Text style={styles.sub}>{labelFromEnum(item.type)} · {item.mobile}</Text>
+              <Text style={styles.sub}>{tEnum('labourType', item.type)} · {item.mobile}</Text>
               <Text style={styles.sub}>
-                {item.customAmount != null ? 'Custom' : 'Daily wage'}: {formatCurrency(wage)}
+                {item.customAmount != null ? t('labour.custom') : t('labour.dailyWage')}: {formatCurrency(wage)}
               </Text>
             </Card>
           );
         }}
       />
       <View style={styles.footer}>
-        <Button title="+ Add labour" onPress={() => navigation.navigate('LabourForm')} />
+        <Button title={t('labour.addLabour')} onPress={() => navigation.navigate('LabourForm')} />
       </View>
     </View>
   );

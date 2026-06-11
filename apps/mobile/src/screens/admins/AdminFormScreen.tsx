@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { HarvesterStatus } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
@@ -15,6 +16,7 @@ import { colors, font, radius, spacing } from '@/theme';
 type Props = NativeStackScreenProps<MoreStackParamList, 'AdminForm'>;
 
 export function AdminFormScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const adminId = route.params?.adminId;
   const editing = !!adminId;
@@ -44,8 +46,8 @@ export function AdminFormScreen({ route, navigation }: Props) {
   });
 
   useEffect(() => {
-    navigation.setOptions({ title: editing ? 'Edit admin' : 'Add admin' });
-  }, [editing, navigation]);
+    navigation.setOptions({ title: editing ? t('adminForm.editTitle') : t('adminForm.addTitle') });
+  }, [editing, navigation, t]);
 
   useEffect(() => {
     if (existing) {
@@ -70,63 +72,63 @@ export function AdminFormScreen({ route, navigation }: Props) {
       qc.invalidateQueries({ queryKey: ['admins'] });
       navigation.goBack();
     },
-    onError: (e) => Alert.alert('Error', apiErrorMessage(e)),
+    onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const onSave = () => {
-    if (!name.trim()) return Alert.alert('Required', 'Name is required.');
-    if (!email.trim()) return Alert.alert('Required', 'Email is required.');
+    if (!name.trim()) return Alert.alert(t('adminForm.required'), t('adminForm.nameRequired'));
+    if (!email.trim()) return Alert.alert(t('adminForm.required'), t('adminForm.emailRequired'));
     if (!/^[0-9]{10}$/.test(phone))
-      return Alert.alert('Required', 'Enter a valid 10-digit mobile number.');
+      return Alert.alert(t('adminForm.required'), t('adminForm.phoneRequired'));
     if (!editing && password.length < 8)
-      return Alert.alert('Required', 'Password must be at least 8 characters.');
+      return Alert.alert(t('adminForm.required'), t('adminForm.passwordRequired'));
     if (editing && newPassword.trim() && newPassword.length < 8)
-      return Alert.alert('Required', 'New password must be at least 8 characters.');
+      return Alert.alert(t('adminForm.required'), t('adminForm.newPasswordRequired'));
     save.mutate();
   };
 
   return (
     <Screen>
-      <TextField label="Name *" value={name} onChangeText={setName} />
+      <TextField label={t('adminForm.nameLabel')} value={name} onChangeText={setName} />
       <TextField
-        label="Email *"
+        label={t('adminForm.emailLabel')}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
       <TextField
-        label="Mobile number *"
+        label={t('adminForm.phoneLabel')}
         value={phone}
         onChangeText={(v) => setPhone(v.replace(/[^0-9]/g, '').slice(0, 10))}
         keyboardType="number-pad"
-        placeholder="10-digit mobile"
+        placeholder={t('adminForm.phonePlaceholder')}
         maxLength={10}
       />
 
       {!editing ? (
         <TextField
-          label="Password *"
+          label={t('adminForm.passwordLabel')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          placeholder="At least 8 characters"
+          placeholder={t('adminForm.passwordPlaceholder')}
         />
       ) : (
         <>
           <TextField
-            label="Set new password"
+            label={t('adminForm.newPasswordLabel')}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
-            placeholder="Leave blank to keep current"
+            placeholder={t('adminForm.newPasswordPlaceholder')}
           />
           {!isSelf ? (
             <View style={styles.statusCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.statusLabel}>Account access</Text>
+                <Text style={styles.statusLabel}>{t('adminForm.accountAccess')}</Text>
                 <Text style={[styles.statusValue, isActive ? styles.active : styles.inactive]}>
-                  {isActive ? 'Active' : 'Inactive'}
+                  {isActive ? t('adminForm.active') : t('adminForm.inactive')}
                 </Text>
               </View>
               <Switch
@@ -140,13 +142,13 @@ export function AdminFormScreen({ route, navigation }: Props) {
         </>
       )}
 
-      <Text style={styles.sectionLabel}>Assigned harvesters</Text>
+      <Text style={styles.sectionLabel}>{t('adminForm.assignedHarvesters')}</Text>
       <Text style={styles.sectionHint}>
-        This admin can only see and manage data for the harvesters you select.
+        {t('adminForm.assignedHarvestersHint')}
       </Text>
       <View style={styles.harvesterBox}>
         {harvesters.length === 0 ? (
-          <Text style={styles.empty}>No active harvesters to assign.</Text>
+          <Text style={styles.empty}>{t('adminForm.noActiveHarvesters')}</Text>
         ) : (
           harvesters.map((h) => {
             const on = harvesterIds.includes(h.id);
@@ -163,7 +165,7 @@ export function AdminFormScreen({ route, navigation }: Props) {
       </View>
 
       <Button
-        title={editing ? 'Save changes' : 'Add admin'}
+        title={editing ? t('adminForm.saveChanges') : t('adminForm.addTitle')}
         onPress={onSave}
         loading={save.isPending}
         style={{ marginTop: spacing.sm }}

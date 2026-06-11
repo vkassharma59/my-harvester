@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ALL_HARVESTERS, HarvesterStatus } from '@wh/shared';
 import { harvestersApi } from '@/api/endpoints';
@@ -13,6 +14,7 @@ import { colors, font, radius, spacing } from '@/theme';
  * header — so it isn't subject to iOS's translucent nav-bar button material.
  */
 export function HarvesterPicker() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { selectedId, setSelected } = useSelectedHarvester();
   const { showPicker } = useHarvesterAccess();
@@ -26,14 +28,14 @@ export function HarvesterPicker() {
   if (!showPicker) return null;
 
   const options = [
-    { id: ALL_HARVESTERS, name: 'All Harvesters' },
+    { id: ALL_HARVESTERS, name: t('harvesterPicker.allHarvesters') },
     ...harvesters.map((h) => ({ id: h.id, name: h.name })),
   ];
-  const current = options.find((o) => o.id === selectedId)?.name ?? 'All Harvesters';
+  const current = options.find((o) => o.id === selectedId)?.name ?? t('harvesterPicker.allHarvesters');
 
   return (
     <View style={styles.bar}>
-      <Text style={styles.barLabel}>Harvester</Text>
+      <Text style={styles.barLabel}>{t('harvesterPicker.harvester')}</Text>
 
       <Pressable style={styles.chip} onPress={() => setOpen(true)}>
         <Text style={styles.chipText} numberOfLines={1}>
@@ -45,7 +47,7 @@ export function HarvesterPicker() {
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.sheetTitle}>Select harvester</Text>
+            <Text style={styles.sheetTitle}>{t('harvesterPicker.selectHarvester')}</Text>
             <FlatList
               data={options}
               keyExtractor={(o) => o.id}
