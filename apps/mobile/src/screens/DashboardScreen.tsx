@@ -21,6 +21,7 @@ export function DashboardScreen() {
 
   const settingsQ = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const currency = settingsQ.data?.currency ?? 'INR';
+  const areaUnit = settingsQ.data?.defaultAreaUnit;
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard', selectedId],
@@ -66,7 +67,10 @@ export function DashboardScreen() {
         <View style={styles.grid}>
           <StatTile label={t('dashboard.customers')} value={String(data.harvesting.totalCustomers)} />
           <StatTile label={t('dashboard.plotsHarvested')} value={String(data.harvesting.totalPlots)} />
-          <StatTile label={t('dashboard.areaHarvested')} value={`${data.harvesting.totalArea}`} />
+          <StatTile
+            label={t('dashboard.areaHarvested')}
+            value={areaUnit ? `${data.harvesting.totalArea} ${tEnum('areaUnit', areaUnit)}` : `${data.harvesting.totalArea}`}
+          />
           <StatTile label={t('dashboard.jobsCompleted')} value={String(data.harvesting.totalJobsCompleted)} />
         </View>
       </Section>
