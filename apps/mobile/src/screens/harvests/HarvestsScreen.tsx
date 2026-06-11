@@ -10,6 +10,7 @@ import { Card } from '@/components/Card';
 import { HarvesterPicker } from '@/components/HarvesterPicker';
 import { EmptyState, ErrorState, Loading } from '@/components/States';
 import { TextField } from '@/components/TextField';
+import { useHarvestTypeLabel } from '@/hooks/useHarvestTypeLabel';
 import { tEnum } from '@/i18n';
 import { HarvestsStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
@@ -23,6 +24,7 @@ export function HarvestsScreen({ navigation, route }: Props) {
   const customerName = route.params?.customerName;
 
   const { t } = useTranslation();
+  const harvestTypeLabel = useHarvestTypeLabel();
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const harvesterId = scopedHarvesterId(selectedId);
   const [search, setSearch] = useState('');
@@ -113,7 +115,7 @@ export function HarvestsScreen({ navigation, route }: Props) {
             <Text style={styles.sub}>
               {item.area} {tEnum('areaUnit', item.areaUnit)} · {formatDate(item.harvestDate)}
             </Text>
-            <Text style={styles.sub}>{tEnum('harvestType', item.harvestType)}</Text>
+            <Text style={styles.sub}>{harvestTypeLabel(item.harvesterId, item.harvestType)}</Text>
           </Card>
         )}
       />

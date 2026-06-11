@@ -14,6 +14,7 @@ import { Screen } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { ErrorState, Loading } from '@/components/States';
 import { TextField } from '@/components/TextField';
+import { useHarvestTypeLabel } from '@/hooks/useHarvestTypeLabel';
 import { tEnum } from '@/i18n';
 import { AppTabsParamList, CustomersStackParamList } from '@/navigation/types';
 import { colors, font, radius, spacing } from '@/theme';
@@ -23,6 +24,7 @@ type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomerLedger'>;
 
 export function CustomerLedgerScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
+  const harvestTypeLabel = useHarvestTypeLabel();
   const { customerId } = route.params;
   const qc = useQueryClient();
   const [payOpen, setPayOpen] = useState(false);
@@ -140,7 +142,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
           <Text style={styles.sub}>
             {p.area} {tEnum('areaUnit', p.areaUnit)} · {formatDate(p.harvestDate)}
           </Text>
-          <Text style={styles.sub}>{tEnum('harvestType', p.harvestType)}</Text>
+          <Text style={styles.sub}>{harvestTypeLabel(p.harvesterId, p.harvestType)}</Text>
           {p.remarks ? <Text style={styles.sub}>{p.remarks}</Text> : null}
         </Card>
       ))}

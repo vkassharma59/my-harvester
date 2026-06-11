@@ -46,9 +46,8 @@ export const pa = {
   enums: {
     areaUnit: { BIGHA: 'ਬਿੱਘਾ', ACRE: 'ਏਕੜ', HECTARE: 'ਹੈਕਟੇਅਰ' },
     harvestType: {
-      PER_BIGHA_KEEP_BHUSA: 'ਪ੍ਰਤੀ ਬਿੱਘਾ (ਤੂੜੀ ਰੱਖੋ)',
       PER_BIGHA_WITH_BHUSA: 'ਪ੍ਰਤੀ ਬਿੱਘਾ (ਤੂੜੀ ਸਮੇਤ)',
-      PER_BIGHA_WITHOUT_BHUSA: 'ਪ੍ਰਤੀ ਬਿੱਘਾ (ਤੂੜੀ ਤੋਂ ਬਿਨਾਂ)',
+      WITHOUT_BHUSA: 'ਤੂੜੀ ਤੋਂ ਬਿਨਾਂ',
     },
     expenseType: { DIESEL: 'ਡੀਜ਼ਲ', LABOUR: 'ਮਜ਼ਦੂਰੀ', SPARE_PARTS: 'ਸਪੇਅਰ ਪਾਰਟਸ', OTHER: 'ਹੋਰ' },
     labourType: { HARVESTER_DRIVER: 'ਹਾਰਵੈਸਟਰ ਚਾਲਕ', TRACTOR_DRIVER: 'ਟਰੈਕਟਰ ਚਾਲਕ', HELPER: 'ਸਹਾਇਕ' },

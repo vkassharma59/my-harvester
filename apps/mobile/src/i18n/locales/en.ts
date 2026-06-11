@@ -46,9 +46,8 @@ export const en = {
   enums: {
     areaUnit: { BIGHA: 'Bigha', ACRE: 'Acre', HECTARE: 'Hectare' },
     harvestType: {
-      PER_BIGHA_KEEP_BHUSA: 'Per Bigha (keep Bhusa)',
       PER_BIGHA_WITH_BHUSA: 'Per Bigha (with Bhusa)',
-      PER_BIGHA_WITHOUT_BHUSA: 'Per Bigha (without Bhusa)',
+      WITHOUT_BHUSA: 'Without Bhusa',
     },
     expenseType: { DIESEL: 'Diesel', LABOUR: 'Labour', SPARE_PARTS: 'Spare Parts', OTHER: 'Other' },
     labourType: { HARVESTER_DRIVER: 'Harvester Driver', TRACTOR_DRIVER: 'Tractor Driver', HELPER: 'Helper' },
