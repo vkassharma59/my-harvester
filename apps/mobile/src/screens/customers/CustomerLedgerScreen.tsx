@@ -44,12 +44,16 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const [reminder, setReminder] = useState('');
   useEffect(() => {
     if (!data) return;
+    const firm = settings?.firmName?.trim();
+    const signoff = firm
+      ? t('customerLedger.reminderSignoffFirm', { firm })
+      : t('customerLedger.reminderSignoff');
     setReminder(
       t('customerLedger.reminderTemplate', {
         name: data.customer.name,
         amount: formatCurrency(data.outstanding),
-        firm: settings?.firmName || '',
         link: t('customerLedger.paymentLinkPlaceholder'),
+        signoff,
       }),
     );
   }, [data, settings, t]);
