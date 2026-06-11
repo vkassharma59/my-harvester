@@ -29,6 +29,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const { customerId } = route.params;
   const qc = useQueryClient();
   const [payOpen, setPayOpen] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
@@ -129,6 +130,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
 
   const callCustomer = () => void Linking.openURL(`tel:${data.customer.phone}`).catch(() => {});
   const sendWhatsApp = () => {
+    setReminderOpen(false);
     const digits = data.customer.phone.replace(/[^0-9]/g, '');
     const intl = digits.length === 10 ? `91${digits}` : digits; // assume India for 10-digit numbers
     Linking.openURL(`https://wa.me/${intl}?text=${encodeURIComponent(reminder)}`).catch(() =>
@@ -139,13 +141,16 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   return (
     <Screen refreshing={isRefetching} onRefresh={refetch}>
       <Card>
-        <Text style={styles.name}>{data.customer.name}</Text>
-        <View style={styles.phoneRow}>
-          <Text style={styles.sub}>{data.customer.phone}</Text>
-          <Pressable onPress={callCustomer} hitSlop={10} style={styles.callBtn}>
+        <View style={styles.cardActions}>
+          <Pressable onPress={() => setReminderOpen(true)} hitSlop={10}>
+            <Ionicons name="logo-whatsapp" size={24} color={colors.primary} />
+          </Pressable>
+          <Pressable onPress={callCustomer} hitSlop={10}>
             <Ionicons name="call" size={24} color={colors.primary} />
           </Pressable>
         </View>
+        <Text style={styles.name}>{data.customer.name}</Text>
+        <Text style={styles.sub}>{data.customer.phone}</Text>
         {data.customer.village ? <Text style={styles.sub}>{data.customer.village}</Text> : null}
         {data.customer.address ? <Text style={styles.sub}>{data.customer.address}</Text> : null}
       </Card>
@@ -198,15 +203,25 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         ))
       )}
 
-      <Text style={styles.sectionTitle}>{t('customerLedger.reminderTitle')}</Text>
-      <TextField
-        label={t('customerLedger.reminderLabel')}
-        value={reminder}
-        onChangeText={setReminder}
-        multiline
-        style={styles.reminderInput}
-      />
-      <Button title={t('customerLedger.sendWhatsapp')} onPress={sendWhatsApp} style={{ marginTop: spacing.sm }} />
+      <Modal visible={reminderOpen} transparent animationType="slide" onRequestClose={() => setReminderOpen(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalRoot}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable style={styles.backdrop} onPress={() => setReminderOpen(false)} />
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>{t('customerLedger.reminderTitle')}</Text>
+            <TextField
+              label={t('customerLedger.reminderLabel')}
+              value={reminder}
+              onChangeText={setReminder}
+              multiline
+              style={styles.reminderInput}
+            />
+            <Button title={t('customerLedger.sendWhatsapp')} onPress={sendWhatsApp} />
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal visible={payOpen} transparent animationType="slide" onRequestClose={closeSheet}>
         <KeyboardAvoidingView
@@ -238,10 +253,16 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
+  name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text, paddingRight: 76 },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  callBtn: { paddingVertical: spacing.xs, paddingLeft: spacing.md },
+  cardActions: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    flexDirection: 'row',
+    gap: spacing.lg,
+    zIndex: 1,
+  },
   reminderInput: { minHeight: 150, textAlignVertical: 'top' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   sectionTitle: {
