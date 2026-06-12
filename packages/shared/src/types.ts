@@ -66,6 +66,8 @@ export interface Expense extends AuditFields {
   type: ExpenseType;
   /** Set for custom (super-admin-defined) categories; type is OTHER then. */
   categoryId?: string | null;
+  /** Set for DIESEL expenses: the fuel pump the diesel was bought from. */
+  pumpId?: string | null;
   amount: number;
   notes?: string;
   attachmentUrl?: string;
@@ -77,6 +79,23 @@ export interface Expense extends AuditFields {
 export interface ExpenseCategory extends AuditFields {
   name: string;
   isActive: boolean;
+}
+
+/** A diesel supplier. One pump can serve multiple harvesters (many-to-many). */
+export interface FuelPump extends AuditFields {
+  name: string;
+  phone?: string;
+  harvesterIds: string[];
+  isActive: boolean;
+}
+
+/** A fuel pump's account: diesel bought (bill) vs paid, with payment history. */
+export interface FuelPumpLedger {
+  pump: FuelPump;
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
+  payments: Payment[];
 }
 
 export interface Labour extends AuditFields {

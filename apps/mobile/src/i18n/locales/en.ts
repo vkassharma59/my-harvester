@@ -38,6 +38,8 @@ export const en = {
     addLabour: 'Add worker',
     agents: 'Agents',
     addAgent: 'Add agent',
+    fuelPumps: 'Fuel Pumps',
+    addFuelPump: 'Fuel pump',
     staffAdmins: 'Staff Admins',
     addAdmin: 'Add admin',
     expenseCategories: 'Expense Types',

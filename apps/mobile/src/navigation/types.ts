@@ -32,6 +32,9 @@ export type MoreStackParamList = {
   AdminForm: { adminId?: string } | undefined;
   ExpenseCategories: undefined;
   ExpenseCategoryForm: { categoryId?: string } | undefined;
+  FuelPumps: undefined;
+  FuelPumpForm: { pumpId?: string } | undefined;
+  FuelPumpLedger: { pumpId: string; name: string };
   Reports: undefined;
   Settings: undefined;
 };

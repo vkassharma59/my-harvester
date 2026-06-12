@@ -11,6 +11,8 @@ import {
   Expense,
   ExpenseCategory,
   ExpenseType,
+  FuelPump,
+  FuelPumpLedger,
   Harvester,
   HarvesterStatus,
   HarvesterType,
@@ -133,6 +135,8 @@ export interface ExpenseInput {
   type: ExpenseType;
   /** A custom category id, or null for a built-in type. */
   categoryId?: string | null;
+  /** The fuel pump a DIESEL expense was bought from, or null. */
+  pumpId?: string | null;
   amount: number;
   date?: string;
   notes?: string;
@@ -183,6 +187,23 @@ export const labourApi = {
     api.patch<Labour>(`/labour/${id}`, body).then((r) => r.data),
   remove: (id: string) => api.delete(`/labour/${id}`).then(() => undefined),
   ledger: (id: string) => api.get<LabourLedger>(`/labour/${id}/ledger`).then((r) => r.data),
+};
+
+// ---------- Fuel pumps (diesel vendors) ----------
+export interface FuelPumpInput {
+  name: string;
+  phone?: string;
+  harvesterIds: string[];
+  isActive?: boolean;
+}
+export const fuelPumpsApi = {
+  list: (harvesterId?: string) =>
+    api.get<FuelPump[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
+  create: (body: FuelPumpInput) => api.post<FuelPump>('/fuel-pumps', body).then((r) => r.data),
+  update: (id: string, body: Partial<FuelPumpInput>) =>
+    api.patch<FuelPump>(`/fuel-pumps/${id}`, body).then((r) => r.data),
+  remove: (id: string) => api.delete(`/fuel-pumps/${id}`).then(() => undefined),
+  ledger: (id: string) => api.get<FuelPumpLedger>(`/fuel-pumps/${id}/ledger`).then((r) => r.data),
 };
 
 // ---------- Agents (commission) ----------

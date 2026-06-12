@@ -15,6 +15,9 @@ import { ExpenseCategoriesScreen } from '@/screens/expenses/ExpenseCategoriesScr
 import { ExpenseCategoryFormScreen } from '@/screens/expenses/ExpenseCategoryFormScreen';
 import { ExpenseFormScreen } from '@/screens/expenses/ExpenseFormScreen';
 import { ExpensesScreen } from '@/screens/expenses/ExpensesScreen';
+import { FuelPumpFormScreen } from '@/screens/fuel-pumps/FuelPumpFormScreen';
+import { FuelPumpLedgerScreen } from '@/screens/fuel-pumps/FuelPumpLedgerScreen';
+import { FuelPumpsScreen } from '@/screens/fuel-pumps/FuelPumpsScreen';
 import { HarvesterFormScreen } from '@/screens/harvesters/HarvesterFormScreen';
 import { HarvestersScreen } from '@/screens/harvesters/HarvestersScreen';
 import { HarvestFormScreen } from '@/screens/harvests/HarvestFormScreen';
@@ -137,6 +140,13 @@ export function MoreStack() {
         name="ExpenseCategoryForm"
         component={ExpenseCategoryFormScreen}
         options={{ title: t('nav.addExpenseCategory') }}
+      />
+      <More.Screen name="FuelPumps" component={FuelPumpsScreen} options={{ title: t('nav.fuelPumps') }} />
+      <More.Screen name="FuelPumpForm" component={FuelPumpFormScreen} options={{ title: t('nav.addFuelPump') }} />
+      <More.Screen
+        name="FuelPumpLedger"
+        component={FuelPumpLedgerScreen}
+        options={({ route }) => ({ title: route.params.name })}
       />
       <More.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />
       <More.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />

@@ -16,6 +16,7 @@ const ITEMS: MenuItem[] = [
   { labelKey: 'more.harvesters', icon: '🚜', route: 'Harvesters' },
   { labelKey: 'more.labour', icon: '👷', route: 'Labour' },
   { labelKey: 'more.agents', icon: '🤝', route: 'Agents' },
+  { labelKey: 'more.fuelPumps', icon: '⛽', route: 'FuelPumps' },
   { labelKey: 'more.staffAdmins', icon: '🧑‍💼', route: 'Admins', superAdminOnly: true },
   { labelKey: 'more.expenseCategories', icon: '🏷️', route: 'ExpenseCategories', superAdminOnly: true },
   { labelKey: 'more.reports', icon: '📊', route: 'Reports' },

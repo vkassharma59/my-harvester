@@ -30,6 +30,12 @@ export class CreateExpenseDto {
   @IsMongoId()
   categoryId?: string | null;
 
+  /** The fuel pump a DIESEL expense was bought from, or null. */
+  @IsOptional()
+  @ValidateIf((o) => o.pumpId !== null && o.pumpId !== undefined)
+  @IsMongoId()
+  pumpId?: string | null;
+
   /** Required in practice for LABOUR expenses (links the payment to a labourer). */
   @IsOptional()
   @IsMongoId()

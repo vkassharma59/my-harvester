@@ -11,6 +11,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ExpenseCategoriesModule } from './modules/expense-categories/expense-categories.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
+import { FuelPumpsModule } from './modules/fuel-pumps/fuel-pumps.module';
 import { HarvestersModule } from './modules/harvesters/harvesters.module';
 import { LabourModule } from './modules/labour/labour.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
@@ -34,6 +35,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     SettingsModule,
     ExpensesModule,
     ExpenseCategoriesModule,
+    FuelPumpsModule,
     LabourModule,
     AgentsModule,
     PlotsModule,

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { expenseCategoriesApi, expensesApi } from '@/api/endpoints';
+import { expenseCategoriesApi, expensesApi, fuelPumpsApi } from '@/api/endpoints';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
@@ -37,6 +37,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
   );
   // A single selection: a built-in ExpenseType value OR a custom category id.
   const [category, setCategory] = useState<string>(ExpenseType.DIESEL);
+  const [pumpId, setPumpId] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
@@ -45,6 +46,14 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
   const type = isCustom ? ExpenseType.OTHER : (category as ExpenseType);
   // Only the built-in "Other" requires a remark; custom categories don't.
   const isBuiltinOther = category === ExpenseType.OTHER;
+  const isDiesel = category === ExpenseType.DIESEL;
+
+  // Fuel pumps serving the chosen harvester (active only), for diesel expenses.
+  const { data: pumps = [] } = useQuery({
+    queryKey: ['fuel-pumps', harvesterId || 'all'],
+    queryFn: () => fuelPumpsApi.list(harvesterId || undefined),
+  });
+  const pumpOptions = pumps.filter((p) => p.isActive).map((p) => ({ label: p.name, value: p.id }));
 
   // Custom categories defined by the super admin (active ones only). "Other"
   // is always listed last, after any custom types.
@@ -73,6 +82,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     if (existing) {
       setHarvesterId(existing.harvesterId);
       setCategory(existing.categoryId ?? existing.type);
+      setPumpId(existing.pumpId ?? '');
       setAmount(String(existing.amount));
       setDate(new Date(existing.date));
       setNotes(existing.notes ?? '');
@@ -90,6 +100,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
         harvesterId,
         type,
         categoryId: isCustom ? category : null,
+        pumpId: isDiesel ? pumpId || null : null,
         amount: Number(amount),
         date: date.toISOString(),
         notes: notes.trim() || undefined,
@@ -130,6 +141,16 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
         options={typeOptions}
         onChange={setCategory}
       />
+
+      {isDiesel ? (
+        <Select
+          label={t('expenseForm.pumpLabel')}
+          value={pumpId}
+          options={pumpOptions}
+          onChange={setPumpId}
+          placeholder={pumpOptions.length ? t('expenseForm.pumpPlaceholder') : t('expenseForm.noPumps')}
+        />
+      ) : null}
 
       <AmountField label={t('expenseForm.amountLabel')} value={amount} onChangeText={setAmount} placeholder="0" />
       <DateField label={t('expenseForm.dateLabel')} value={date} onChange={setDate} />

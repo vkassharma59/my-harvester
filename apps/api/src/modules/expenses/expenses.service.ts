@@ -28,12 +28,15 @@ export class ExpensesService {
     const labourId =
       dto.type === ExpenseType.LABOUR && dto.labourId ? new Types.ObjectId(dto.labourId) : null;
     const categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : null;
+    const pumpId =
+      dto.type === ExpenseType.DIESEL && dto.pumpId ? new Types.ObjectId(dto.pumpId) : null;
 
     const expense = await this.model.create({
       ...dto,
       tenantId,
       harvesterId: new Types.ObjectId(dto.harvesterId),
       categoryId,
+      pumpId,
       labourId,
       date: dto.date ?? new Date(),
       createdBy: new Types.ObjectId(user.id),
@@ -75,6 +78,11 @@ export class ExpensesService {
       const linkId = dto.labourId ?? existing.labourId?.toString();
       update.labourId =
         resultingType === ExpenseType.LABOUR && linkId ? new Types.ObjectId(linkId) : null;
+    }
+    if (dto.type !== undefined || dto.pumpId !== undefined) {
+      const pid = dto.pumpId ?? existing.pumpId?.toString();
+      update.pumpId =
+        resultingType === ExpenseType.DIESEL && pid ? new Types.ObjectId(pid) : null;
     }
 
     const doc = await this.model

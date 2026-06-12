@@ -38,6 +38,8 @@ export const hi = {
     addLabour: 'कामगार जोड़ें',
     agents: 'एजेंट',
     addAgent: 'एजेंट जोड़ें',
+    fuelPumps: 'फ्यूल पंप',
+    addFuelPump: 'फ्यूल पंप',
     staffAdmins: 'स्टाफ़ एडमिन',
     addAdmin: 'एडमिन जोड़ें',
     expenseCategories: 'खर्च प्रकार',

@@ -38,6 +38,8 @@ export const pa = {
     addLabour: 'ਕਾਮਾ ਸ਼ਾਮਲ ਕਰੋ',
     agents: 'ਏਜੰਟ',
     addAgent: 'ਏਜੰਟ ਸ਼ਾਮਲ ਕਰੋ',
+    fuelPumps: 'ਫਿਊਲ ਪੰਪ',
+    addFuelPump: 'ਫਿਊਲ ਪੰਪ',
     staffAdmins: 'ਸਟਾਫ਼ ਐਡਮਿਨ',
     addAdmin: 'ਐਡਮਿਨ ਸ਼ਾਮਲ ਕਰੋ',
     expenseCategories: 'ਖਰਚ ਕਿਸਮਾਂ',

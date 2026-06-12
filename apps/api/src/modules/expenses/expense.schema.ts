@@ -20,6 +20,10 @@ export class Expense extends AuditedDocument {
   @Prop({ type: Types.ObjectId, ref: 'ExpenseCategory', default: null, index: true })
   categoryId?: Types.ObjectId | null;
 
+  /** Set only for DIESEL expenses: the fuel pump the diesel was bought from. */
+  @Prop({ type: Types.ObjectId, ref: 'FuelPump', default: null, index: true })
+  pumpId?: Types.ObjectId | null;
+
   /** Set only for LABOUR expenses: the labourer this payment is for. */
   @Prop({ type: Types.ObjectId, ref: 'Labour', default: null, index: true })
   labourId?: Types.ObjectId | null;
