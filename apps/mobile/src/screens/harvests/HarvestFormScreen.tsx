@@ -213,6 +213,8 @@ export function HarvestFormScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plots'] });
+      qc.invalidateQueries({ queryKey: ['plot', plotId] });
+      qc.invalidateQueries({ queryKey: ['customers'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['customer-ledger'] });
       navigation.goBack();
