@@ -85,12 +85,14 @@ export function CustomerFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <Button
-        title={t('customerForm.importFromContacts')}
-        variant="secondary"
-        onPress={importFromContacts}
-        style={{ marginBottom: spacing.lg }}
-      />
+      {!editing ? (
+        <Button
+          title={t('customerForm.importFromContacts')}
+          variant="secondary"
+          onPress={importFromContacts}
+          style={{ marginBottom: spacing.lg }}
+        />
+      ) : null}
       <TextField
         label={t('customerForm.nameLabel')}
         value={form.name}
