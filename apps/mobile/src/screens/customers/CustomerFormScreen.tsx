@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Contacts from 'expo-contacts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { apiErrorMessage } from '@/api/client';
@@ -14,10 +14,34 @@ import { spacing } from '@/theme';
 
 type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomerForm'>;
 
-export function CustomerFormScreen({ navigation }: Props) {
+export function CustomerFormScreen({ route, navigation }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const customerId = route.params?.customerId;
+  const editing = !!customerId;
   const [form, setForm] = useState<CustomerInput>({ name: '', phone: '', village: '', address: '' });
+
+  const { data: existing } = useQuery({
+    queryKey: ['customer', customerId],
+    queryFn: () => customersApi.get(customerId as string),
+    enabled: editing,
+  });
+
+  useEffect(() => {
+    if (editing) navigation.setOptions({ title: t('customerForm.editTitle') });
+  }, [editing, navigation, t]);
+
+  useEffect(() => {
+    if (existing) {
+      setForm({
+        name: existing.name,
+        phone: existing.phone,
+        village: existing.village ?? '',
+        address: existing.address ?? '',
+        deviceContactId: existing.deviceContactId,
+      });
+    }
+  }, [existing]);
 
   const importFromContacts = async () => {
     try {
@@ -42,9 +66,10 @@ export function CustomerFormScreen({ navigation }: Props) {
   };
 
   const save = useMutation({
-    mutationFn: () => customersApi.create(form),
+    mutationFn: () => (editing ? customersApi.update(customerId as string, form) : customersApi.create(form)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
+      if (editing) qc.invalidateQueries({ queryKey: ['customer-ledger', customerId] });
       navigation.goBack();
     },
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
@@ -89,7 +114,7 @@ export function CustomerFormScreen({ navigation }: Props) {
         multiline
       />
       <Button
-        title={t('customerForm.addCustomer')}
+        title={editing ? t('customerForm.saveChanges') : t('customerForm.addCustomer')}
         onPress={onSave}
         loading={save.isPending}
         style={{ marginTop: spacing.sm }}

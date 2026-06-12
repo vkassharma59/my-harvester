@@ -40,6 +40,21 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const areaUnit = settings?.defaultAreaUnit;
 
+  // Edit-customer button in the header.
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => navigation.navigate('CustomerForm', { customerId })}
+          hitSlop={10}
+          style={{ paddingHorizontal: spacing.xs }}
+        >
+          <Ionicons name="create-outline" size={22} color={colors.white} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, customerId]);
+
   // Editable payment-reminder draft, prefilled from a template.
   const [reminder, setReminder] = useState('');
   useEffect(() => {
