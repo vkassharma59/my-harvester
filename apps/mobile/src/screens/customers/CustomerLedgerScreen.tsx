@@ -40,21 +40,6 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const areaUnit = settings?.defaultAreaUnit;
 
-  // Edit-customer button in the header.
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={() => navigation.navigate('CustomerForm', { customerId })}
-          hitSlop={10}
-          style={{ paddingHorizontal: spacing.xs }}
-        >
-          <Ionicons name="create-outline" size={22} color={colors.white} />
-        </Pressable>
-      ),
-    });
-  }, [navigation, customerId]);
-
   // Editable payment-reminder draft, prefilled from a template.
   const [reminder, setReminder] = useState('');
   useEffect(() => {
@@ -162,6 +147,9 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         <Text style={styles.sub}>{data.customer.phone}</Text>
         {data.customer.village ? <Text style={styles.sub}>{data.customer.village}</Text> : null}
         {data.customer.address ? <Text style={styles.sub}>{data.customer.address}</Text> : null}
+        <Pressable onPress={() => navigation.navigate('CustomerForm', { customerId })} hitSlop={8}>
+          <Text style={styles.editLink}>{t('customerLedger.editCustomer')}</Text>
+        </Pressable>
       </Card>
 
       <View style={styles.grid}>
@@ -264,6 +252,12 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text, paddingRight: 76 },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+  editLink: {
+    fontSize: font.size.sm,
+    fontWeight: font.weight.semibold,
+    color: colors.primary,
+    marginTop: spacing.sm,
+  },
   cardActions: {
     position: 'absolute',
     top: spacing.lg,
