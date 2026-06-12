@@ -1,8 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { agentsApi, paymentsApi } from '@/api/endpoints';
@@ -95,11 +96,21 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
+  const phone = data.agent.phone;
+  const call = () => phone && void Linking.openURL(`tel:${phone}`).catch(() => {});
+
   return (
     <Screen refreshing={isRefetching} onRefresh={refetch}>
       <Card>
+        {phone ? (
+          <View style={styles.cardActions}>
+            <Pressable onPress={call} hitSlop={10}>
+              <Ionicons name="call" size={24} color={colors.primary} />
+            </Pressable>
+          </View>
+        ) : null}
         <Text style={styles.name}>{data.agent.name}</Text>
-        {data.agent.phone ? <Text style={styles.sub}>{data.agent.phone}</Text> : null}
+        {phone ? <Text style={styles.sub}>{phone}</Text> : null}
         <Text style={styles.sub}>
           {t('agents.commission')}: {formatCurrency(data.agent.commissionRate)} {t('agents.perUnit')}
         </Text>
@@ -183,6 +194,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
+  cardActions: { position: 'absolute', top: spacing.lg, right: spacing.lg, flexDirection: 'row', gap: spacing.lg, zIndex: 1 },
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
   editLink: {

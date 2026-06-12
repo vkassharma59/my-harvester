@@ -3,7 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LabourType, PartyType, WageType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi, paymentsApi } from '@/api/endpoints';
@@ -98,6 +98,7 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
 
   const w = data.labour;
   const isFixed = w.wageType === WageType.FIXED;
+  const call = () => void Linking.openURL(`tel:${w.mobile}`).catch(() => {});
   const typeLabel =
     w.type === LabourType.OTHER && w.customType ? w.customType : tEnum('labourType', w.type);
   const wageLine =
@@ -110,14 +111,19 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
       <Card>
         <View style={styles.headerRow}>
           <Text style={styles.name}>{w.name}</Text>
-          {!isFixed ? (
-            <Pressable
-              onPress={() => navigation.navigate('Attendance', { labourId, name: w.name })}
-              hitSlop={8}
-            >
-              <Ionicons name="time-outline" size={26} color={colors.primary} />
+          <View style={styles.headerActions}>
+            <Pressable onPress={call} hitSlop={10}>
+              <Ionicons name="call" size={24} color={colors.primary} />
             </Pressable>
-          ) : null}
+            {!isFixed ? (
+              <Pressable
+                onPress={() => navigation.navigate('Attendance', { labourId, name: w.name })}
+                hitSlop={10}
+              >
+                <Ionicons name="time-outline" size={26} color={colors.primary} />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
         <Text style={styles.sub}>
           {typeLabel} · {w.mobile}
@@ -193,6 +199,7 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
   editLink: {

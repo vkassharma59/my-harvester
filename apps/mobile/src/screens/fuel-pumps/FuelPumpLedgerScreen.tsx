@@ -1,8 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { fuelPumpsApi, paymentsApi } from '@/api/endpoints';
@@ -95,10 +96,18 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
   if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   const p = data.pump;
+  const call = () => p.phone && void Linking.openURL(`tel:${p.phone}`).catch(() => {});
 
   return (
     <Screen refreshing={isRefetching} onRefresh={refetch}>
       <Card>
+        {p.phone ? (
+          <View style={styles.cardActions}>
+            <Pressable onPress={call} hitSlop={10}>
+              <Ionicons name="call" size={24} color={colors.primary} />
+            </Pressable>
+          </View>
+        ) : null}
         <Text style={styles.name}>{p.name}</Text>
         {p.phone ? <Text style={styles.sub}>{p.phone}</Text> : null}
         <Text style={styles.sub}>{t('fuelPumpLedger.harvestersServed', { count: p.harvesterIds.length })}</Text>
@@ -162,6 +171,7 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
+  cardActions: { position: 'absolute', top: spacing.lg, right: spacing.lg, flexDirection: 'row', gap: spacing.lg, zIndex: 1 },
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
   editLink: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.primary, marginTop: spacing.sm },
