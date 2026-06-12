@@ -69,9 +69,28 @@ export class CustomersService {
     // Staff see customers who have a job on their harvester(s) OR that they
     // added themselves (so a newly added customer is visible/selectable).
     if (user.role !== Role.SUPER_ADMIN) {
+      // Customers linked to the staff's jobs: plot owners AND Bhusa buyers.
       const rows = await this.plots.aggregate<{ _id: Types.ObjectId }>([
         { $match: { tenantId: tenant, ...hFilter } },
-        { $group: { _id: '$customerId' } },
+        {
+          $project: {
+            ids: {
+              $concatArrays: [
+                ['$customerId'],
+                { $cond: [{ $ifNull: ['$bhusaBuyerId', false] }, ['$bhusaBuyerId'], []] },
+                {
+                  $map: {
+                    input: { $ifNull: ['$bhusaBuyers', []] },
+                    as: 'b',
+                    in: '$$b.customerId',
+                  },
+                },
+              ],
+            },
+          },
+        },
+        { $unwind: '$ids' },
+        { $group: { _id: '$ids' } },
       ]);
       and.push({
         $or: [
