@@ -107,8 +107,28 @@ export class CustomersService {
         { $group: { _id: '$customerId', bill: { $sum: '$harvestingAmount' } } },
       ]),
       this.plots.aggregate<{ _id: Types.ObjectId; bill: number }>([
-        { $match: { tenantId: tenant, ...hFilter, bhusaBuyerId: { $in: ids } } },
-        { $group: { _id: '$bhusaBuyerId', bill: { $sum: '$bhusaAmount' } } },
+        { $match: { tenantId: tenant, ...hFilter } },
+        {
+          // Effective buyers: the array if present, else the legacy single field.
+          $project: {
+            buyers: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$bhusaBuyers', []] } }, 0] },
+                '$bhusaBuyers',
+                {
+                  $cond: [
+                    { $ifNull: ['$bhusaBuyerId', false] },
+                    [{ customerId: '$bhusaBuyerId', amount: { $ifNull: ['$bhusaAmount', 0] } }],
+                    [],
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        { $unwind: '$buyers' },
+        { $match: { 'buyers.customerId': { $in: ids } } },
+        { $group: { _id: '$buyers.customerId', bill: { $sum: '$buyers.amount' } } },
       ]),
       this.payments.aggregate<{ _id: Types.ObjectId; paid: number }>([
         {

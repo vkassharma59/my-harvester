@@ -49,6 +49,13 @@ export class Plot extends AuditedDocument {
   @Prop({ min: 0, default: 0 })
   bhusaAmount?: number;
 
+  // One or more Bhusa buyers, each owing their own amount (Type 2).
+  @Prop({
+    type: [{ customerId: { type: Types.ObjectId, ref: 'Customer' }, amount: { type: Number, min: 0 } }],
+    default: [],
+  })
+  bhusaBuyers?: { customerId: Types.ObjectId; amount: number }[];
+
   @Prop({ required: true, min: 0 })
   totalAmount!: number;
 

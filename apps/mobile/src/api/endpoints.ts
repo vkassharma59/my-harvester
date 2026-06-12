@@ -4,6 +4,7 @@ import {
   AgentLedger,
   AppSettings,
   AreaUnit,
+  BhusaBuyer,
   Customer,
   CustomerLedger,
   DashboardSummary,
@@ -194,6 +195,8 @@ export interface PlotInput {
   ratePerBigha?: number;
   bhusaBuyerId?: string;
   bhusaAmount?: number;
+  /** Multiple Bhusa buyers, each with their own amount (Type 2). */
+  bhusaBuyers?: BhusaBuyer[];
   /** Commission agent for this job; null clears it. */
   agentId?: string | null;
 }

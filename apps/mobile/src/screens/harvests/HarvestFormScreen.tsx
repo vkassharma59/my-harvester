@@ -2,7 +2,18 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { AreaUnit, HarvesterStatus, HarvesterType, HarvestType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { agentsApi, customersApi, harvestersApi, plotsApi, settingsApi } from '@/api/endpoints';
@@ -55,8 +66,8 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const [harvestDate, setHarvestDate] = useState(new Date());
   const [harvestType, setHarvestType] = useState<HarvestType>(HarvestType.PER_BIGHA_WITH_BHUSA);
   const [ratePerBigha, setRatePerBigha] = useState('');
-  const [bhusaBuyerId, setBhusaBuyerId] = useState('');
-  const [bhusaAmount, setBhusaAmount] = useState('');
+  const [bhusaBuyers, setBhusaBuyers] = useState<{ customerId: string; amount: string }[]>([]);
+  const [bhusaOpen, setBhusaOpen] = useState(false);
   const [remarks, setRemarks] = useState('');
   const [rateTouched, setRateTouched] = useState(false);
   const [agentEnabled, setAgentEnabled] = useState(false);
@@ -133,8 +144,13 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       setHarvestType(existing.harvestType);
       setRatePerBigha(String(existing.ratePerBigha));
       setRateTouched(true);
-      setBhusaBuyerId(existing.bhusaBuyerId ?? '');
-      setBhusaAmount(existing.bhusaAmount != null ? String(existing.bhusaAmount) : '');
+      setBhusaBuyers(
+        existing.bhusaBuyers?.length
+          ? existing.bhusaBuyers.map((b) => ({ customerId: b.customerId, amount: String(b.amount) }))
+          : existing.bhusaBuyerId
+            ? [{ customerId: existing.bhusaBuyerId, amount: String(existing.bhusaAmount ?? 0) }]
+            : [],
+      );
       setRemarks(existing.remarks ?? '');
       setAgentEnabled(!!existing.agentId);
       setAgentId(existing.agentId ?? '');
@@ -153,13 +169,21 @@ export function HarvestFormScreen({ route, navigation }: Props) {
     if (agentId && agents.length && !agents.some((a) => a.id === agentId)) setAgentId('');
   }, [agents, agentId]);
 
+  const bhusaTotal = showBhusa
+    ? bhusaBuyers.reduce((acc, b) => acc + (Number(b.amount) || 0), 0)
+    : 0;
+
   const preview = useMemo(() => {
     const a = Number(area) || 0;
     const r = Number(ratePerBigha) || 0;
     const harvesting = Math.round(a * r * 100) / 100;
-    const bhusa = showBhusa ? Number(bhusaAmount) || 0 : 0;
-    return { harvesting, bhusa, total: harvesting + bhusa };
-  }, [area, ratePerBigha, bhusaAmount, showBhusa]);
+    return { harvesting, bhusa: bhusaTotal, total: harvesting + bhusaTotal };
+  }, [area, ratePerBigha, bhusaTotal]);
+
+  const addBhusaBuyer = () => setBhusaBuyers((rows) => [...rows, { customerId: '', amount: '' }]);
+  const removeBhusaBuyer = (i: number) => setBhusaBuyers((rows) => rows.filter((_, idx) => idx !== i));
+  const updateBhusaBuyer = (i: number, key: 'customerId' | 'amount', value: string) =>
+    setBhusaBuyers((rows) => rows.map((r, idx) => (idx === i ? { ...r, [key]: value } : r)));
 
   const commission =
     agentEnabled && selectedAgent
@@ -178,8 +202,11 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         harvestType: effectiveHarvestType,
         ratePerBigha: Number(ratePerBigha),
         remarks: remarks.trim() || undefined,
-        bhusaBuyerId: showBhusa && bhusaBuyerId ? bhusaBuyerId : undefined,
-        bhusaAmount: showBhusa && bhusaAmount ? Number(bhusaAmount) : undefined,
+        bhusaBuyers: showBhusa
+          ? bhusaBuyers
+              .filter((b) => b.customerId && Number(b.amount) > 0)
+              .map((b) => ({ customerId: b.customerId, amount: Number(b.amount) }))
+          : [],
         agentId: agentEnabled && agentId ? agentId : null,
       };
       return editing ? plotsApi.update(plotId as string, body) : plotsApi.create(body);
@@ -254,17 +281,13 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       ) : null}
 
       {showBhusa ? (
-        <>
-          <Select
-            label={t('harvestForm.bhusaBuyerLabel')}
-            value={bhusaBuyerId}
-            options={customerOptions}
-            onChange={setBhusaBuyerId}
-            placeholder={t('harvestForm.bhusaBuyerPlaceholder')}
-            searchable
-          />
-          <AmountField label={t('harvestForm.bhusaAmountLabel')} value={bhusaAmount} onChangeText={setBhusaAmount} placeholder="0" />
-        </>
+        <Pressable onPress={() => setBhusaOpen(true)} style={styles.bhusaLink} hitSlop={6}>
+          <Text style={styles.bhusaLinkText}>
+            {bhusaBuyers.length
+              ? t('harvestForm.bhusaSummary', { count: bhusaBuyers.length, amount: formatCurrency(bhusaTotal) })
+              : t('harvestForm.addBhusaBuyers')}
+          </Text>
+        </Pressable>
       ) : null}
 
       <TextField
@@ -319,6 +342,56 @@ export function HarvestFormScreen({ route, navigation }: Props) {
         loading={save.isPending}
         style={{ marginTop: spacing.md }}
       />
+
+      <Modal visible={bhusaOpen} transparent animationType="slide" onRequestClose={() => setBhusaOpen(false)}>
+        <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Pressable style={styles.backdrop} onPress={() => setBhusaOpen(false)} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>{t('harvestForm.bhusaBuyersTitle')}</Text>
+              <Pressable onPress={() => setBhusaOpen(false)} hitSlop={8}>
+                <Text style={styles.done}>{t('harvestForm.done')}</Text>
+              </Pressable>
+            </View>
+            <ScrollView style={styles.bhusaScroll} keyboardShouldPersistTaps="handled">
+              {bhusaBuyers.length === 0 ? (
+                <Text style={styles.bhusaEmpty}>{t('harvestForm.bhusaEmpty')}</Text>
+              ) : (
+                bhusaBuyers.map((b, i) => (
+                  <View key={i} style={styles.bhusaCard}>
+                    <View style={styles.bhusaCardHeader}>
+                      <Text style={styles.bhusaCardTitle}>{t('harvestForm.bhusaBuyerN', { n: i + 1 })}</Text>
+                      <Pressable onPress={() => removeBhusaBuyer(i)} hitSlop={8}>
+                        <Text style={styles.bhusaRemove}>✕</Text>
+                      </Pressable>
+                    </View>
+                    <Select
+                      label={t('harvestForm.bhusaBuyerLabel')}
+                      value={b.customerId}
+                      options={customerOptions}
+                      onChange={(v) => updateBhusaBuyer(i, 'customerId', v)}
+                      placeholder={t('harvestForm.bhusaBuyerPlaceholder')}
+                      searchable
+                    />
+                    <AmountField
+                      label={t('harvestForm.bhusaAmountLabel')}
+                      value={b.amount}
+                      onChangeText={(v) => updateBhusaBuyer(i, 'amount', v)}
+                      placeholder="0"
+                    />
+                  </View>
+                ))
+              )}
+              <Button
+                title={t('harvestForm.addMoreBhusa')}
+                variant="secondary"
+                onPress={addBhusaBuyer}
+                style={{ marginTop: spacing.sm }}
+              />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </Screen>
   );
 }
@@ -357,4 +430,42 @@ const styles = StyleSheet.create({
   rowValue: { fontSize: font.size.sm, color: colors.text },
   bold: { fontWeight: font.weight.bold, color: colors.primary, fontSize: font.size.md },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xs },
+
+  bhusaLink: { paddingVertical: spacing.xs, marginBottom: spacing.md },
+  bhusaLinkText: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.primary },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    paddingBottom: spacing.xl,
+    maxHeight: '80%',
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+  },
+  sheetTitle: { fontSize: font.size.md, fontWeight: font.weight.bold, color: colors.text },
+  done: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.primary },
+  bhusaScroll: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  bhusaEmpty: { fontSize: font.size.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.md },
+  bhusaCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  bhusaCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
+  bhusaCardTitle: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.text },
+  bhusaRemove: { fontSize: font.size.md, color: colors.danger, fontWeight: font.weight.bold, paddingHorizontal: spacing.xs },
 });

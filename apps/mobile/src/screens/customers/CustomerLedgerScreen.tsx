@@ -176,14 +176,20 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
 
       <Text style={styles.sectionTitle}>{t('customerLedger.harvestingRecords', { count: data.plots.length })}</Text>
       {data.plots.map((p) => {
-        // This customer is the Bhusa buyer (not the plot owner) on this job.
-        const isBhusa = p.customerId !== customerId && p.bhusaBuyerId === customerId;
+        // This customer is a Bhusa buyer (not the plot owner) on this job.
+        const isBhusaBuyer = p.bhusaBuyers?.length
+          ? p.bhusaBuyers.some((b) => b.customerId === customerId)
+          : p.bhusaBuyerId === customerId;
+        const isBhusa = p.customerId !== customerId && isBhusaBuyer;
+        const myBhusa = p.bhusaBuyers?.length
+          ? p.bhusaBuyers.filter((b) => b.customerId === customerId).reduce((a, b) => a + b.amount, 0)
+          : p.bhusaAmount ?? 0;
         return (
           <Card key={p.id} onPress={isBhusa ? undefined : () => editJob(p.id)}>
             <View style={styles.rowBetween}>
               <Text style={styles.plotName}>{p.plotName}</Text>
               <Text style={styles.plotAmount}>
-                {formatCurrency(isBhusa ? p.bhusaAmount ?? 0 : p.harvestingAmount)}
+                {formatCurrency(isBhusa ? myBhusa : p.harvestingAmount)}
               </Text>
             </View>
             {isBhusa ? (

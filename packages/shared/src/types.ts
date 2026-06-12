@@ -92,6 +92,12 @@ export interface Agent extends AuditFields {
   isActive: boolean;
 }
 
+/** A Bhusa buyer on a job and the amount they owe for the Bhusa. */
+export interface BhusaBuyer {
+  customerId: string;
+  amount: number;
+}
+
 /** A plot of land for a harvesting job. Carries the commercial terms. */
 export interface Plot extends AuditFields {
   customerId: string;
@@ -109,8 +115,11 @@ export interface Plot extends AuditFields {
   ratePerBigha: number; // may override the configured default
   harvestingAmount: number; // computed = area * ratePerBigha
 
-  // Type 2 only: Bhusa sold to a separate buyer
+  // Type 2 only: Bhusa sold to one or more buyers, each owing their own amount.
+  bhusaBuyers?: BhusaBuyer[];
+  /** Legacy single buyer (older jobs); superseded by bhusaBuyers. */
   bhusaBuyerId?: string;
+  /** Total Bhusa amount (sum of bhusaBuyers' amounts). */
   bhusaAmount?: number;
 
   /** harvestingAmount + (bhusaAmount ?? 0) */

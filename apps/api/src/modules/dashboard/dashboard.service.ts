@@ -130,7 +130,7 @@ export class DashboardService {
       .find({
         tenantId: tenant,
         ...harvesterFilter(user),
-        $or: [{ customerId: cId }, { bhusaBuyerId: cId }],
+        $or: [{ customerId: cId }, { bhusaBuyerId: cId }, { 'bhusaBuyers.customerId': cId }],
       })
       .sort({ harvestDate: -1 })
       .exec();
@@ -144,9 +144,16 @@ export class DashboardService {
       .sort({ date: -1 })
       .exec();
 
-    // Owned jobs bill the harvesting amount; Bhusa-buyer jobs bill the Bhusa amount.
+    // The Bhusa amount this customer owes on a job (their share, or legacy single).
+    const bhusaOwed = (p: PlotDocument): number => {
+      if (p.bhusaBuyers?.length) {
+        return p.bhusaBuyers.filter((b) => b.customerId.equals(cId)).reduce((a, b) => a + b.amount, 0);
+      }
+      return p.bhusaBuyerId?.equals(cId) ? p.bhusaAmount ?? 0 : 0;
+    };
+    // Owned jobs bill the harvesting amount; Bhusa-buyer jobs bill the Bhusa share.
     const totalBillAmount = plots.reduce(
-      (acc, p) => acc + (p.customerId.equals(cId) ? p.harvestingAmount : p.bhusaAmount ?? 0),
+      (acc, p) => acc + (p.customerId.equals(cId) ? p.harvestingAmount : bhusaOwed(p)),
       0,
     );
     const totalHarvestedArea = plots.reduce(
