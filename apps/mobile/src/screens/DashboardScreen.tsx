@@ -83,7 +83,7 @@ export function DashboardScreen() {
               <Text style={styles.lineValue}>{money(data.financial.agentCommission)}</Text>
             </View>
           ) : null}
-          {(Object.keys(data.expenses) as ExpenseType[]).map((type) => (
+          {[ExpenseType.DIESEL, ExpenseType.SPARE_PARTS].map((type) => (
             <View key={type} style={styles.lineRow}>
               <Text style={styles.lineLabel}>{tEnum('expenseType', type)}</Text>
               <Text style={styles.lineValue}>{money(data.expenses[type])}</Text>
@@ -95,13 +95,23 @@ export function DashboardScreen() {
               <Text style={styles.lineValue}>{money(c.amount)}</Text>
             </View>
           ))}
+          {/* "Other" always last. */}
+          <View style={styles.lineRow}>
+            <Text style={styles.lineLabel}>{tEnum('expenseType', ExpenseType.OTHER)}</Text>
+            <Text style={styles.lineValue}>{money(data.expenses[ExpenseType.OTHER])}</Text>
+          </View>
         </Card>
       </Section>
 
       <Section title={t('dashboard.labourSummary')}>
         <View style={styles.grid}>
           <StatTile label={t('dashboard.totalLabourCost')} value={money(data.labour.totalCost)} tone="negative" />
-          <StatTile label={t('dashboard.pendingPayments')} value={String(data.labour.pendingPayments)} tone="accent" />
+          <StatTile label={t('dashboard.workerPaid')} value={money(data.labour.amountPaid)} tone="positive" />
+          <StatTile
+            label={t('dashboard.workerRemaining')}
+            value={money(data.labour.remaining)}
+            tone={data.labour.remaining > 0 ? 'accent' : 'positive'}
+          />
         </View>
       </Section>
       </Screen>

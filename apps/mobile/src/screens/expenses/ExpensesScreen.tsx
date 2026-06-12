@@ -19,12 +19,8 @@ import { formatCurrency, formatDate } from '@/utils/format';
 type Props = NativeStackScreenProps<ExpensesStackParamList, 'ExpensesList'>;
 
 const BUILTIN_VALUES = Object.values(ExpenseType) as string[];
-const BUILTIN_FILTERS = [
-  ExpenseType.DIESEL,
-  ExpenseType.LABOUR,
-  ExpenseType.SPARE_PARTS,
-  ExpenseType.OTHER,
-];
+// Diesel & Spare Parts first, custom types in the middle, "Other" always last.
+const LEADING_FILTERS = [ExpenseType.DIESEL, ExpenseType.SPARE_PARTS];
 
 export function ExpensesScreen({ navigation }: Props) {
   const { t } = useTranslation();
@@ -66,8 +62,9 @@ export function ExpensesScreen({ navigation }: Props) {
 
   const chipValues: string[] = [
     'ALL',
-    ...BUILTIN_FILTERS,
+    ...LEADING_FILTERS,
     ...categories.filter((c) => c.isActive).map((c) => c.id),
+    ExpenseType.OTHER,
   ];
   const chipLabel = (v: string) =>
     v === 'ALL' ? t('expenses.all') : BUILTIN_VALUES.includes(v) ? tEnum('expenseType', v) : catName(v);
@@ -80,7 +77,9 @@ export function ExpensesScreen({ navigation }: Props) {
     return e.categoryId === typeFilter;
   };
 
-  const visible = (data ?? []).filter(matches);
+  // Worker payments live in the worker ledger now, not in expenses.
+  const rows = (data ?? []).filter((e) => e.type !== ExpenseType.LABOUR);
+  const visible = rows.filter(matches);
   const total = visible.reduce((sum, e) => sum + e.amount, 0);
   const filterLabel = chipLabel(typeFilter);
 

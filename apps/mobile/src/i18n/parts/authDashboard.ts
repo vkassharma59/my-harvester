@@ -26,6 +26,8 @@ export const part = {
       labourSummary: 'Workers summary',
       totalLabourCost: 'Total Worker Cost',
       pendingPayments: 'Pending Payments',
+      workerPaid: 'Amount Paid',
+      workerRemaining: 'Remaining',
     },
   },
   hi: {
@@ -55,6 +57,8 @@ export const part = {
       labourSummary: 'कामगार सारांश',
       totalLabourCost: 'कुल कामगार लागत',
       pendingPayments: 'बकाया भुगतान',
+      workerPaid: 'भुगतान की राशि',
+      workerRemaining: 'शेष',
     },
   },
   pa: {
@@ -84,6 +88,8 @@ export const part = {
       labourSummary: 'ਕਾਮੇ ਸੰਖੇਪ',
       totalLabourCost: 'ਕੁੱਲ ਕਾਮੇ ਲਾਗਤ',
       pendingPayments: 'ਬਕਾਇਆ ਭੁਗਤਾਨ',
+      workerPaid: 'ਭੁਗਤਾਨ ਕੀਤੀ ਰਕਮ',
+      workerRemaining: 'ਬਾਕੀ',
     },
   },
 } as const;

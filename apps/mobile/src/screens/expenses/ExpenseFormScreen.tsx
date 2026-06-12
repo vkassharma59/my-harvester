@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { expenseCategoriesApi, expensesApi, labourApi } from '@/api/endpoints';
+import { expenseCategoriesApi, expensesApi } from '@/api/endpoints';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
@@ -37,36 +37,27 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
   );
   // A single selection: a built-in ExpenseType value OR a custom category id.
   const [category, setCategory] = useState<string>(ExpenseType.DIESEL);
-  const [labourId, setLabourId] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
 
   const isCustom = !BUILTIN_VALUES.includes(category);
   const type = isCustom ? ExpenseType.OTHER : (category as ExpenseType);
-  const isLabour = type === ExpenseType.LABOUR;
   // Only the built-in "Other" requires a remark; custom categories don't.
   const isBuiltinOther = category === ExpenseType.OTHER;
 
-  // Custom categories defined by the super admin (active ones only).
+  // Custom categories defined by the super admin (active ones only). "Other"
+  // is always listed last, after any custom types.
   const { data: categories = [] } = useQuery({
     queryKey: ['expense-categories'],
     queryFn: () => expenseCategoriesApi.list(),
   });
   const typeOptions = [
-    ...Object.values(ExpenseType).map((value) => ({ label: tEnum('expenseType', value), value })),
+    { label: tEnum('expenseType', ExpenseType.DIESEL), value: ExpenseType.DIESEL as string },
+    { label: tEnum('expenseType', ExpenseType.SPARE_PARTS), value: ExpenseType.SPARE_PARTS as string },
     ...categories.filter((c) => c.isActive).map((c) => ({ label: c.name, value: c.id })),
+    { label: tEnum('expenseType', ExpenseType.OTHER), value: ExpenseType.OTHER as string },
   ];
-
-  // Labour for the chosen harvester (so the list matches the expense's harvester).
-  const { data: labourList = [] } = useQuery({
-    queryKey: ['labour', harvesterId || 'all'],
-    queryFn: () => labourApi.list(harvesterId || undefined),
-  });
-  const labourOptions = labourList.map((l) => ({
-    label: `${l.name} · ${tEnum('labourType', l.type)}`,
-    value: l.id,
-  }));
 
   const { data: existing } = useQuery({
     queryKey: ['expense', expenseId],
@@ -82,7 +73,6 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     if (existing) {
       setHarvesterId(existing.harvesterId);
       setCategory(existing.categoryId ?? existing.type);
-      setLabourId(existing.labourId ?? '');
       setAmount(String(existing.amount));
       setDate(new Date(existing.date));
       setNotes(existing.notes ?? '');
@@ -94,27 +84,12 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     if (soleHarvesterId && !harvesterId) setHarvesterId(soleHarvesterId);
   }, [soleHarvesterId, harvesterId]);
 
-  // Clear the labourer link if the selection is changed away from Labour.
-  const onCategoryChange = (next: string) => {
-    setCategory(next);
-    if (next !== ExpenseType.LABOUR) setLabourId('');
-  };
-
-  // Picking a labourer pre-fills the amount with their agreed wage (if empty).
-  const onLabourChange = (id: string) => {
-    setLabourId(id);
-    const l = labourList.find((x) => x.id === id);
-    const agreed = l?.customAmount ?? l?.dailyWage;
-    if (agreed != null && !amount.trim()) setAmount(String(agreed));
-  };
-
   const save = useMutation({
     mutationFn: () => {
       const body = {
         harvesterId,
         type,
         categoryId: isCustom ? category : null,
-        labourId: isLabour ? labourId : undefined,
         amount: Number(amount),
         date: date.toISOString(),
         notes: notes.trim() || undefined,
@@ -123,7 +98,6 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] });
-      qc.invalidateQueries({ queryKey: ['labour'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       navigation.goBack();
     },
@@ -132,8 +106,6 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
 
   const onSave = () => {
     if (!harvesterId) return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.selectHarvester'));
-    if (isLabour && !labourId)
-      return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.selectLabourer'));
     const value = Number(amount);
     if (!value || value <= 0) return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.enterAmount'));
     if (isBuiltinOther && !notes.trim())
@@ -156,22 +128,8 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
         label={t('expenseForm.typeLabel')}
         value={category}
         options={typeOptions}
-        onChange={onCategoryChange}
+        onChange={setCategory}
       />
-
-      {isLabour ? (
-        <Select
-          label={t('expenseForm.labourerLabel')}
-          value={labourId}
-          options={labourOptions}
-          onChange={onLabourChange}
-          placeholder={
-            labourOptions.length
-              ? t('expenseForm.labourerPlaceholder')
-              : t('expenseForm.noLabour')
-          }
-        />
-      ) : null}
 
       <AmountField label={t('expenseForm.amountLabel')} value={amount} onChangeText={setAmount} placeholder="0" />
       <DateField label={t('expenseForm.dateLabel')} value={date} onChange={setDate} />

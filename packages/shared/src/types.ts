@@ -196,7 +196,8 @@ export interface DashboardSummary {
   customExpenses: { id: string; name: string; amount: number }[];
   labour: {
     totalCost: number;
-    pendingPayments: number;
+    amountPaid: number;
+    remaining: number;
   };
 }
 

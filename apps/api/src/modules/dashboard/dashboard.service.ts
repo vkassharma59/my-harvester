@@ -7,7 +7,7 @@ import {
   DashboardSummary,
   ExpenseType,
   PartyType,
-  PaymentStatus,
+  WageType,
 } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { harvesterFilter } from '../../common/scope';
@@ -53,7 +53,9 @@ export class DashboardService {
     };
 
     const totalEarnings = await sum(this.plots, hMatch, 'totalAmount');
-    const expenseTotal = await sum(this.expenses, hMatch, 'amount');
+    // Worker payments are tracked in the worker ledger, not as expenses.
+    const nonLabour = { type: { $ne: ExpenseType.LABOUR } };
+    const expenseTotal = await sum(this.expenses, { ...hMatch, ...nonLabour }, 'amount');
     // Agent commission is a real cost: include it among expenses / net profit.
     const agentCommission = await sum(this.plots, hMatch, 'commissionAmount');
     const totalExpenses = expenseTotal + agentCommission;
@@ -66,7 +68,7 @@ export class DashboardService {
 
     // Built-in types only (categoryId null also matches legacy docs with no field).
     const expenseRows = await this.expenses.aggregate<{ _id: ExpenseType; total: number }>([
-      { $match: { ...hMatch, categoryId: null } },
+      { $match: { ...hMatch, ...nonLabour, categoryId: null } },
       { $group: { _id: '$type', total: { $sum: '$amount' } } },
     ]);
     const expensesByType: Record<ExpenseType, number> = {
@@ -109,12 +111,23 @@ export class DashboardService {
       },
     ]);
 
-    const labourRows = await this.labour
-      .find(hMatch)
-      .select('dailyWage customAmount paymentStatus')
-      .exec();
-    const labourCost = labourRows.reduce((acc, l) => acc + (l.customAmount ?? l.dailyWage ?? 0), 0);
-    const labourPending = labourRows.filter((l) => l.paymentStatus !== PaymentStatus.PAID).length;
+    const labourRows = await this.labour.find(hMatch).select('dailyWage customAmount wageType').exec();
+    // Each worker's bill: a fixed amount, or daily rate × working days. Attendance
+    // isn't tracked yet, so daily workers contribute 0 to the cost for now.
+    const totalWorkerCost = labourRows.reduce(
+      (acc, l) => acc + (l.wageType === WageType.FIXED ? l.customAmount ?? 0 : 0),
+      0,
+    );
+    const workerIds = labourRows.map((l) => l._id);
+    const workerPaid = await sum(
+      this.payments,
+      {
+        tenantId: new Types.ObjectId(user.tenantId),
+        partyType: PartyType.LABOUR,
+        partyId: { $in: workerIds },
+      },
+      'amount',
+    );
 
     return {
       harvesterId: harvesterId && harvesterId !== ALL_HARVESTERS ? harvesterId : ALL_HARVESTERS,
@@ -134,8 +147,9 @@ export class DashboardService {
       expenses: expensesByType,
       customExpenses,
       labour: {
-        totalCost: labourCost,
-        pendingPayments: labourPending,
+        totalCost: totalWorkerCost,
+        amountPaid: workerPaid,
+        remaining: totalWorkerCost - workerPaid,
       },
     };
   }
