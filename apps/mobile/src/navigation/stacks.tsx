@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import { Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdminFormScreen } from '@/screens/admins/AdminFormScreen';
 import { AdminsScreen } from '@/screens/admins/AdminsScreen';
@@ -32,14 +33,17 @@ import { colors } from '@/theme';
 
 function useScreenOptions() {
   const insets = useSafeAreaInsets();
+  // On Android the safe-area inset is 0 on the first render after a reload (it
+  // re-measures only after a layout pass), so the header overlaps the status
+  // bar until you background/foreground the app. StatusBar.currentHeight is
+  // available synchronously, so use the larger of the two. (No-op on iOS.)
+  const androidStatusBar = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
   return {
     headerStyle: { backgroundColor: colors.primary },
     headerTintColor: colors.white,
     headerTitleStyle: { fontWeight: '600' as const },
     contentStyle: { backgroundColor: colors.background },
-    // Edge-to-edge (Expo SDK 54) can leave the Android header's status-bar inset
-    // at 0, so the title overlaps the clock — pin it to the safe-area top.
-    headerStatusBarHeight: insets.top,
+    headerStatusBarHeight: Math.max(insets.top, androidStatusBar),
   };
 }
 
