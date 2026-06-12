@@ -27,11 +27,13 @@ export class ExpensesService {
     const tenantId = new Types.ObjectId(user.tenantId);
     const labourId =
       dto.type === ExpenseType.LABOUR && dto.labourId ? new Types.ObjectId(dto.labourId) : null;
+    const categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : null;
 
     const expense = await this.model.create({
       ...dto,
       tenantId,
       harvesterId: new Types.ObjectId(dto.harvesterId),
+      categoryId,
       labourId,
       date: dto.date ?? new Date(),
       createdBy: new Types.ObjectId(user.id),
@@ -65,6 +67,8 @@ export class ExpensesService {
 
     const update: Record<string, unknown> = { ...dto, updatedBy: new Types.ObjectId(user.id) };
     if (dto.harvesterId) update.harvesterId = new Types.ObjectId(dto.harvesterId);
+    if (dto.categoryId !== undefined)
+      update.categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : null;
 
     const resultingType = dto.type ?? existing.type;
     if (dto.type !== undefined || dto.labourId !== undefined) {

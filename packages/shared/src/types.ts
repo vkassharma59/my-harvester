@@ -64,11 +64,19 @@ export interface Expense extends AuditFields {
   harvesterId: string;
   date: string; // ISO date
   type: ExpenseType;
+  /** Set for custom (super-admin-defined) categories; type is OTHER then. */
+  categoryId?: string | null;
   amount: number;
   notes?: string;
   attachmentUrl?: string;
   /** When type is LABOUR, the labourer this payment is for. */
   labourId?: string | null;
+}
+
+/** A super-admin-defined expense category, available to all admins in the tenant. */
+export interface ExpenseCategory extends AuditFields {
+  name: string;
+  isActive: boolean;
 }
 
 export interface Labour extends AuditFields {
@@ -184,6 +192,8 @@ export interface DashboardSummary {
     totalJobsCompleted: number;
   };
   expenses: Record<ExpenseType, number>;
+  /** Super-admin-defined categories with their summed amounts. */
+  customExpenses: { id: string; name: string; amount: number }[];
   labour: {
     totalCost: number;
     pendingPayments: number;

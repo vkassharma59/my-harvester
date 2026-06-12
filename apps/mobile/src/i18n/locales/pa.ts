@@ -40,6 +40,8 @@ export const pa = {
     addAgent: 'ਏਜੰਟ ਸ਼ਾਮਲ ਕਰੋ',
     staffAdmins: 'ਸਟਾਫ਼ ਐਡਮਿਨ',
     addAdmin: 'ਐਡਮਿਨ ਸ਼ਾਮਲ ਕਰੋ',
+    expenseCategories: 'ਖਰਚ ਕਿਸਮਾਂ',
+    addExpenseCategory: 'ਖਰਚ ਕਿਸਮ',
     reports: 'ਰਿਪੋਰਟਾਂ',
     settings: 'ਸੈਟਿੰਗਾਂ',
   },

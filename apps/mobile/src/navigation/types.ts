@@ -30,6 +30,8 @@ export type MoreStackParamList = {
   AgentLedger: { agentId: string; name: string };
   Admins: undefined;
   AdminForm: { adminId?: string } | undefined;
+  ExpenseCategories: undefined;
+  ExpenseCategoryForm: { categoryId?: string } | undefined;
   Reports: undefined;
   Settings: undefined;
 };

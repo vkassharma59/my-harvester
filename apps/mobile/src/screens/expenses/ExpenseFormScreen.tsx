@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { expensesApi, labourApi } from '@/api/endpoints';
+import { expenseCategoriesApi, expensesApi, labourApi } from '@/api/endpoints';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
@@ -21,13 +21,11 @@ import { spacing } from '@/theme';
 
 type Props = NativeStackScreenProps<ExpensesStackParamList, 'ExpenseForm'>;
 
+const BUILTIN_VALUES = Object.values(ExpenseType) as string[];
+
 export function ExpenseFormScreen({ route, navigation }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const typeOptions = Object.values(ExpenseType).map((value) => ({
-    label: tEnum('expenseType', value),
-    value,
-  }));
   const expenseId = route.params?.expenseId;
   const editing = !!expenseId;
   const selectedId = useSelectedHarvester((s) => s.selectedId);
@@ -37,13 +35,28 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
   const [harvesterId, setHarvesterId] = useState(
     soleHarvesterId ?? scopedHarvesterId(selectedId) ?? '',
   );
-  const [type, setType] = useState<ExpenseType>(ExpenseType.DIESEL);
+  // A single selection: a built-in ExpenseType value OR a custom category id.
+  const [category, setCategory] = useState<string>(ExpenseType.DIESEL);
   const [labourId, setLabourId] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
 
+  const isCustom = !BUILTIN_VALUES.includes(category);
+  const type = isCustom ? ExpenseType.OTHER : (category as ExpenseType);
   const isLabour = type === ExpenseType.LABOUR;
+  // Only the built-in "Other" requires a remark; custom categories don't.
+  const isBuiltinOther = category === ExpenseType.OTHER;
+
+  // Custom categories defined by the super admin (active ones only).
+  const { data: categories = [] } = useQuery({
+    queryKey: ['expense-categories'],
+    queryFn: () => expenseCategoriesApi.list(),
+  });
+  const typeOptions = [
+    ...Object.values(ExpenseType).map((value) => ({ label: tEnum('expenseType', value), value })),
+    ...categories.filter((c) => c.isActive).map((c) => ({ label: c.name, value: c.id })),
+  ];
 
   // Labour for the chosen harvester (so the list matches the expense's harvester).
   const { data: labourList = [] } = useQuery({
@@ -68,7 +81,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
   useEffect(() => {
     if (existing) {
       setHarvesterId(existing.harvesterId);
-      setType(existing.type);
+      setCategory(existing.categoryId ?? existing.type);
       setLabourId(existing.labourId ?? '');
       setAmount(String(existing.amount));
       setDate(new Date(existing.date));
@@ -81,9 +94,9 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     if (soleHarvesterId && !harvesterId) setHarvesterId(soleHarvesterId);
   }, [soleHarvesterId, harvesterId]);
 
-  // Clear the labourer link if the type is changed away from Labour.
-  const onTypeChange = (next: ExpenseType) => {
-    setType(next);
+  // Clear the labourer link if the selection is changed away from Labour.
+  const onCategoryChange = (next: string) => {
+    setCategory(next);
     if (next !== ExpenseType.LABOUR) setLabourId('');
   };
 
@@ -100,6 +113,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
       const body = {
         harvesterId,
         type,
+        categoryId: isCustom ? category : null,
         labourId: isLabour ? labourId : undefined,
         amount: Number(amount),
         date: date.toISOString(),
@@ -122,7 +136,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
       return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.selectLabourer'));
     const value = Number(amount);
     if (!value || value <= 0) return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.enterAmount'));
-    if (type === ExpenseType.OTHER && !notes.trim())
+    if (isBuiltinOther && !notes.trim())
       return Alert.alert(t('expenseForm.requiredTitle'), t('expenseForm.remarkRequired'));
     save.mutate();
   };
@@ -140,9 +154,9 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
       ) : null}
       <Select
         label={t('expenseForm.typeLabel')}
-        value={type}
+        value={category}
         options={typeOptions}
-        onChange={(v) => onTypeChange(v as ExpenseType)}
+        onChange={onCategoryChange}
       />
 
       {isLabour ? (
@@ -162,7 +176,7 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
       <AmountField label={t('expenseForm.amountLabel')} value={amount} onChangeText={setAmount} placeholder="0" />
       <DateField label={t('expenseForm.dateLabel')} value={date} onChange={setDate} />
       <TextField
-        label={type === ExpenseType.OTHER ? `${t('expenseForm.notesLabel')} *` : t('expenseForm.notesLabel')}
+        label={isBuiltinOther ? `${t('expenseForm.notesLabel')} *` : t('expenseForm.notesLabel')}
         value={notes}
         onChangeText={setNotes}
         multiline

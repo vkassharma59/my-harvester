@@ -40,6 +40,8 @@ export const en = {
     addAgent: 'Add agent',
     staffAdmins: 'Staff Admins',
     addAdmin: 'Add admin',
+    expenseCategories: 'Expense Types',
+    addExpenseCategory: 'Expense type',
     reports: 'Reports',
     settings: 'Settings',
   },

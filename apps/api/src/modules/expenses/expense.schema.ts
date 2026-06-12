@@ -16,6 +16,10 @@ export class Expense extends AuditedDocument {
   @Prop({ type: String, enum: ExpenseType, required: true, index: true })
   type!: ExpenseType;
 
+  /** A super-admin-defined custom category; null for the built-in types. */
+  @Prop({ type: Types.ObjectId, ref: 'ExpenseCategory', default: null, index: true })
+  categoryId?: Types.ObjectId | null;
+
   /** Set only for LABOUR expenses: the labourer this payment is for. */
   @Prop({ type: Types.ObjectId, ref: 'Labour', default: null, index: true })
   labourId?: Types.ObjectId | null;

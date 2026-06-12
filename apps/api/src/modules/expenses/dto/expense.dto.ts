@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { ExpenseType } from '@wh/shared';
 
@@ -22,6 +23,12 @@ export class CreateExpenseDto {
 
   @IsEnum(ExpenseType)
   type!: ExpenseType;
+
+  /** A super-admin-defined category id, or null for a built-in type. */
+  @IsOptional()
+  @ValidateIf((o) => o.categoryId !== null && o.categoryId !== undefined)
+  @IsMongoId()
+  categoryId?: string | null;
 
   /** Required in practice for LABOUR expenses (links the payment to a labourer). */
   @IsOptional()

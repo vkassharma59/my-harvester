@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
+import {
+  ExpenseCategory,
+  ExpenseCategorySchema,
+} from '../expense-categories/expense-category.schema';
 import { Expense, ExpenseSchema } from '../expenses/expense.schema';
 import { Labour, LabourSchema } from '../labour/labour.schema';
 import { Payment, PaymentSchema } from '../payments/payment.schema';
@@ -16,6 +20,7 @@ import { DashboardService } from './dashboard.service';
       { name: Labour.name, schema: LabourSchema },
       { name: Payment.name, schema: PaymentSchema },
       { name: Customer.name, schema: CustomerSchema },
+      { name: ExpenseCategory.name, schema: ExpenseCategorySchema },
     ]),
   ],
   controllers: [DashboardController],

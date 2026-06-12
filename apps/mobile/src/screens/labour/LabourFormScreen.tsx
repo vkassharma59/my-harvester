@@ -129,12 +129,14 @@ export function LabourFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <Button
-        title={t('labourForm.importContacts')}
-        variant="secondary"
-        onPress={importFromContacts}
-        style={{ marginBottom: spacing.lg }}
-      />
+      {!editing ? (
+        <Button
+          title={t('labourForm.importContacts')}
+          variant="secondary"
+          onPress={importFromContacts}
+          style={{ marginBottom: spacing.lg }}
+        />
+      ) : null}
       <TextField label={t('labourForm.name')} value={name} onChangeText={setName} />
       <TextField
         label={t('labourForm.mobile')}

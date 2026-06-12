@@ -11,6 +11,8 @@ import { CustomerFormScreen } from '@/screens/customers/CustomerFormScreen';
 import { CustomerLedgerScreen } from '@/screens/customers/CustomerLedgerScreen';
 import { CustomersScreen } from '@/screens/customers/CustomersScreen';
 import { DashboardScreen } from '@/screens/DashboardScreen';
+import { ExpenseCategoriesScreen } from '@/screens/expenses/ExpenseCategoriesScreen';
+import { ExpenseCategoryFormScreen } from '@/screens/expenses/ExpenseCategoryFormScreen';
 import { ExpenseFormScreen } from '@/screens/expenses/ExpenseFormScreen';
 import { ExpensesScreen } from '@/screens/expenses/ExpensesScreen';
 import { HarvesterFormScreen } from '@/screens/harvesters/HarvesterFormScreen';
@@ -126,6 +128,16 @@ export function MoreStack() {
       />
       <More.Screen name="Admins" component={AdminsScreen} options={{ title: t('nav.staffAdmins') }} />
       <More.Screen name="AdminForm" component={AdminFormScreen} options={{ title: t('nav.addAdmin') }} />
+      <More.Screen
+        name="ExpenseCategories"
+        component={ExpenseCategoriesScreen}
+        options={{ title: t('nav.expenseCategories') }}
+      />
+      <More.Screen
+        name="ExpenseCategoryForm"
+        component={ExpenseCategoryFormScreen}
+        options={{ title: t('nav.addExpenseCategory') }}
+      />
       <More.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />
       <More.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
     </More.Navigator>

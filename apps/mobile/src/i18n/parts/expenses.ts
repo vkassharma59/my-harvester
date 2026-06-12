@@ -11,6 +11,7 @@ export const part = {
       emptySubtitle: 'Record diesel, labour, parts and more.',
       emptyTypeSubtitle: 'No {{type}} expenses recorded.',
       deleteTitle: 'Delete expense',
+      deletedCategory: 'Deleted type',
     },
     expenseForm: {
       addTitle: 'Add expense',
@@ -31,6 +32,23 @@ export const part = {
       dateLabel: 'Date',
       notesLabel: 'Notes / Remarks',
     },
+    expenseCategories: {
+      hint: 'Custom expense types you add here are available to all admins — on the expense form, the filters, and the dashboard.',
+      emptyTitle: 'No custom types',
+      emptySubtitle: 'Add an expense type to get started.',
+      addCategory: '+ Add expense type',
+      deleteTitle: 'Remove expense type',
+      deleteBody: 'It will no longer be selectable. Past expenses keep their amounts.',
+    },
+    expenseCategoryForm: {
+      addTitle: 'Add expense type',
+      editTitle: 'Edit expense type',
+      name: 'Type name *',
+      namePlaceholder: 'e.g. Transport, Food',
+      saveChanges: 'Save changes',
+      required: 'Required',
+      requiredName: 'Enter a type name.',
+    },
   },
   hi: {
     expenses: {
@@ -42,6 +60,7 @@ export const part = {
       emptySubtitle: 'डीज़ल, मज़दूरी, पुर्ज़े और बहुत कुछ दर्ज करें।',
       emptyTypeSubtitle: 'कोई {{type}} खर्च दर्ज नहीं है।',
       deleteTitle: 'खर्च हटाएँ',
+      deletedCategory: 'हटाया गया प्रकार',
     },
     expenseForm: {
       addTitle: 'खर्च जोड़ें',
@@ -62,6 +81,23 @@ export const part = {
       dateLabel: 'तारीख़',
       notesLabel: 'नोट्स / टिप्पणियाँ',
     },
+    expenseCategories: {
+      hint: 'यहाँ जोड़े गए कस्टम खर्च प्रकार सभी एडमिन के लिए उपलब्ध होते हैं — खर्च फ़ॉर्म, फ़िल्टर और डैशबोर्ड पर।',
+      emptyTitle: 'कोई कस्टम प्रकार नहीं',
+      emptySubtitle: 'शुरू करने के लिए एक खर्च प्रकार जोड़ें।',
+      addCategory: '+ खर्च प्रकार जोड़ें',
+      deleteTitle: 'खर्च प्रकार हटाएँ',
+      deleteBody: 'यह अब चुनने योग्य नहीं रहेगा। पुराने खर्च अपनी राशि बनाए रखते हैं।',
+    },
+    expenseCategoryForm: {
+      addTitle: 'खर्च प्रकार जोड़ें',
+      editTitle: 'खर्च प्रकार संपादित करें',
+      name: 'प्रकार का नाम *',
+      namePlaceholder: 'उदा. परिवहन, भोजन',
+      saveChanges: 'बदलाव सहेजें',
+      required: 'आवश्यक',
+      requiredName: 'एक प्रकार का नाम दर्ज करें।',
+    },
   },
   pa: {
     expenses: {
@@ -73,6 +109,7 @@ export const part = {
       emptySubtitle: 'ਡੀਜ਼ਲ, ਮਜ਼ਦੂਰੀ, ਪੁਰਜ਼ੇ ਅਤੇ ਹੋਰ ਦਰਜ ਕਰੋ।',
       emptyTypeSubtitle: 'ਕੋਈ {{type}} ਖਰਚਾ ਦਰਜ ਨਹੀਂ ਹੈ।',
       deleteTitle: 'ਖਰਚਾ ਮਿਟਾਓ',
+      deletedCategory: 'ਮਿਟਾਈ ਕਿਸਮ',
     },
     expenseForm: {
       addTitle: 'ਖਰਚਾ ਸ਼ਾਮਲ ਕਰੋ',
@@ -92,6 +129,23 @@ export const part = {
       amountLabel: 'ਰਕਮ *',
       dateLabel: 'ਤਾਰੀਖ਼',
       notesLabel: 'ਨੋਟਸ / ਟਿੱਪਣੀਆਂ',
+    },
+    expenseCategories: {
+      hint: 'ਇੱਥੇ ਜੋੜੀਆਂ ਕਸਟਮ ਖਰਚ ਕਿਸਮਾਂ ਸਾਰੇ ਐਡਮਿਨਾਂ ਲਈ ਉਪਲਬਧ ਹਨ — ਖਰਚ ਫ਼ਾਰਮ, ਫ਼ਿਲਟਰ ਅਤੇ ਡੈਸ਼ਬੋਰਡ ਉੱਤੇ।',
+      emptyTitle: 'ਕੋਈ ਕਸਟਮ ਕਿਸਮ ਨਹੀਂ',
+      emptySubtitle: 'ਸ਼ੁਰੂ ਕਰਨ ਲਈ ਇੱਕ ਖਰਚ ਕਿਸਮ ਜੋੜੋ।',
+      addCategory: '+ ਖਰਚ ਕਿਸਮ ਜੋੜੋ',
+      deleteTitle: 'ਖਰਚ ਕਿਸਮ ਹਟਾਓ',
+      deleteBody: 'ਇਹ ਹੁਣ ਚੁਣਨਯੋਗ ਨਹੀਂ ਰਹੇਗੀ। ਪੁਰਾਣੇ ਖਰਚੇ ਆਪਣੀ ਰਕਮ ਰੱਖਦੇ ਹਨ।',
+    },
+    expenseCategoryForm: {
+      addTitle: 'ਖਰਚ ਕਿਸਮ ਜੋੜੋ',
+      editTitle: 'ਖਰਚ ਕਿਸਮ ਸੋਧੋ',
+      name: 'ਕਿਸਮ ਦਾ ਨਾਮ *',
+      namePlaceholder: 'ਉਦਾ. ਆਵਾਜਾਈ, ਭੋਜਨ',
+      saveChanges: 'ਤਬਦੀਲੀਆਂ ਸੰਭਾਲੋ',
+      required: 'ਲੋੜੀਂਦਾ',
+      requiredName: 'ਇੱਕ ਕਿਸਮ ਦਾ ਨਾਮ ਦਰਜ ਕਰੋ।',
     },
   },
 } as const;

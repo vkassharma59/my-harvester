@@ -40,6 +40,8 @@ export const hi = {
     addAgent: 'एजेंट जोड़ें',
     staffAdmins: 'स्टाफ़ एडमिन',
     addAdmin: 'एडमिन जोड़ें',
+    expenseCategories: 'खर्च प्रकार',
+    addExpenseCategory: 'खर्च प्रकार',
     reports: 'रिपोर्ट',
     settings: 'सेटिंग्स',
   },

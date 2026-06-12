@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { expensesApi } from '@/api/endpoints';
+import { expenseCategoriesApi, expensesApi } from '@/api/endpoints';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HarvesterPicker } from '@/components/HarvesterPicker';
@@ -18,9 +18,8 @@ import { formatCurrency, formatDate } from '@/utils/format';
 
 type Props = NativeStackScreenProps<ExpensesStackParamList, 'ExpensesList'>;
 
-type TypeFilter = ExpenseType | 'ALL';
-const TYPE_OPTIONS: TypeFilter[] = [
-  'ALL',
+const BUILTIN_VALUES = Object.values(ExpenseType) as string[];
+const BUILTIN_FILTERS = [
   ExpenseType.DIESEL,
   ExpenseType.LABOUR,
   ExpenseType.SPARE_PARTS,
@@ -32,12 +31,20 @@ export function ExpensesScreen({ navigation }: Props) {
   const qc = useQueryClient();
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const harvesterId = scopedHarvesterId(selectedId);
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
+  // 'ALL', a built-in ExpenseType, or a custom category id.
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['expenses', selectedId],
     queryFn: () => expensesApi.list({ harvesterId }),
   });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['expense-categories'],
+    queryFn: () => expenseCategoriesApi.list(),
+  });
+  const catName = (id: string) =>
+    categories.find((c) => c.id === id)?.name ?? t('expenses.deletedCategory');
 
   const remove = useMutation({
     mutationFn: (id: string) => expensesApi.remove(id),
@@ -57,9 +64,25 @@ export function ExpensesScreen({ navigation }: Props) {
   if (isLoading) return <Loading />;
   if (isError) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
-  const visible = typeFilter === 'ALL' ? data ?? [] : (data ?? []).filter((e) => e.type === typeFilter);
+  const chipValues: string[] = [
+    'ALL',
+    ...BUILTIN_FILTERS,
+    ...categories.filter((c) => c.isActive).map((c) => c.id),
+  ];
+  const chipLabel = (v: string) =>
+    v === 'ALL' ? t('expenses.all') : BUILTIN_VALUES.includes(v) ? tEnum('expenseType', v) : catName(v);
+
+  const matches = (e: { type: ExpenseType; categoryId?: string | null }) => {
+    if (typeFilter === 'ALL') return true;
+    // A built-in chip shows only built-in expenses (custom ones live under their
+    // own chip even though they're stored as type OTHER).
+    if (BUILTIN_VALUES.includes(typeFilter)) return e.type === typeFilter && !e.categoryId;
+    return e.categoryId === typeFilter;
+  };
+
+  const visible = (data ?? []).filter(matches);
   const total = visible.reduce((sum, e) => sum + e.amount, 0);
-  const filterLabel = typeFilter === 'ALL' ? t('expenses.all') : tEnum('expenseType', typeFilter);
+  const filterLabel = chipLabel(typeFilter);
 
   return (
     <View style={styles.root}>
@@ -70,7 +93,7 @@ export function ExpensesScreen({ navigation }: Props) {
         style={styles.chipBar}
         contentContainerStyle={styles.chips}
       >
-        {TYPE_OPTIONS.map((opt) => {
+        {chipValues.map((opt) => {
           const active = typeFilter === opt;
           return (
             <Pressable
@@ -78,9 +101,7 @@ export function ExpensesScreen({ navigation }: Props) {
               onPress={() => setTypeFilter(opt)}
               style={[styles.chip, active && styles.chipActive]}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {opt === 'ALL' ? t('expenses.all') : tEnum('expenseType', opt)}
-              </Text>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{chipLabel(opt)}</Text>
             </Pressable>
           );
         })}
@@ -115,7 +136,9 @@ export function ExpensesScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <Card onPress={() => navigation.navigate('ExpenseForm', { expenseId: item.id })}>
             <View style={styles.rowBetween}>
-              <Text style={styles.type}>{tEnum('expenseType', item.type)}</Text>
+              <Text style={styles.type}>
+                {item.categoryId ? catName(item.categoryId) : tEnum('expenseType', item.type)}
+              </Text>
               <Text style={styles.amount}>{formatCurrency(item.amount)}</Text>
             </View>
             <Text style={styles.sub}>{formatDate(item.date)}</Text>

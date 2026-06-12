@@ -9,6 +9,7 @@ import { AgentsModule } from './modules/agents/agents.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ExpenseCategoriesModule } from './modules/expense-categories/expense-categories.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { HarvestersModule } from './modules/harvesters/harvesters.module';
 import { LabourModule } from './modules/labour/labour.module';
@@ -32,6 +33,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     CustomersModule,
     SettingsModule,
     ExpensesModule,
+    ExpenseCategoriesModule,
     LabourModule,
     AgentsModule,
     PlotsModule,

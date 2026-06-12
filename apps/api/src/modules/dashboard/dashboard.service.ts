@@ -12,6 +12,10 @@ import {
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { harvesterFilter } from '../../common/scope';
 import { Customer, CustomerDocument } from '../customers/customer.schema';
+import {
+  ExpenseCategory,
+  ExpenseCategoryDocument,
+} from '../expense-categories/expense-category.schema';
 import { Expense, ExpenseDocument } from '../expenses/expense.schema';
 import { Labour, LabourDocument } from '../labour/labour.schema';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
@@ -37,6 +41,8 @@ export class DashboardService {
     @InjectModel(Labour.name) private readonly labour: Model<LabourDocument>,
     @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
     @InjectModel(Customer.name) private readonly customers: Model<CustomerDocument>,
+    @InjectModel(ExpenseCategory.name)
+    private readonly expenseCategories: Model<ExpenseCategoryDocument>,
   ) {}
 
   async summary(user: AuthUser, harvesterId?: string): Promise<DashboardSummary> {
@@ -58,8 +64,9 @@ export class DashboardService {
       'amount',
     );
 
+    // Built-in types only (categoryId null also matches legacy docs with no field).
     const expenseRows = await this.expenses.aggregate<{ _id: ExpenseType; total: number }>([
-      { $match: hMatch },
+      { $match: { ...hMatch, categoryId: null } },
       { $group: { _id: '$type', total: { $sum: '$amount' } } },
     ]);
     const expensesByType: Record<ExpenseType, number> = {
@@ -69,6 +76,22 @@ export class DashboardService {
       [ExpenseType.OTHER]: 0,
     };
     for (const r of expenseRows) expensesByType[r._id] = r.total;
+
+    // Custom (super-admin-defined) categories: sum per category, then label it.
+    const customRows = await this.expenses.aggregate<{ _id: Types.ObjectId; total: number }>([
+      { $match: { ...hMatch, categoryId: { $ne: null } } },
+      { $group: { _id: '$categoryId', total: { $sum: '$amount' } } },
+    ]);
+    const amountByCat = new Map(customRows.map((r) => [r._id.toString(), r.total]));
+    const categories = await this.expenseCategories
+      .find({ tenantId: new Types.ObjectId(user.tenantId) })
+      .sort({ name: 1 })
+      .exec();
+    // Show every active category (even at 0) plus any inactive one that still
+    // carries spend, so totals stay honest after a category is removed.
+    const customExpenses = categories
+      .filter((c) => c.isActive || (amountByCat.get(c.id) ?? 0) > 0)
+      .map((c) => ({ id: c.id, name: c.name, amount: amountByCat.get(c.id) ?? 0 }));
 
     const [hStats] = await this.plots.aggregate<{
       totalArea: number;
@@ -109,6 +132,7 @@ export class DashboardService {
         totalJobsCompleted: hStats?.totalPlots ?? 0,
       },
       expenses: expensesByType,
+      customExpenses,
       labour: {
         totalCost: labourCost,
         pendingPayments: labourPending,

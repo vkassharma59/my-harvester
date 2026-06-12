@@ -17,6 +17,7 @@ const ITEMS: MenuItem[] = [
   { labelKey: 'more.labour', icon: '👷', route: 'Labour' },
   { labelKey: 'more.agents', icon: '🤝', route: 'Agents' },
   { labelKey: 'more.staffAdmins', icon: '🧑‍💼', route: 'Admins', superAdminOnly: true },
+  { labelKey: 'more.expenseCategories', icon: '🏷️', route: 'ExpenseCategories', superAdminOnly: true },
   { labelKey: 'more.reports', icon: '📊', route: 'Reports' },
   { labelKey: 'more.settings', icon: '⚙️', route: 'Settings' },
 ];

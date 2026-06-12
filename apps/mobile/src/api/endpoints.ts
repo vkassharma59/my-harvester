@@ -9,6 +9,7 @@ import {
   CustomerLedger,
   DashboardSummary,
   Expense,
+  ExpenseCategory,
   ExpenseType,
   Harvester,
   HarvesterStatus,
@@ -130,6 +131,8 @@ export const settingsApi = {
 export interface ExpenseInput {
   harvesterId: string;
   type: ExpenseType;
+  /** A custom category id, or null for a built-in type. */
+  categoryId?: string | null;
   amount: number;
   date?: string;
   notes?: string;
@@ -144,6 +147,20 @@ export const expensesApi = {
   update: (id: string, body: Partial<ExpenseInput>) =>
     api.patch<Expense>(`/expenses/${id}`, body).then((r) => r.data),
   remove: (id: string) => api.delete(`/expenses/${id}`).then(() => undefined),
+};
+
+// ---------- Expense categories (custom; SUPER_ADMIN manages) ----------
+export interface ExpenseCategoryInput {
+  name: string;
+  isActive?: boolean;
+}
+export const expenseCategoriesApi = {
+  list: () => api.get<ExpenseCategory[]>('/expense-categories').then((r) => r.data),
+  create: (body: ExpenseCategoryInput) =>
+    api.post<ExpenseCategory>('/expense-categories', body).then((r) => r.data),
+  update: (id: string, body: Partial<ExpenseCategoryInput>) =>
+    api.patch<ExpenseCategory>(`/expense-categories/${id}`, body).then((r) => r.data),
+  remove: (id: string) => api.delete(`/expense-categories/${id}`).then(() => undefined),
 };
 
 // ---------- Labour ----------

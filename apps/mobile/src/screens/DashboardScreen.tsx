@@ -89,6 +89,12 @@ export function DashboardScreen() {
               <Text style={styles.lineValue}>{money(data.expenses[type])}</Text>
             </View>
           ))}
+          {data.customExpenses.map((c) => (
+            <View key={c.id} style={styles.lineRow}>
+              <Text style={styles.lineLabel}>{c.name}</Text>
+              <Text style={styles.lineValue}>{money(c.amount)}</Text>
+            </View>
+          ))}
         </Card>
       </Section>
 
