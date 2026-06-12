@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
+import { LabourLedger, PartyType, WageType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
+import { Payment, PaymentDocument } from '../payments/payment.schema';
 import { Labour, LabourDocument } from './labour.schema';
 import { CreateLabourDto, UpdateLabourDto } from './dto/labour.dto';
 
@@ -10,7 +12,38 @@ import { CreateLabourDto, UpdateLabourDto } from './dto/labour.dto';
 export class LabourService {
   constructor(
     @InjectModel(Labour.name) private readonly model: Model<LabourDocument>,
+    @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
   ) {}
+
+  /** A worker's account: bill (fixed amount, or daily rate × working days) vs paid. */
+  async ledger(id: string, user: AuthUser): Promise<LabourLedger> {
+    const worker = await this.findOne(id, user);
+    const payments = await this.payments
+      .find({
+        tenantId: new Types.ObjectId(user.tenantId),
+        partyType: PartyType.LABOUR,
+        partyId: new Types.ObjectId(id),
+      })
+      .sort({ date: -1 })
+      .exec();
+
+    const amountPaid = payments.reduce((acc, p) => acc + p.amount, 0);
+    // Attendance isn't tracked yet, so daily workers have 0 working days for now.
+    const totalWorkingDays = 0;
+    const totalBill =
+      worker.wageType === WageType.FIXED
+        ? worker.customAmount ?? 0
+        : (worker.dailyWage ?? 0) * totalWorkingDays;
+
+    return {
+      labour: worker.toJSON() as unknown as LabourLedger['labour'],
+      totalBill,
+      amountPaid,
+      remaining: totalBill - amountPaid,
+      totalWorkingDays,
+      payments: payments.map((p) => p.toJSON()) as unknown as LabourLedger['payments'],
+    };
+  }
 
   create(dto: CreateLabourDto, user: AuthUser): Promise<LabourDocument> {
     assertCanUseHarvester(user, dto.harvesterId);

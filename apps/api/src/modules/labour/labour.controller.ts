@@ -28,6 +28,11 @@ export class LabourController {
     return this.labour.findAll(user, harvesterId);
   }
 
+  @Get(':id/ledger')
+  ledger(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.labour.ledger(id, user);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.labour.findOne(id, user);

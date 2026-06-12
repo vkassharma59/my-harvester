@@ -18,6 +18,7 @@ import { HarvestersScreen } from '@/screens/harvesters/HarvestersScreen';
 import { HarvestFormScreen } from '@/screens/harvests/HarvestFormScreen';
 import { HarvestsScreen } from '@/screens/harvests/HarvestsScreen';
 import { LabourFormScreen } from '@/screens/labour/LabourFormScreen';
+import { LabourLedgerScreen } from '@/screens/labour/LabourLedgerScreen';
 import { LabourScreen } from '@/screens/labour/LabourScreen';
 import { MoreMenuScreen } from '@/screens/more/MoreMenuScreen';
 import { ReportsScreen } from '@/screens/more/ReportsScreen';
@@ -111,6 +112,11 @@ export function MoreStack() {
       <More.Screen name="HarvesterForm" component={HarvesterFormScreen} options={{ title: t('nav.addHarvester') }} />
       <More.Screen name="Labour" component={LabourScreen} options={{ title: t('nav.labour') }} />
       <More.Screen name="LabourForm" component={LabourFormScreen} options={{ title: t('nav.addLabour') }} />
+      <More.Screen
+        name="LabourLedger"
+        component={LabourLedgerScreen}
+        options={({ route }) => ({ title: route.params.name })}
+      />
       <More.Screen name="Agents" component={AgentsScreen} options={{ title: t('nav.agents') }} />
       <More.Screen name="AgentForm" component={AgentFormScreen} options={{ title: t('nav.addAgent') }} />
       <More.Screen

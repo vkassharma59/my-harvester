@@ -23,6 +23,12 @@ export enum LabourType {
   HELPER = 'HELPER',
 }
 
+/** How a worker is paid: a daily rate (× attendance) or a fixed amount. */
+export enum WageType {
+  DAILY = 'DAILY',
+  FIXED = 'FIXED',
+}
+
 /** Harvesting commercial models from the spec. */
 export enum HarvestType {
   /** Type 1: customer pays per Bigha and keeps the Bhusa. */

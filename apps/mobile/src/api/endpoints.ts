@@ -15,11 +15,13 @@ import {
   HarvesterType,
   HarvestType,
   Labour,
+  LabourLedger,
   LabourType,
   Payment,
   PartyType,
   PaymentStatus,
   Plot,
+  WageType,
 } from '@wh/shared';
 import { api } from './client';
 
@@ -150,6 +152,7 @@ export interface LabourInput {
   mobile: string;
   type: LabourType;
   harvesterId: string;
+  wageType?: WageType;
   dailyWage?: number;
   customAmount?: number;
   paymentStatus?: PaymentStatus;
@@ -161,6 +164,7 @@ export const labourApi = {
   update: (id: string, body: Partial<LabourInput>) =>
     api.patch<Labour>(`/labour/${id}`, body).then((r) => r.data),
   remove: (id: string) => api.delete(`/labour/${id}`).then(() => undefined),
+  ledger: (id: string) => api.get<LabourLedger>(`/labour/${id}/ledger`).then((r) => r.data),
 };
 
 // ---------- Agents (commission) ----------

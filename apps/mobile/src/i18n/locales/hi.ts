@@ -51,6 +51,7 @@ export const hi = {
     },
     expenseType: { DIESEL: 'डीज़ल', LABOUR: 'कामगार', SPARE_PARTS: 'स्पेयर पार्ट्स', OTHER: 'अन्य' },
     labourType: { HARVESTER_DRIVER: 'हार्वेस्टर चालक', TRACTOR_DRIVER: 'ट्रैक्टर चालक', HELPER: 'सहायक' },
+    wageType: { DAILY: 'दैनिक', FIXED: 'निश्चित' },
     role: { SUPER_ADMIN: 'सुपर एडमिन', STAFF_ADMIN: 'स्टाफ़ एडमिन' },
   },
   settings: {

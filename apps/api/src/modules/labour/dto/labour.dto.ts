@@ -8,7 +8,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { LabourType, PaymentStatus } from '@wh/shared';
+import { LabourType, PaymentStatus, WageType } from '@wh/shared';
 
 export class CreateLabourDto {
   @IsString()
@@ -24,6 +24,10 @@ export class CreateLabourDto {
 
   @IsMongoId()
   harvesterId!: string;
+
+  @IsOptional()
+  @IsEnum(WageType)
+  wageType?: WageType;
 
   @IsOptional()
   @IsNumber()

@@ -8,6 +8,7 @@ import {
   PartyType,
   PaymentStatus,
   Role,
+  WageType,
 } from './enums';
 
 /** Fields present on every persisted record. `updatedBy` satisfies the audit
@@ -75,10 +76,21 @@ export interface Labour extends AuditFields {
   mobile: string;
   type: LabourType;
   harvesterId: string;
-  /** Either a recurring daily wage or a one-off custom amount. */
+  /** DAILY: dailyWage is the per-day rate. FIXED: customAmount is the total. */
+  wageType: WageType;
   dailyWage?: number;
   customAmount?: number;
   paymentStatus: PaymentStatus;
+}
+
+/** A worker's account: what they're owed vs paid, with payment history. */
+export interface LabourLedger {
+  labour: Labour;
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
+  totalWorkingDays: number;
+  payments: Payment[];
 }
 
 /** A commission agent attached to a single harvester. Earns a per-unit-area

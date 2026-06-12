@@ -4,7 +4,7 @@ import * as Contacts from 'expo-contacts';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
-import { LabourType, PaymentStatus } from '@wh/shared';
+import { LabourType, WageType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi } from '@/api/endpoints';
 import { tEnum } from '@/i18n';
@@ -18,15 +18,13 @@ import { useHarvesterOptions } from '@/hooks/useHarvesterOptions';
 import { MoreStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { spacing } from '@/theme';
-import { labelFromEnum } from '@/utils/format';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'LabourForm'>;
-
-const STATUS_OPTIONS = Object.values(PaymentStatus).map((s) => ({ label: labelFromEnum(s), value: s }));
 
 export function LabourFormScreen({ route, navigation }: Props) {
   const { t } = useTranslation();
   const TYPE_OPTIONS = Object.values(LabourType).map((v) => ({ label: tEnum('labourType', v), value: v }));
+  const WAGE_OPTIONS = Object.values(WageType).map((v) => ({ label: tEnum('wageType', v), value: v }));
   const qc = useQueryClient();
   const labourId = route.params?.labourId;
   const editing = !!labourId;
@@ -40,9 +38,9 @@ export function LabourFormScreen({ route, navigation }: Props) {
   const [harvesterId, setHarvesterId] = useState(
     soleHarvesterId ?? scopedHarvesterId(selectedId) ?? '',
   );
-  const [dailyWage, setDailyWage] = useState('');
-  const [customAmount, setCustomAmount] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.PENDING);
+  const [wageType, setWageType] = useState<WageType>(WageType.DAILY);
+  // A single amount: the daily rate (DAILY) or the fixed total (FIXED).
+  const [wage, setWage] = useState('');
 
   const importFromContacts = async () => {
     try {
@@ -81,9 +79,10 @@ export function LabourFormScreen({ route, navigation }: Props) {
       setMobile(existing.mobile);
       setType(existing.type);
       setHarvesterId(existing.harvesterId);
-      setDailyWage(existing.dailyWage != null ? String(existing.dailyWage) : '');
-      setCustomAmount(existing.customAmount != null ? String(existing.customAmount) : '');
-      setPaymentStatus(existing.paymentStatus);
+      const wt = existing.wageType ?? WageType.DAILY;
+      setWageType(wt);
+      const amt = wt === WageType.FIXED ? existing.customAmount : existing.dailyWage;
+      setWage(amt != null ? String(amt) : '');
     }
   }, [existing]);
 
@@ -94,20 +93,22 @@ export function LabourFormScreen({ route, navigation }: Props) {
 
   const save = useMutation({
     mutationFn: () => {
+      const amount = wage ? Number(wage) : undefined;
       const body = {
         name,
         mobile,
         type,
         harvesterId,
-        dailyWage: dailyWage ? Number(dailyWage) : undefined,
-        customAmount: customAmount ? Number(customAmount) : undefined,
-        paymentStatus,
+        wageType,
+        dailyWage: wageType === WageType.DAILY ? amount : undefined,
+        customAmount: wageType === WageType.FIXED ? amount : undefined,
       };
       return editing ? labourApi.update(labourId, body) : labourApi.create(body);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['labour'] });
       qc.invalidateQueries({ queryKey: ['labour-one', labourId] });
+      qc.invalidateQueries({ queryKey: ['labour-ledger', labourId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       navigation.goBack();
     },
@@ -147,18 +148,17 @@ export function LabourFormScreen({ route, navigation }: Props) {
           placeholder={t('labourForm.selectHarvester')}
         />
       ) : null}
-      <AmountField label={t('labourForm.dailyWage')} value={dailyWage} onChangeText={setDailyWage} placeholder={t('labourForm.dailyWagePlaceholder')} />
-      <AmountField
-        label={t('labourForm.customAmount')}
-        value={customAmount}
-        onChangeText={setCustomAmount}
-        placeholder={t('common.optional')}
-      />
       <Select
-        label={t('labourForm.paymentStatus')}
-        value={paymentStatus}
-        options={STATUS_OPTIONS}
-        onChange={(v) => setPaymentStatus(v as PaymentStatus)}
+        label={t('labourForm.wageType')}
+        value={wageType}
+        options={WAGE_OPTIONS}
+        onChange={(v) => setWageType(v as WageType)}
+      />
+      <AmountField
+        label={wageType === WageType.FIXED ? t('labourForm.fixedWage') : t('labourForm.dailyWage')}
+        value={wage}
+        onChangeText={setWage}
+        placeholder={t('labourForm.dailyWagePlaceholder')}
       />
       <Button
         title={editing ? t('labourForm.saveChanges') : t('labourForm.addLabour')}
