@@ -39,6 +39,12 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const areaUnit = settings?.defaultAreaUnit;
+  // Names to label Bhusa records ("bought from <owner>").
+  const { data: customerLookup } = useQuery({
+    queryKey: ['customers', 'lookup'],
+    queryFn: () => customersApi.list({ limit: 1000 }),
+  });
+  const ownerName = new Map((customerLookup?.items ?? []).map((c) => [c.id, c.name]));
 
   // Editable payment-reminder draft, prefilled from a template.
   const [reminder, setReminder] = useState('');
@@ -169,20 +175,31 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
       <Button title={t('customerLedger.recordPayment')} onPress={openRecord} style={{ marginVertical: spacing.md }} />
 
       <Text style={styles.sectionTitle}>{t('customerLedger.harvestingRecords', { count: data.plots.length })}</Text>
-      {data.plots.map((p) => (
-        <Card key={p.id} onPress={() => editJob(p.id)}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.plotName}>{p.plotName}</Text>
-            <Text style={styles.plotAmount}>{formatCurrency(p.harvestingAmount)}</Text>
-          </View>
-          <Text style={styles.sub}>
-            {p.area} {tEnum('areaUnit', p.areaUnit)} · {formatDate(p.harvestDate)}
-          </Text>
-          <Text style={styles.sub}>{harvestTypeLabel(p.harvesterId, p.harvestType)}</Text>
-          {p.remarks ? <Text style={styles.sub}>{p.remarks}</Text> : null}
-          <Text style={styles.editHint}>{t('customerLedger.editJob')}</Text>
-        </Card>
-      ))}
+      {data.plots.map((p) => {
+        // This customer is the Bhusa buyer (not the plot owner) on this job.
+        const isBhusa = p.customerId !== customerId && p.bhusaBuyerId === customerId;
+        return (
+          <Card key={p.id} onPress={isBhusa ? undefined : () => editJob(p.id)}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.plotName}>{p.plotName}</Text>
+              <Text style={styles.plotAmount}>
+                {formatCurrency(isBhusa ? p.bhusaAmount ?? 0 : p.harvestingAmount)}
+              </Text>
+            </View>
+            {isBhusa ? (
+              <Text style={styles.sub}>
+                {t('customerLedger.bhusaFrom', { name: ownerName.get(p.customerId) ?? '' })}
+              </Text>
+            ) : null}
+            <Text style={styles.sub}>
+              {p.area} {tEnum('areaUnit', p.areaUnit)} · {formatDate(p.harvestDate)}
+            </Text>
+            {!isBhusa ? <Text style={styles.sub}>{harvestTypeLabel(p.harvesterId, p.harvestType)}</Text> : null}
+            {p.remarks ? <Text style={styles.sub}>{p.remarks}</Text> : null}
+            {!isBhusa ? <Text style={styles.editHint}>{t('customerLedger.editJob')}</Text> : null}
+          </Card>
+        );
+      })}
 
       <Text style={styles.sectionTitle}>{t('customerLedger.paymentHistory', { count: data.payments.length })}</Text>
       {data.payments.length === 0 ? (

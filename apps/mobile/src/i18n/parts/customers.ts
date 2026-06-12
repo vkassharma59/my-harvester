@@ -12,6 +12,7 @@ export const part = {
     customerLedger: {
       editJob: 'Edit job →',
       editCustomer: 'Edit customer →',
+      bhusaFrom: 'Bhusa bought from {{name}}',
       call: 'Call',
       reminderTitle: 'Payment reminder',
       reminderLabel: 'Reminder message',
@@ -67,6 +68,7 @@ export const part = {
     customerLedger: {
       editJob: 'काम संपादित करें →',
       editCustomer: 'ग्राहक संपादित करें →',
+      bhusaFrom: '{{name}} से खरीदा गया भूसा',
       call: 'कॉल',
       reminderTitle: 'भुगतान अनुस्मारक',
       reminderLabel: 'अनुस्मारक संदेश',
@@ -122,6 +124,7 @@ export const part = {
     customerLedger: {
       editJob: 'ਕੰਮ ਸੋਧੋ →',
       editCustomer: 'ਗਾਹਕ ਸੋਧੋ →',
+      bhusaFrom: '{{name}} ਤੋਂ ਖਰੀਦੀ ਤੂੜੀ',
       call: 'ਕਾਲ',
       reminderTitle: 'ਭੁਗਤਾਨ ਯਾਦ-ਪੱਤਰ',
       reminderLabel: 'ਯਾਦ-ਪੱਤਰ ਸੁਨੇਹਾ',

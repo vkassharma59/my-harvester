@@ -123,12 +123,14 @@ export class DashboardService {
       throw new NotFoundException('Customer not found');
     }
 
-    // Staff only see this customer's jobs on their assigned harvesters.
+    const cId = new Types.ObjectId(customerId);
+    // Jobs the customer owns (harvesting bill) plus jobs where they buy the
+    // Bhusa (Bhusa bill). Staff only see jobs on their assigned harvesters.
     const plots = await this.plots
       .find({
         tenantId: tenant,
-        customerId: new Types.ObjectId(customerId),
         ...harvesterFilter(user),
+        $or: [{ customerId: cId }, { bhusaBuyerId: cId }],
       })
       .sort({ harvestDate: -1 })
       .exec();
@@ -136,14 +138,21 @@ export class DashboardService {
     const payments = await this.payments
       .find({
         tenantId: tenant,
-        partyType: PartyType.CUSTOMER,
-        partyId: new Types.ObjectId(customerId),
+        partyType: { $in: [PartyType.CUSTOMER, PartyType.BHUSA_BUYER] },
+        partyId: cId,
       })
       .sort({ date: -1 })
       .exec();
 
-    const totalBillAmount = plots.reduce((acc, p) => acc + p.harvestingAmount, 0);
-    const totalHarvestedArea = plots.reduce((acc, p) => acc + p.area, 0);
+    // Owned jobs bill the harvesting amount; Bhusa-buyer jobs bill the Bhusa amount.
+    const totalBillAmount = plots.reduce(
+      (acc, p) => acc + (p.customerId.equals(cId) ? p.harvestingAmount : p.bhusaAmount ?? 0),
+      0,
+    );
+    const totalHarvestedArea = plots.reduce(
+      (acc, p) => acc + (p.customerId.equals(cId) ? p.area : 0),
+      0,
+    );
     const amountPaid = payments.reduce((acc, p) => acc + p.amount, 0);
 
     return {
