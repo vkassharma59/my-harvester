@@ -36,6 +36,7 @@ export const hi = {
     addHarvester: 'हार्वेस्टर जोड़ें',
     labour: 'कामगार',
     addLabour: 'कामगार जोड़ें',
+    attendance: 'उपस्थिति · {{name}}',
     agents: 'एजेंट',
     addAgent: 'एजेंट जोड़ें',
     fuelPumps: 'फ्यूल पंप',

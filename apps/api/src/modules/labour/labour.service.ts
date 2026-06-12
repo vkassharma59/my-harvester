@@ -4,6 +4,7 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { LabourLedger, PartyType, WageType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
+import { Attendance, AttendanceDocument } from '../attendance/attendance.schema';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
 import { Labour, LabourDocument } from './labour.schema';
 import { CreateLabourDto, UpdateLabourDto } from './dto/labour.dto';
@@ -13,6 +14,7 @@ export class LabourService {
   constructor(
     @InjectModel(Labour.name) private readonly model: Model<LabourDocument>,
     @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
+    @InjectModel(Attendance.name) private readonly attendance: Model<AttendanceDocument>,
   ) {}
 
   /** A worker's account: bill (fixed amount, or daily rate × working days) vs paid. */
@@ -28,8 +30,14 @@ export class LabourService {
       .exec();
 
     const amountPaid = payments.reduce((acc, p) => acc + p.amount, 0);
-    // Attendance isn't tracked yet, so daily workers have 0 working days for now.
-    const totalWorkingDays = 0;
+    // Daily workers bill per attended day; fixed workers don't use attendance.
+    const totalWorkingDays =
+      worker.wageType === WageType.FIXED
+        ? 0
+        : await this.attendance.countDocuments({
+            tenantId: new Types.ObjectId(user.tenantId),
+            labourId: new Types.ObjectId(id),
+          });
     const totalBill =
       worker.wageType === WageType.FIXED
         ? worker.customAmount ?? 0

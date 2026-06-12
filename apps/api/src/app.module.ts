@@ -6,6 +6,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import configuration, { AppConfig } from './config/configuration';
 import { AdminsModule } from './modules/admins/admins.module';
 import { AgentsModule } from './modules/agents/agents.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -37,6 +38,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     ExpenseCategoriesModule,
     FuelPumpsModule,
     LabourModule,
+    AttendanceModule,
     AgentsModule,
     PlotsModule,
     PaymentsModule,

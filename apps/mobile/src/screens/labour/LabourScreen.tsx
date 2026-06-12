@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LabourType, WageType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi } from '@/api/endpoints';
@@ -51,7 +52,18 @@ export function LabourScreen({ navigation }: Props) {
             <Card onPress={() => navigation.navigate('LabourLedger', { labourId: item.id, name: item.name })}>
               <View style={styles.rowBetween}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.wage}>{formatCurrency(wage)}</Text>
+                <View style={styles.rightRow}>
+                  {!isFixed ? (
+                    <Pressable
+                      onPress={() => navigation.navigate('Attendance', { labourId: item.id, name: item.name })}
+                      hitSlop={8}
+                      style={styles.clock}
+                    >
+                      <Ionicons name="time-outline" size={22} color={colors.primary} />
+                    </Pressable>
+                  ) : null}
+                  <Text style={styles.wage}>{formatCurrency(wage)}</Text>
+                </View>
               </View>
               <Text style={styles.sub}>{typeLabel} · {item.mobile}</Text>
               <Text style={styles.sub}>{isFixed ? t('labour.fixed') : t('labour.dailyWage')}</Text>
@@ -70,6 +82,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.lg, flexGrow: 1 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rightRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  clock: { padding: spacing.xs },
   name: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
   wage: { fontSize: font.size.md, fontWeight: font.weight.bold, color: colors.primary },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },

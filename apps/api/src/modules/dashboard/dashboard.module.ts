@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Attendance, AttendanceSchema } from '../attendance/attendance.schema';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
 import {
   ExpenseCategory,
@@ -21,6 +22,7 @@ import { DashboardService } from './dashboard.service';
       { name: Payment.name, schema: PaymentSchema },
       { name: Customer.name, schema: CustomerSchema },
       { name: ExpenseCategory.name, schema: ExpenseCategorySchema },
+      { name: Attendance.name, schema: AttendanceSchema },
     ]),
   ],
   controllers: [DashboardController],

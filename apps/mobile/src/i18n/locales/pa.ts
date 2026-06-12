@@ -36,6 +36,7 @@ export const pa = {
     addHarvester: 'ਹਾਰਵੈਸਟਰ ਸ਼ਾਮਲ ਕਰੋ',
     labour: 'ਕਾਮੇ',
     addLabour: 'ਕਾਮਾ ਸ਼ਾਮਲ ਕਰੋ',
+    attendance: 'ਹਾਜ਼ਰੀ · {{name}}',
     agents: 'ਏਜੰਟ',
     addAgent: 'ਏਜੰਟ ਸ਼ਾਮਲ ਕਰੋ',
     fuelPumps: 'ਫਿਊਲ ਪੰਪ',

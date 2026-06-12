@@ -25,6 +25,7 @@ export type MoreStackParamList = {
   Labour: undefined;
   LabourForm: { labourId?: string } | undefined;
   LabourLedger: { labourId: string; name: string };
+  Attendance: { labourId: string; name: string };
   Agents: undefined;
   AgentForm: { agentId?: string } | undefined;
   AgentLedger: { agentId: string; name: string };

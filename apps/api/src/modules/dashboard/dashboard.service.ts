@@ -11,6 +11,7 @@ import {
 } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { harvesterFilter } from '../../common/scope';
+import { Attendance, AttendanceDocument } from '../attendance/attendance.schema';
 import { Customer, CustomerDocument } from '../customers/customer.schema';
 import {
   ExpenseCategory,
@@ -43,6 +44,7 @@ export class DashboardService {
     @InjectModel(Customer.name) private readonly customers: Model<CustomerDocument>,
     @InjectModel(ExpenseCategory.name)
     private readonly expenseCategories: Model<ExpenseCategoryDocument>,
+    @InjectModel(Attendance.name) private readonly attendance: Model<AttendanceDocument>,
   ) {}
 
   async summary(user: AuthUser, harvesterId?: string): Promise<DashboardSummary> {
@@ -112,12 +114,29 @@ export class DashboardService {
     ]);
 
     const labourRows = await this.labour.find(hMatch).select('dailyWage customAmount wageType').exec();
-    // Each worker's bill: a fixed amount, or daily rate × working days. Attendance
-    // isn't tracked yet, so daily workers contribute 0 to the cost for now.
-    const totalWorkerCost = labourRows.reduce(
-      (acc, l) => acc + (l.wageType === WageType.FIXED ? l.customAmount ?? 0 : 0),
-      0,
-    );
+    // Fixed workers bill a flat amount; daily workers bill rate × attended days.
+    const fixedCost = labourRows
+      .filter((l) => l.wageType === WageType.FIXED)
+      .reduce((acc, l) => acc + (l.customAmount ?? 0), 0);
+    const dailyWorkers = labourRows.filter((l) => l.wageType !== WageType.FIXED);
+    let dailyCost = 0;
+    if (dailyWorkers.length) {
+      const counts = await this.attendance.aggregate<{ _id: Types.ObjectId; days: number }>([
+        {
+          $match: {
+            tenantId: new Types.ObjectId(user.tenantId),
+            labourId: { $in: dailyWorkers.map((l) => l._id) },
+          },
+        },
+        { $group: { _id: '$labourId', days: { $sum: 1 } } },
+      ]);
+      const daysByWorker = new Map(counts.map((c) => [c._id.toString(), c.days]));
+      dailyCost = dailyWorkers.reduce(
+        (acc, l) => acc + (l.dailyWage ?? 0) * (daysByWorker.get(l._id.toString()) ?? 0),
+        0,
+      );
+    }
+    const totalWorkerCost = fixedCost + dailyCost;
     const workerIds = labourRows.map((l) => l._id);
     const workerPaid = await sum(
       this.payments,

@@ -36,6 +36,7 @@ export const en = {
     addHarvester: 'Add harvester',
     labour: 'Workers',
     addLabour: 'Add worker',
+    attendance: 'Attendance · {{name}}',
     agents: 'Agents',
     addAgent: 'Add agent',
     fuelPumps: 'Fuel Pumps',

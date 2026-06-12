@@ -189,6 +189,16 @@ export const labourApi = {
   ledger: (id: string) => api.get<LabourLedger>(`/labour/${id}/ledger`).then((r) => r.data),
 };
 
+// ---------- Attendance (daily workers) ----------
+export const attendanceApi = {
+  /** Present dates ('YYYY-MM-DD') for a worker within [from, to]. */
+  getRange: (labourId: string, from: string, to: string) =>
+    api.get<string[]>('/attendance', { params: { labourId, from, to } }).then((r) => r.data),
+  /** Replace a worker's attendance for one week with the given present days. */
+  setWeek: (labourId: string, weekStart: string, days: string[]) =>
+    api.put<string[]>('/attendance/week', { labourId, weekStart, days }).then((r) => r.data),
+};
+
 // ---------- Fuel pumps (diesel vendors) ----------
 export interface FuelPumpInput {
   name: string;
