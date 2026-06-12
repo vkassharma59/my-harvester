@@ -112,6 +112,14 @@ export interface Labour extends AuditFields {
   paymentStatus: PaymentStatus;
 }
 
+/** A worker row enriched with their computed bill (drives the workers list). */
+export interface LabourListItem extends Labour {
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
+  totalWorkingDays: number;
+}
+
 /** A worker's account: what they're owed vs paid, with payment history. */
 export interface LabourLedger {
   labour: Labour;

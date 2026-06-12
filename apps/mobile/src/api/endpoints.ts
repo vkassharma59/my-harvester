@@ -19,6 +19,7 @@ import {
   HarvestType,
   Labour,
   LabourLedger,
+  LabourListItem,
   LabourType,
   Payment,
   PartyType,
@@ -181,7 +182,7 @@ export interface LabourInput {
 }
 export const labourApi = {
   list: (harvesterId?: string) =>
-    api.get<Labour[]>('/labour', { params: { harvesterId } }).then((r) => r.data),
+    api.get<LabourListItem[]>('/labour', { params: { harvesterId } }).then((r) => r.data),
   create: (body: LabourInput) => api.post<Labour>('/labour', body).then((r) => r.data),
   update: (id: string, body: Partial<LabourInput>) =>
     api.patch<Labour>(`/labour/${id}`, body).then((r) => r.data),

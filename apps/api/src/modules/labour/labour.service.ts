@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
-import { LabourLedger, PartyType, WageType } from '@wh/shared';
+import { LabourLedger, LabourListItem, PartyType, WageType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Attendance, AttendanceDocument } from '../attendance/attendance.schema';
@@ -64,12 +64,43 @@ export class LabourService {
     });
   }
 
-  findAll(user: AuthUser, harvesterId?: string): Promise<LabourDocument[]> {
+  async findAll(user: AuthUser, harvesterId?: string): Promise<LabourListItem[]> {
+    const tenant = new Types.ObjectId(user.tenantId);
     const filter: FilterQuery<LabourDocument> = {
-      tenantId: new Types.ObjectId(user.tenantId),
+      tenantId: tenant,
       ...harvesterFilter(user, harvesterId),
     };
-    return this.model.find(filter).sort({ createdAt: -1 }).exec();
+    const workers = await this.model.find(filter).sort({ createdAt: -1 }).exec();
+    if (!workers.length) return [];
+
+    const ids = workers.map((w) => w._id);
+    // Attended days per worker (daily wage) and payments made per worker.
+    const [attRows, payRows] = await Promise.all([
+      this.attendance.aggregate<{ _id: Types.ObjectId; days: number }>([
+        { $match: { tenantId: tenant, labourId: { $in: ids } } },
+        { $group: { _id: '$labourId', days: { $sum: 1 } } },
+      ]),
+      this.payments.aggregate<{ _id: Types.ObjectId; paid: number }>([
+        { $match: { tenantId: tenant, partyType: PartyType.LABOUR, partyId: { $in: ids } } },
+        { $group: { _id: '$partyId', paid: { $sum: '$amount' } } },
+      ]),
+    ]);
+    const daysByWorker = new Map(attRows.map((r) => [r._id.toString(), r.days]));
+    const paidByWorker = new Map(payRows.map((r) => [r._id.toString(), r.paid]));
+
+    return workers.map((w) => {
+      const days = w.wageType === WageType.FIXED ? 0 : daysByWorker.get(w._id.toString()) ?? 0;
+      const totalBill =
+        w.wageType === WageType.FIXED ? w.customAmount ?? 0 : (w.dailyWage ?? 0) * days;
+      const amountPaid = paidByWorker.get(w._id.toString()) ?? 0;
+      return {
+        ...(w.toJSON() as Record<string, unknown>),
+        totalBill,
+        amountPaid,
+        remaining: totalBill - amountPaid,
+        totalWorkingDays: days,
+      } as unknown as LabourListItem;
+    });
   }
 
   async findOne(id: string, user: AuthUser): Promise<LabourDocument> {

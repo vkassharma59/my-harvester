@@ -6,6 +6,7 @@ export const part = {
       custom: 'Custom',
       dailyWage: 'Daily wage',
       fixed: 'Fixed wage',
+      daysWorked: '{{count}} days × {{rate}}',
       addLabour: '+ Add worker',
     },
     labourForm: {
@@ -38,6 +39,7 @@ export const part = {
     },
     labourLedger: {
       editWorker: 'Edit worker →',
+      markAttendance: 'Mark attendance →',
       totalBill: 'Total bill',
       amountPaid: 'Amount paid',
       remaining: 'Remaining',
@@ -95,6 +97,7 @@ export const part = {
       custom: 'कस्टम',
       dailyWage: 'दैनिक मज़दूरी',
       fixed: 'निश्चित मज़दूरी',
+      daysWorked: '{{count}} दिन × {{rate}}',
       addLabour: '+ कामगार जोड़ें',
     },
     labourForm: {
@@ -127,6 +130,7 @@ export const part = {
     },
     labourLedger: {
       editWorker: 'कामगार संपादित करें →',
+      markAttendance: 'उपस्थिति दर्ज करें →',
       totalBill: 'कुल बिल',
       amountPaid: 'भुगतान की राशि',
       remaining: 'शेष',
@@ -184,6 +188,7 @@ export const part = {
       custom: 'ਕਸਟਮ',
       dailyWage: 'ਰੋਜ਼ਾਨਾ ਮਜ਼ਦੂਰੀ',
       fixed: 'ਨਿਸ਼ਚਿਤ ਮਜ਼ਦੂਰੀ',
+      daysWorked: '{{count}} ਦਿਨ × {{rate}}',
       addLabour: '+ ਕਾਮਾ ਸ਼ਾਮਲ ਕਰੋ',
     },
     labourForm: {
@@ -216,6 +221,7 @@ export const part = {
     },
     labourLedger: {
       editWorker: 'ਕਾਮਾ ਸੋਧੋ →',
+      markAttendance: 'ਹਾਜ਼ਰੀ ਦਰਜ ਕਰੋ →',
       totalBill: 'ਕੁੱਲ ਬਿੱਲ',
       amountPaid: 'ਭੁਗਤਾਨ ਕੀਤੀ ਰਕਮ',
       remaining: 'ਬਾਕੀ',

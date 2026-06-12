@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -96,6 +97,7 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
   if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   const w = data.labour;
+  const isFixed = w.wageType === WageType.FIXED;
   const typeLabel =
     w.type === LabourType.OTHER && w.customType ? w.customType : tEnum('labourType', w.type);
   const wageLine =
@@ -106,11 +108,26 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
   return (
     <Screen refreshing={isRefetching} onRefresh={refetch}>
       <Card>
-        <Text style={styles.name}>{w.name}</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.name}>{w.name}</Text>
+          {!isFixed ? (
+            <Pressable
+              onPress={() => navigation.navigate('Attendance', { labourId, name: w.name })}
+              hitSlop={8}
+            >
+              <Ionicons name="time-outline" size={26} color={colors.primary} />
+            </Pressable>
+          ) : null}
+        </View>
         <Text style={styles.sub}>
           {typeLabel} · {w.mobile}
         </Text>
         <Text style={styles.sub}>{wageLine}</Text>
+        {!isFixed ? (
+          <Pressable onPress={() => navigation.navigate('Attendance', { labourId, name: w.name })} hitSlop={8}>
+            <Text style={styles.editLink}>{t('labourLedger.markAttendance')}</Text>
+          </Pressable>
+        ) : null}
         <Pressable onPress={() => navigation.navigate('LabourForm', { labourId })} hitSlop={8}>
           <Text style={styles.editLink}>{t('labourLedger.editWorker')}</Text>
         </Pressable>
@@ -175,6 +192,7 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
   editLink: {

@@ -73,6 +73,7 @@ export function AttendanceScreen({ route }: Props) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attendance', labourId] });
       qc.invalidateQueries({ queryKey: ['labour-ledger', labourId] });
+      qc.invalidateQueries({ queryKey: ['labour'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       Alert.alert(t('attendance.savedTitle'), t('attendance.savedBody'));
     },
