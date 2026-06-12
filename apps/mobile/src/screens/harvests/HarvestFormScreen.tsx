@@ -1,10 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Contacts from 'expo-contacts';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { AreaUnit, HarvesterStatus, HarvesterType, HarvestType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { agentsApi, customersApi, harvestersApi, plotsApi, settingsApi } from '@/api/endpoints';
@@ -63,8 +61,6 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   const [rateTouched, setRateTouched] = useState(false);
   const [agentEnabled, setAgentEnabled] = useState(false);
   const [agentId, setAgentId] = useState('');
-  // A customer imported from contacts that isn't in the DB yet — created on save.
-  const [importedCustomer, setImportedCustomer] = useState<{ name: string; phone: string; deviceContactId?: string } | null>(null);
 
   // Commission agents for the chosen harvester (the list includes inactive ones).
   const { data: agents = [] } = useQuery({
@@ -170,50 +166,10 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       ? Math.round((Number(area) || 0) * selectedAgent.commissionRate * 100) / 100
       : 0;
 
-  // Pick a customer from contacts: reuse an existing one (matched by phone) or
-  // stage a new customer that gets created when the job is saved.
-  const importCustomer = async () => {
-    try {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(t('harvestForm.permissionNeeded'), t('harvestForm.permissionMessage'));
-        return;
-      }
-      const contact = await Contacts.presentContactPickerAsync();
-      if (!contact) return;
-      const phone = (contact.phoneNumbers?.[0]?.number ?? '').replace(/[^0-9]/g, '').slice(-10);
-      const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || contact.name || '';
-      if (!phone) {
-        Alert.alert(t('harvestForm.required'), t('harvestForm.contactNeedsPhone'));
-        return;
-      }
-      const existing = (customers?.items ?? []).find((c) => c.phone === phone);
-      if (existing) {
-        setCustomerId(existing.id);
-        setImportedCustomer(null);
-      } else {
-        setImportedCustomer({ name: name || phone, phone, deviceContactId: contact.id });
-        setCustomerId('');
-      }
-    } catch (e) {
-      Alert.alert(t('harvestForm.contactsError'), apiErrorMessage(e));
-    }
-  };
-
   const save = useMutation({
-    mutationFn: async () => {
-      // Create the imported customer first so the job can reference it.
-      let cId = customerId;
-      if (!cId && importedCustomer) {
-        const created = await customersApi.create({
-          name: importedCustomer.name,
-          phone: importedCustomer.phone,
-          deviceContactId: importedCustomer.deviceContactId,
-        });
-        cId = created.id;
-      }
+    mutationFn: () => {
       const body = {
-        customerId: cId,
+        customerId,
         harvesterId,
         plotName,
         area: Number(area),
@@ -230,7 +186,6 @@ export function HarvestFormScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plots'] });
-      qc.invalidateQueries({ queryKey: ['customers'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['customer-ledger'] });
       navigation.goBack();
@@ -239,8 +194,7 @@ export function HarvestFormScreen({ route, navigation }: Props) {
   });
 
   const onSave = () => {
-    if (!customerId && !importedCustomer)
-      return Alert.alert(t('harvestForm.required'), t('harvestForm.selectCustomer'));
+    if (!customerId) return Alert.alert(t('harvestForm.required'), t('harvestForm.selectCustomer'));
     if (!harvesterId) return Alert.alert(t('harvestForm.required'), t('harvestForm.selectHarvester'));
     if (!plotName.trim()) return Alert.alert(t('harvestForm.required'), t('harvestForm.enterPlot'));
     if (!Number(area)) return Alert.alert(t('harvestForm.required'), t('harvestForm.enterArea'));
@@ -249,39 +203,14 @@ export function HarvestFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <View style={styles.customerRow}>
-        <View style={styles.customerSelect}>
-          <Select
-            label={t('harvestForm.customerLabel')}
-            value={customerId}
-            options={customerOptions}
-            onChange={(v) => {
-              setCustomerId(v);
-              setImportedCustomer(null);
-            }}
-            placeholder={t('harvestForm.customerPlaceholder')}
-            searchable
-          />
-        </View>
-        <Pressable
-          onPress={importCustomer}
-          hitSlop={10}
-          style={styles.contactIconBtn}
-          accessibilityLabel={t('harvestForm.importCustomer')}
-        >
-          <Ionicons name="person-add-outline" size={24} color={colors.primary} />
-        </Pressable>
-      </View>
-      {importedCustomer ? (
-        <View style={styles.newCustomerBox}>
-          <Text style={styles.newCustomerText} numberOfLines={1}>
-            {t('harvestForm.newCustomer')}: {importedCustomer.name} · {importedCustomer.phone}
-          </Text>
-          <Pressable onPress={() => setImportedCustomer(null)} hitSlop={8}>
-            <Text style={styles.newCustomerClear}>✕</Text>
-          </Pressable>
-        </View>
-      ) : null}
+      <Select
+        label={t('harvestForm.customerLabel')}
+        value={customerId}
+        options={customerOptions}
+        onChange={setCustomerId}
+        placeholder={t('harvestForm.customerPlaceholder')}
+        searchable
+      />
       {!soleHarvesterId ? (
         <Select
           label={t('harvestForm.harvesterLabel')}
@@ -414,23 +343,6 @@ const styles = StyleSheet.create({
   },
   fieldRow: { flexDirection: 'row', gap: spacing.md },
   fieldHalf: { flex: 1 },
-  customerRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  customerSelect: { flex: 1 },
-  contactIconBtn: { paddingLeft: spacing.md, marginBottom: spacing.lg },
-  newCustomerBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  newCustomerText: { flex: 1, fontSize: font.size.sm, color: colors.text, paddingRight: spacing.sm },
-  newCustomerClear: { fontSize: font.size.md, color: colors.textMuted, fontWeight: font.weight.bold },
   agentBox: { marginTop: spacing.sm },
   switchRow: {
     flexDirection: 'row',
