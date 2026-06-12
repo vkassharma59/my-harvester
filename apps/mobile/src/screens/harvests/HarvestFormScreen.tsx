@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Contacts from 'expo-contacts';
@@ -248,23 +249,29 @@ export function HarvestFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <Select
-        label={t('harvestForm.customerLabel')}
-        value={customerId}
-        options={customerOptions}
-        onChange={(v) => {
-          setCustomerId(v);
-          setImportedCustomer(null);
-        }}
-        placeholder={t('harvestForm.customerPlaceholder')}
-        searchable
-      />
-      <Button
-        title={t('harvestForm.importCustomer')}
-        variant="secondary"
-        onPress={importCustomer}
-        style={{ marginBottom: spacing.md }}
-      />
+      <View style={styles.customerRow}>
+        <View style={styles.customerSelect}>
+          <Select
+            label={t('harvestForm.customerLabel')}
+            value={customerId}
+            options={customerOptions}
+            onChange={(v) => {
+              setCustomerId(v);
+              setImportedCustomer(null);
+            }}
+            placeholder={t('harvestForm.customerPlaceholder')}
+            searchable
+          />
+        </View>
+        <Pressable
+          onPress={importCustomer}
+          hitSlop={10}
+          style={styles.contactIconBtn}
+          accessibilityLabel={t('harvestForm.importCustomer')}
+        >
+          <Ionicons name="person-add-outline" size={24} color={colors.primary} />
+        </Pressable>
+      </View>
       {importedCustomer ? (
         <View style={styles.newCustomerBox}>
           <Text style={styles.newCustomerText} numberOfLines={1}>
@@ -407,6 +414,9 @@ const styles = StyleSheet.create({
   },
   fieldRow: { flexDirection: 'row', gap: spacing.md },
   fieldHalf: { flex: 1 },
+  customerRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  customerSelect: { flex: 1 },
+  contactIconBtn: { paddingLeft: spacing.md, marginBottom: spacing.lg },
   newCustomerBox: {
     flexDirection: 'row',
     alignItems: 'center',
