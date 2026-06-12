@@ -87,6 +87,11 @@ export function LabourFormScreen({ route, navigation }: Props) {
     }
   }, [existing]);
 
+  // Auto-select the sole harvester once it resolves (covers super admins with one).
+  useEffect(() => {
+    if (soleHarvesterId && !harvesterId) setHarvesterId(soleHarvesterId);
+  }, [soleHarvesterId, harvesterId]);
+
   const save = useMutation({
     mutationFn: () => {
       const body = {
