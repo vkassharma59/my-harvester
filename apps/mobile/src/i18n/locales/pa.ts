@@ -50,7 +50,7 @@ export const pa = {
       WITHOUT_BHUSA: 'ਪ੍ਰਤੀ ਬਿੱਘਾ (ਤੂੜੀ ਤੋਂ ਬਿਨਾਂ)',
     },
     expenseType: { DIESEL: 'ਡੀਜ਼ਲ', LABOUR: 'ਕਾਮੇ', SPARE_PARTS: 'ਸਪੇਅਰ ਪਾਰਟਸ', OTHER: 'ਹੋਰ' },
-    labourType: { HARVESTER_DRIVER: 'ਹਾਰਵੈਸਟਰ ਚਾਲਕ', TRACTOR_DRIVER: 'ਟਰੈਕਟਰ ਚਾਲਕ', HELPER: 'ਸਹਾਇਕ' },
+    labourType: { HARVESTER_DRIVER: 'ਹਾਰਵੈਸਟਰ ਚਾਲਕ', TRACTOR_DRIVER: 'ਟਰੈਕਟਰ ਚਾਲਕ', HELPER: 'ਸਹਾਇਕ', OTHER: 'ਹੋਰ' },
     wageType: { DAILY: 'ਰੋਜ਼ਾਨਾ', FIXED: 'ਨਿਸ਼ਚਿਤ' },
     role: { SUPER_ADMIN: 'ਸੁਪਰ ਐਡਮਿਨ', STAFF_ADMIN: 'ਸਟਾਫ਼ ਐਡਮਿਨ' },
   },

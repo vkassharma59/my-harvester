@@ -35,6 +35,7 @@ export function LabourFormScreen({ route, navigation }: Props) {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [type, setType] = useState<LabourType>(LabourType.HELPER);
+  const [customType, setCustomType] = useState('');
   const [harvesterId, setHarvesterId] = useState(
     soleHarvesterId ?? scopedHarvesterId(selectedId) ?? '',
   );
@@ -78,6 +79,7 @@ export function LabourFormScreen({ route, navigation }: Props) {
       setName(existing.name);
       setMobile(existing.mobile);
       setType(existing.type);
+      setCustomType(existing.customType ?? '');
       setHarvesterId(existing.harvesterId);
       const wt = existing.wageType ?? WageType.DAILY;
       setWageType(wt);
@@ -98,6 +100,7 @@ export function LabourFormScreen({ route, navigation }: Props) {
         name,
         mobile,
         type,
+        customType: type === LabourType.OTHER ? customType.trim() || undefined : undefined,
         harvesterId,
         wageType,
         dailyWage: wageType === WageType.DAILY ? amount : undefined,
@@ -118,6 +121,8 @@ export function LabourFormScreen({ route, navigation }: Props) {
   const onSave = () => {
     if (!name.trim() || !mobile.trim())
       return Alert.alert(t('labourForm.required'), t('labourForm.requiredNameMobile'));
+    if (type === LabourType.OTHER && !customType.trim())
+      return Alert.alert(t('labourForm.required'), t('labourForm.requiredCustomType'));
     if (!harvesterId) return Alert.alert(t('labourForm.required'), t('labourForm.requiredHarvester'));
     save.mutate();
   };
@@ -139,6 +144,14 @@ export function LabourFormScreen({ route, navigation }: Props) {
         maxLength={10}
       />
       <Select label={t('labourForm.labourType')} value={type} options={TYPE_OPTIONS} onChange={(v) => setType(v as LabourType)} />
+      {type === LabourType.OTHER ? (
+        <TextField
+          label={t('labourForm.customType')}
+          value={customType}
+          onChangeText={setCustomType}
+          placeholder={t('labourForm.customTypePlaceholder')}
+        />
+      ) : null}
       {!soleHarvesterId ? (
         <Select
           label={t('labourForm.harvester')}

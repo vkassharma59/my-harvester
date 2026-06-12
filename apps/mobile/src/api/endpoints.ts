@@ -151,6 +151,7 @@ export interface LabourInput {
   name: string;
   mobile: string;
   type: LabourType;
+  customType?: string;
   harvesterId: string;
   wageType?: WageType;
   dailyWage?: number;

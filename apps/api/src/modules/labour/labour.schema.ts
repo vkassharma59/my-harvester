@@ -16,6 +16,9 @@ export class Labour extends AuditedDocument {
   @Prop({ type: String, enum: LabourType, required: true, index: true })
   type!: LabourType;
 
+  @Prop({ trim: true })
+  customType?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
   harvesterId!: Types.ObjectId;
 

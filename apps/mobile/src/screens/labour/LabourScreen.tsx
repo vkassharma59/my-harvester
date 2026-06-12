@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { WageType } from '@wh/shared';
+import { LabourType, WageType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi } from '@/api/endpoints';
 import { tEnum } from '@/i18n';
@@ -43,13 +43,17 @@ export function LabourScreen({ navigation }: Props) {
         renderItem={({ item }) => {
           const isFixed = item.wageType === WageType.FIXED;
           const wage = isFixed ? item.customAmount ?? 0 : item.dailyWage ?? 0;
+          const typeLabel =
+            item.type === LabourType.OTHER && item.customType
+              ? item.customType
+              : tEnum('labourType', item.type);
           return (
             <Card onPress={() => navigation.navigate('LabourLedger', { labourId: item.id, name: item.name })}>
               <View style={styles.rowBetween}>
                 <Text style={styles.name}>{item.name}</Text>
                 <Text style={styles.wage}>{formatCurrency(wage)}</Text>
               </View>
-              <Text style={styles.sub}>{tEnum('labourType', item.type)} · {item.mobile}</Text>
+              <Text style={styles.sub}>{typeLabel} · {item.mobile}</Text>
               <Text style={styles.sub}>{isFixed ? t('labour.fixed') : t('labour.dailyWage')}</Text>
             </Card>
           );

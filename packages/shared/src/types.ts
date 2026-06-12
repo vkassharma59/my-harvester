@@ -75,6 +75,8 @@ export interface Labour extends AuditFields {
   name: string;
   mobile: string;
   type: LabourType;
+  /** Free-text role label, set only when type is OTHER. */
+  customType?: string;
   harvesterId: string;
   /** DAILY: dailyWage is the per-day rate. FIXED: customAmount is the total. */
   wageType: WageType;

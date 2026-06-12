@@ -21,6 +21,8 @@ export enum LabourType {
   HARVESTER_DRIVER = 'HARVESTER_DRIVER',
   TRACTOR_DRIVER = 'TRACTOR_DRIVER',
   HELPER = 'HELPER',
+  /** A free-text role; the label is stored in Labour.customType. */
+  OTHER = 'OTHER',
 }
 
 /** How a worker is paid: a daily rate (× attendance) or a fixed amount. */

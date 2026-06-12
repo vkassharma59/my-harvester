@@ -50,7 +50,7 @@ export const en = {
       WITHOUT_BHUSA: 'Per Bigha (without Bhusa)',
     },
     expenseType: { DIESEL: 'Diesel', LABOUR: 'Worker', SPARE_PARTS: 'Spare Parts', OTHER: 'Other' },
-    labourType: { HARVESTER_DRIVER: 'Harvester Driver', TRACTOR_DRIVER: 'Tractor Driver', HELPER: 'Helper' },
+    labourType: { HARVESTER_DRIVER: 'Harvester Driver', TRACTOR_DRIVER: 'Tractor Driver', HELPER: 'Helper', OTHER: 'Other' },
     wageType: { DAILY: 'Daily', FIXED: 'Fixed' },
     role: { SUPER_ADMIN: 'Super Admin', STAFF_ADMIN: 'Staff Admin' },
   },

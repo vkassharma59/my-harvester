@@ -22,6 +22,10 @@ export class CreateLabourDto {
   @IsEnum(LabourType)
   type!: LabourType;
 
+  @IsOptional()
+  @IsString()
+  customType?: string;
+
   @IsMongoId()
   harvesterId!: string;
 

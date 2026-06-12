@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { PartyType, WageType } from '@wh/shared';
+import { LabourType, PartyType, WageType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi, paymentsApi } from '@/api/endpoints';
 import { AmountField } from '@/components/AmountField';
@@ -96,6 +96,8 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
   if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   const w = data.labour;
+  const typeLabel =
+    w.type === LabourType.OTHER && w.customType ? w.customType : tEnum('labourType', w.type);
   const wageLine =
     w.wageType === WageType.FIXED
       ? t('labourLedger.fixedWage', { amount: formatCurrency(w.customAmount ?? 0) })
@@ -106,7 +108,7 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
       <Card>
         <Text style={styles.name}>{w.name}</Text>
         <Text style={styles.sub}>
-          {tEnum('labourType', w.type)} · {w.mobile}
+          {typeLabel} · {w.mobile}
         </Text>
         <Text style={styles.sub}>{wageLine}</Text>
         <Pressable onPress={() => navigation.navigate('LabourForm', { labourId })} hitSlop={8}>
