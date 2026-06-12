@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdminFormScreen } from '@/screens/admins/AdminFormScreen';
 import { AdminsScreen } from '@/screens/admins/AdminsScreen';
 import { AgentFormScreen } from '@/screens/agents/AgentFormScreen';
@@ -29,16 +30,23 @@ import {
 } from './types';
 import { colors } from '@/theme';
 
-const screenOptions = {
-  headerStyle: { backgroundColor: colors.primary },
-  headerTintColor: colors.white,
-  headerTitleStyle: { fontWeight: '600' as const },
-  contentStyle: { backgroundColor: colors.background },
-};
+function useScreenOptions() {
+  const insets = useSafeAreaInsets();
+  return {
+    headerStyle: { backgroundColor: colors.primary },
+    headerTintColor: colors.white,
+    headerTitleStyle: { fontWeight: '600' as const },
+    contentStyle: { backgroundColor: colors.background },
+    // Edge-to-edge (Expo SDK 54) can leave the Android header's status-bar inset
+    // at 0, so the title overlaps the clock — pin it to the safe-area top.
+    headerStatusBarHeight: insets.top,
+  };
+}
 
 const Dashboard = createNativeStackNavigator<DashboardStackParamList>();
 export function DashboardStack() {
   const { t } = useTranslation();
+  const screenOptions = useScreenOptions();
   return (
     <Dashboard.Navigator screenOptions={screenOptions}>
       <Dashboard.Screen name="Dashboard" component={DashboardScreen} options={{ title: t('tabs.dashboard') }} />
@@ -49,6 +57,7 @@ export function DashboardStack() {
 const Harvests = createNativeStackNavigator<HarvestsStackParamList>();
 export function HarvestsStack() {
   const { t } = useTranslation();
+  const screenOptions = useScreenOptions();
   return (
     <Harvests.Navigator screenOptions={screenOptions}>
       <Harvests.Screen name="HarvestsList" component={HarvestsScreen} options={{ title: t('nav.harvestingJobs') }} />
@@ -60,6 +69,7 @@ export function HarvestsStack() {
 const Customers = createNativeStackNavigator<CustomersStackParamList>();
 export function CustomersStack() {
   const { t } = useTranslation();
+  const screenOptions = useScreenOptions();
   return (
     <Customers.Navigator screenOptions={screenOptions}>
       <Customers.Screen name="CustomersList" component={CustomersScreen} options={{ title: t('nav.customers') }} />
@@ -77,6 +87,7 @@ export function CustomersStack() {
 const Expenses = createNativeStackNavigator<ExpensesStackParamList>();
 export function ExpensesStack() {
   const { t } = useTranslation();
+  const screenOptions = useScreenOptions();
   return (
     <Expenses.Navigator screenOptions={screenOptions}>
       <Expenses.Screen name="ExpensesList" component={ExpensesScreen} options={{ title: t('nav.expenses') }} />
@@ -88,6 +99,7 @@ export function ExpensesStack() {
 const More = createNativeStackNavigator<MoreStackParamList>();
 export function MoreStack() {
   const { t } = useTranslation();
+  const screenOptions = useScreenOptions();
   return (
     <More.Navigator screenOptions={screenOptions}>
       <More.Screen name="MoreMenu" component={MoreMenuScreen} options={{ title: t('nav.more') }} />
