@@ -12,7 +12,7 @@ export class HarvestersController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.OWNER)
   create(@Body() dto: CreateHarvesterDto, @CurrentUser() user: AuthUser) {
     return this.harvesters.create(dto, user);
   }
@@ -29,21 +29,21 @@ export class HarvestersController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.OWNER)
   update(@Param('id') id: string, @Body() dto: UpdateHarvesterDto, @CurrentUser() user: AuthUser) {
     return this.harvesters.update(id, dto, user);
   }
 
   @Patch(':id/activate')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.OWNER)
   activate(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.harvesters.setStatus(id, HarvesterStatus.ACTIVE, user);
   }
 
   @Patch(':id/deactivate')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.OWNER)
   deactivate(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.harvesters.setStatus(id, HarvesterStatus.INACTIVE, user);
   }

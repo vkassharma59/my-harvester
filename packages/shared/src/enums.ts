@@ -5,9 +5,10 @@
  */
 
 export enum Role {
-  /** Can manage other admins. The first/owner account. */
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  ADMIN = 'ADMIN',
+  /** A harvester business owner — the tenant root that owns all its data. */
+  OWNER = 'OWNER',
+  /** Staff working under an owner, scoped to assigned harvesters. */
+  STAFF_ADMIN = 'STAFF_ADMIN',
 }
 
 export enum ExpenseType {

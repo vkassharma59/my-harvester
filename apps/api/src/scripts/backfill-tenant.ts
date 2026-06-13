@@ -10,7 +10,7 @@ import { AppModule } from '../app.module';
  *   npm run migrate:tenant -w @wh/api
  *
  * Safe to run once on a single-owner database. Aborts if more than one
- * SUPER_ADMIN exists (the correct tenant would be ambiguous).
+ * OWNER exists (the correct tenant would be ambiguous).
  */
 async function run(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error', 'warn'] });
@@ -18,17 +18,17 @@ async function run(): Promise<void> {
 
   try {
     const Admin = conn.models['Admin'];
-    const supers = await Admin.find({ role: 'SUPER_ADMIN' }).lean();
+    const supers = await Admin.find({ role: 'OWNER' }).lean();
 
     if (supers.length === 0) {
       // eslint-disable-next-line no-console
-      console.error('No SUPER_ADMIN found — nothing to backfill.');
+      console.error('No OWNER found — nothing to backfill.');
       process.exitCode = 1;
       return;
     }
     if (supers.length > 1) {
       // eslint-disable-next-line no-console
-      console.error('Multiple SUPER_ADMINs exist — backfill is ambiguous. Aborting.');
+      console.error('Multiple OWNERs exist — backfill is ambiguous. Aborting.');
       process.exitCode = 1;
       return;
     }

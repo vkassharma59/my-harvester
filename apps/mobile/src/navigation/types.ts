@@ -40,6 +40,13 @@ export type MoreStackParamList = {
   Settings: undefined;
 };
 
+export type RootStackParamList = {
+  App: undefined;
+  Login: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { identifier: string };
+};
+
 export type DashboardStackParamList = {
   Dashboard: undefined;
 };

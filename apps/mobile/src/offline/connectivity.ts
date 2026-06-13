@@ -9,7 +9,10 @@ import { useSyncExternalStore } from 'react';
 export function initConnectivity(): void {
   onlineManager.setEventListener((setOnline) =>
     NetInfo.addEventListener((state) => {
-      setOnline(!!state.isConnected && state.isInternetReachable !== false);
+      // Base it on the radio connection only. `isInternetReachable` is a probe
+      // that gives false negatives on iOS, which would wrongly mark us offline
+      // and stop the outbox from ever flushing. Treat unknown (null) as online.
+      setOnline(state.isConnected !== false);
     }),
   );
 }

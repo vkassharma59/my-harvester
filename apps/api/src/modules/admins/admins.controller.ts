@@ -15,10 +15,10 @@ import { AdminsService } from './admins.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ChangePasswordDto, UpdateAdminDto } from './dto/update-admin.dto';
 
-/** Managing admins is restricted to the SUPER_ADMIN (the owner). */
+/** Managing admins is restricted to the OWNER (the owner). */
 @Controller('admins')
 @UseGuards(RolesGuard)
-@Roles(Role.SUPER_ADMIN)
+@Roles(Role.OWNER)
 export class AdminsController {
   constructor(private readonly admins: AdminsService) {}
 

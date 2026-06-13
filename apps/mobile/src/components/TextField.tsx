@@ -12,6 +12,20 @@ export function TextField({ label, error, style, secureTextEntry, ...props }: Te
   const isPassword = !!secureTextEntry;
   const [hidden, setHidden] = useState(true);
 
+  // Password fields otherwise trigger the OS strong-password / autofill overlay,
+  // which flickers in and out and bounces the cursor while typing. Opt out so
+  // entry is smooth. (Callers can still override via props.)
+  const passwordProps = isPassword
+    ? ({
+        autoCapitalize: 'none',
+        autoCorrect: false,
+        spellCheck: false,
+        textContentType: 'none',
+        autoComplete: 'off',
+        importantForAutofill: 'no',
+      } as const)
+    : undefined;
+
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
@@ -20,6 +34,7 @@ export function TextField({ label, error, style, secureTextEntry, ...props }: Te
           placeholderTextColor={colors.textMuted}
           style={[styles.input, style]}
           secureTextEntry={isPassword && hidden}
+          {...passwordProps}
           {...props}
         />
         {isPassword ? (

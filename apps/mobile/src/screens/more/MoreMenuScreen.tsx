@@ -27,7 +27,7 @@ export function MoreMenuScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const admin = useAuth((s) => s.admin);
   const logout = useAuth((s) => s.logout);
-  const items = ITEMS.filter((i) => !i.superAdminOnly || admin?.role === Role.SUPER_ADMIN);
+  const items = ITEMS.filter((i) => !i.superAdminOnly || admin?.role === Role.OWNER);
 
   const confirmLogout = () =>
     Alert.alert(t('more.signOut'), t('more.signOutConfirm'), [

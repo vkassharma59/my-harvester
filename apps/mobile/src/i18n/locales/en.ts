@@ -57,7 +57,7 @@ export const en = {
     expenseType: { DIESEL: 'Diesel', LABOUR: 'Worker', SPARE_PARTS: 'Spare Parts', OTHER: 'Other' },
     labourType: { HARVESTER_DRIVER: 'Harvester Driver', TRACTOR_DRIVER: 'Tractor Driver', HELPER: 'Helper', OTHER: 'Other' },
     wageType: { DAILY: 'Daily', FIXED: 'Fixed' },
-    role: { SUPER_ADMIN: 'Super Admin', STAFF_ADMIN: 'Staff Admin' },
+    role: { OWNER: 'Owner', STAFF_ADMIN: 'Staff Admin' },
   },
   settings: {
     language: 'Language',
