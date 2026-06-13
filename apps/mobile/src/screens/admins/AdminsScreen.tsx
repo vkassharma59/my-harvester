@@ -43,7 +43,7 @@ export function AdminsScreen({ navigation }: Props) {
         refreshing={isRefetching}
         ListEmptyComponent={<EmptyState title={t('admins.emptyTitle')} subtitle={t('admins.emptySubtitle')} />}
         renderItem={({ item }) => {
-          const isOwner = item.role === Role.SUPER_ADMIN;
+          const isOwner = item.role === Role.OWNER;
           const assigned = harvesterNames(item.harvesterIds);
           return (
             <Card onPress={() => navigation.navigate('AdminForm', { adminId: item.id })}>

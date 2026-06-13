@@ -4,7 +4,7 @@ import { AppModule } from '../app.module';
 import { AdminsService } from '../modules/admins/admins.service';
 
 /**
- * Manually create a SUPER_ADMIN (a harvester owner / tenant root).
+ * Manually create a OWNER (a harvester owner / tenant root).
  *
  *   npm run seed:owner -w @wh/api -- <email> <password> <phone> [name]
  *
@@ -28,10 +28,10 @@ async function run(): Promise<void> {
 
   try {
     const admins = app.get(AdminsService);
-    const owner = await admins.createSuperAdmin(email, password, name, phone);
+    const owner = await admins.createOwner(email, password, name, phone);
     // eslint-disable-next-line no-console
     console.log(
-      `✓ Created SUPER_ADMIN "${owner.name}" <${owner.email}>${phone ? ' / ' + phone : ''} (tenantId=${owner.tenantId.toString()})`,
+      `✓ Created OWNER "${owner.name}" <${owner.email}>${phone ? ' / ' + phone : ''} (tenantId=${owner.tenantId.toString()})`,
     );
   } catch (e) {
     // eslint-disable-next-line no-console

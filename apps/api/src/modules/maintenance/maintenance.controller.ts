@@ -5,10 +5,10 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { MaintenanceService } from './maintenance.service';
 
-/** Destructive tenant operations — restricted to the owner (SUPER_ADMIN). */
+/** Destructive tenant operations — restricted to the owner (OWNER). */
 @Controller('maintenance')
 @UseGuards(RolesGuard)
-@Roles(Role.SUPER_ADMIN)
+@Roles(Role.OWNER)
 export class MaintenanceController {
   constructor(private readonly maintenance: MaintenanceService) {}
 

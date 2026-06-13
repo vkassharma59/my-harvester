@@ -21,13 +21,13 @@ export class Admin extends AuditedDocument {
   @Prop({ required: true, select: false })
   passwordHash!: string;
 
-  @Prop({ type: String, enum: Role, default: Role.ADMIN })
+  @Prop({ type: String, enum: Role, default: Role.STAFF_ADMIN })
   role!: Role;
 
   @Prop({ default: true })
   isActive!: boolean;
 
-  /** Harvesters a staff ADMIN may access (empty/ignored for SUPER_ADMIN). */
+  /** Harvesters a staff admin may access (empty/ignored for OWNER). */
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Harvester' }], default: [] })
   harvesterIds!: Types.ObjectId[];
 }
