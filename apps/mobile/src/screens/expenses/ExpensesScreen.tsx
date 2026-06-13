@@ -146,17 +146,21 @@ export function ExpensesScreen({ navigation }: Props) {
             </View>
             <Text style={styles.sub}>{formatDate(item.date)}</Text>
             {item.notes ? <Text style={styles.sub}>{item.notes}</Text> : null}
-            {item.attachmentUrl ? (
-              <Pressable
-                onPress={() => void Linking.openURL(item.attachmentUrl as string).catch(() => {})}
-                hitSlop={8}
-              >
-                <Text style={styles.attachLink}>{t('expenses.viewAttachment')}</Text>
+            <View style={styles.actions}>
+              {item.attachmentUrl ? (
+                <Pressable
+                  onPress={() => void Linking.openURL(item.attachmentUrl as string).catch(() => {})}
+                  hitSlop={8}
+                >
+                  <Text style={styles.attachLink}>{t('expenses.viewAttachment')}</Text>
+                </Pressable>
+              ) : (
+                <View />
+              )}
+              <Pressable onPress={() => confirmDelete(item.id)} hitSlop={8}>
+                <Text style={styles.deleteText}>{t('common.delete')}</Text>
               </Pressable>
-            ) : null}
-            <Pressable onPress={() => confirmDelete(item.id)} hitSlop={8} style={styles.delete}>
-              <Text style={styles.deleteText}>{t('common.delete')}</Text>
-            </Pressable>
+            </View>
           </Card>
         )}
       />
@@ -195,8 +199,13 @@ const styles = StyleSheet.create({
   type: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
   amount: { fontSize: font.size.md, fontWeight: font.weight.bold, color: colors.danger },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
-  attachLink: { color: colors.primary, fontSize: font.size.sm, marginTop: spacing.xs },
-  delete: { alignSelf: 'flex-end', marginTop: spacing.xs },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  attachLink: { color: colors.primary, fontSize: font.size.sm },
   deleteText: { color: colors.danger, fontSize: font.size.sm },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
 });
