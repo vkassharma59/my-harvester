@@ -39,7 +39,7 @@ export function LoginScreen() {
   };
 
   return (
-    <Screen style={styles.centered}>
+    <Screen>
       <View style={styles.header}>
         <Text style={styles.logo}>🌾</Text>
         <Text style={styles.title}>{t('login.title')}</Text>
@@ -75,8 +75,7 @@ export function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flexGrow: 1, justifyContent: 'center' },
-  header: { alignItems: 'center', marginBottom: spacing.xl },
+  header: { alignItems: 'center', marginTop: spacing.xxl, marginBottom: spacing.xl },
   logo: { fontSize: 56 },
   title: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: colors.primary, marginTop: spacing.sm },
   subtitle: { fontSize: font.size.sm, color: colors.textMuted, marginTop: spacing.xs },
