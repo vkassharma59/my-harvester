@@ -88,7 +88,7 @@ export function AttachmentPicker({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: spacing.md },
+  wrap: { marginTop: spacing.md, marginBottom: spacing.md },
   label: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.text, marginBottom: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   info: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: spacing.xs },
