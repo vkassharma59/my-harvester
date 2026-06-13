@@ -17,6 +17,7 @@ import {
 import { AreaUnit, HarvesterStatus, HarvesterType, HarvestType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { agentsApi, customersApi, harvestersApi, plotsApi, settingsApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
@@ -209,7 +210,9 @@ export function HarvestFormScreen({ route, navigation }: Props) {
           : [],
         agentId: agentEnabled && agentId ? agentId : null,
       };
-      return editing ? plotsApi.update(plotId as string, body) : plotsApi.create(body);
+      if (editing) offlineUpdate('plot', plotId as string, body);
+      else offlineCreate('plot', body);
+      return Promise.resolve();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plots'] });

@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LabourType, PartyType, WageType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { labourApi, paymentsApi } from '@/api/endpoints';
+import { labourApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -48,23 +49,27 @@ export function LabourLedgerScreen({ navigation, route }: Props) {
   };
 
   const recordPayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.create({
+    mutationFn: () => {
+      offlineCreate('payment', {
         partyType: PartyType.LABOUR,
         partyId: labourId,
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const updatePayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.update(editingId!, {
+    mutationFn: () => {
+      offlineUpdate('payment', editingId!, {
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });

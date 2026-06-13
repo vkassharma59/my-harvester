@@ -6,6 +6,7 @@ import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from '
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { expenseCategoriesApi, expensesApi } from '@/api/endpoints';
+import { offlineRemove } from '@/offline/enqueue';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HarvesterPicker } from '@/components/HarvesterPicker';
@@ -43,7 +44,10 @@ export function ExpensesScreen({ navigation }: Props) {
     categories.find((c) => c.id === id)?.name ?? t('expenses.deletedCategory');
 
   const remove = useMutation({
-    mutationFn: (id: string) => expensesApi.remove(id),
+    mutationFn: (id: string) => {
+      offlineRemove('expense', id);
+      return Promise.resolve();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });

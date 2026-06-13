@@ -7,6 +7,7 @@ import { Alert } from 'react-native';
 import { LabourType, WageType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { labourApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { tEnum } from '@/i18n';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
@@ -106,7 +107,9 @@ export function LabourFormScreen({ route, navigation }: Props) {
         dailyWage: wageType === WageType.DAILY ? amount : undefined,
         customAmount: wageType === WageType.FIXED ? amount : undefined,
       };
-      return editing ? labourApi.update(labourId, body) : labourApi.create(body);
+      if (editing) offlineUpdate('labour', labourId, body);
+      else offlineCreate('labour', body);
+      return Promise.resolve();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['labour'] });

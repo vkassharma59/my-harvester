@@ -1,5 +1,6 @@
 import { isOnline } from './connectivity';
 import { newObjectId } from './objectId';
+import { optimisticInsert } from './optimistic';
 import { OutboxEntity, useOutbox } from './outbox';
 import { flushOutbox } from './sync';
 
@@ -12,13 +13,13 @@ function triggerFlush(): void {
  * away (optimistic). The real POST happens in the background flush; the id is
  * already final, so anything referencing this record offline stays valid.
  */
-export function offlineCreate<T extends Record<string, unknown>>(
-  entity: OutboxEntity,
-  body: T,
-): T & { id: string } {
+export function offlineCreate<T extends object>(entity: OutboxEntity, body: T): T & { id: string } {
   const id = newObjectId();
   const record = { ...body, id };
   useOutbox.getState().enqueue({ entity, type: 'create', recordId: id, body: record });
+  // Online, the quick flush + invalidate refreshes the list; only show an
+  // optimistic row when offline (and there's no server round-trip coming).
+  if (!isOnline()) optimisticInsert(entity, record as unknown as Record<string, unknown>);
   triggerFlush();
   return record;
 }

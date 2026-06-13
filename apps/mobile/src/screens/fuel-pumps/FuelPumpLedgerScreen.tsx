@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { fuelPumpsApi, paymentsApi } from '@/api/endpoints';
+import { fuelPumpsApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -47,23 +48,27 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
   };
 
   const recordPayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.create({
+    mutationFn: () => {
+      offlineCreate('payment', {
         partyType: PartyType.FUEL_PUMP,
         partyId: pumpId,
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const updatePayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.update(editingId!, {
+    mutationFn: () => {
+      offlineUpdate('payment', editingId!, {
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });

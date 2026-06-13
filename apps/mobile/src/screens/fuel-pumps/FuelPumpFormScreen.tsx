@@ -6,6 +6,7 @@ import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { HarvesterStatus } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { fuelPumpsApi, harvestersApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
@@ -55,7 +56,9 @@ export function FuelPumpFormScreen({ route, navigation }: Props) {
   const save = useMutation({
     mutationFn: () => {
       const body = { name: name.trim(), phone: phone.trim() || undefined, harvesterIds, isActive };
-      return editing ? fuelPumpsApi.update(pumpId, body) : fuelPumpsApi.create(body);
+      if (editing) offlineUpdate('fuelPump', pumpId, body);
+      else offlineCreate('fuelPump', body);
+      return Promise.resolve();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['fuel-pumps'] });

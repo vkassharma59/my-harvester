@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi, CustomerInput } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
@@ -66,7 +67,11 @@ export function CustomerFormScreen({ route, navigation }: Props) {
   };
 
   const save = useMutation({
-    mutationFn: () => (editing ? customersApi.update(customerId as string, form) : customersApi.create(form)),
+    mutationFn: () => {
+      if (editing) offlineUpdate('customer', customerId as string, form);
+      else offlineCreate('customer', form);
+      return Promise.resolve();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
       if (editing) qc.invalidateQueries({ queryKey: ['customer-ledger', customerId] });

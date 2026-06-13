@@ -6,6 +6,7 @@ import { Alert } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { expenseCategoriesApi, expensesApi, fuelPumpsApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { DateField } from '@/components/DateField';
@@ -105,7 +106,9 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
         date: date.toISOString(),
         notes: notes.trim() || undefined,
       };
-      return editing ? expensesApi.update(expenseId, body) : expensesApi.create(body);
+      if (editing) offlineUpdate('expense', expenseId, body);
+      else offlineCreate('expense', body);
+      return Promise.resolve();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] });

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { apiErrorMessage } from '@/api/client';
 import { attendanceApi, labourApi } from '@/api/endpoints';
+import { offlineSetAttendanceWeek } from '@/offline/enqueue';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -69,7 +70,10 @@ export function AttendanceScreen({ route }: Props) {
     setPresent(on ? new Set(days.map(ymd)) : new Set());
 
   const save = useMutation({
-    mutationFn: () => attendanceApi.setWeek(labourId, weekStartIso, [...present]),
+    mutationFn: () => {
+      offlineSetAttendanceWeek(labourId, weekStartIso, [...present]);
+      return Promise.resolve();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attendance', labourId] });
       qc.invalidateQueries({ queryKey: ['labour-ledger', labourId] });
