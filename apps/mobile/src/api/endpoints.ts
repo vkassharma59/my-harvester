@@ -49,7 +49,7 @@ export const authApi = {
   me: () => api.get<Admin>('/auth/me').then((r) => r.data),
 };
 
-// ---------- Admins (SUPER_ADMIN only) ----------
+// ---------- Admins (OWNER only) ----------
 export interface CreateAdminInput {
   name: string;
   email: string;
@@ -154,7 +154,7 @@ export const expensesApi = {
   remove: (id: string) => api.delete(`/expenses/${id}`).then(() => undefined),
 };
 
-// ---------- Expense categories (custom; SUPER_ADMIN manages) ----------
+// ---------- Expense categories (custom; OWNER manages) ----------
 export interface ExpenseCategoryInput {
   name: string;
   isActive?: boolean;
@@ -312,7 +312,7 @@ export const dashboardApi = {
     api.get<DashboardSummary>('/dashboard/summary', { params: { harvesterId } }).then((r) => r.data),
 };
 
-// ---------- Maintenance (SUPER_ADMIN only) ----------
+// ---------- Maintenance (OWNER only) ----------
 export const maintenanceApi = {
   clearData: () =>
     api.delete<{ deleted: Record<string, number> }>('/maintenance/data').then((r) => r.data),

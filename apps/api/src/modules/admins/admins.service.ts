@@ -27,8 +27,12 @@ export class AdminsService implements OnModuleInit {
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
-  /** Seed the first SUPER_ADMIN (its own tenant) from env if none exists. */
+  /** Seed the first OWNER (its own tenant) from env if none exists. */
   async onModuleInit(): Promise<void> {
+    // One-time, idempotent migration of the old role names to the new ones.
+    await this.adminModel.updateMany({ role: 'SUPER_ADMIN' }, { $set: { role: Role.OWNER } });
+    await this.adminModel.updateMany({ role: 'ADMIN' }, { $set: { role: Role.STAFF_ADMIN } });
+
     const count = await this.adminModel.estimatedDocumentCount();
     if (count > 0) return;
 
@@ -40,15 +44,15 @@ export class AdminsService implements OnModuleInit {
       return;
     }
 
-    await this.createSuperAdmin(seed.email, seed.password, seed.name ?? 'Owner');
-    this.logger.log(`Bootstrapped SUPER_ADMIN (owner): ${seed.email}`);
+    await this.createOwner(seed.email, seed.password, seed.name ?? 'Owner');
+    this.logger.log(`Bootstrapped OWNER: ${seed.email}`);
   }
 
   /**
-   * Creates a SUPER_ADMIN (an owner) whose tenant is itself. Used by the
-   * bootstrap and the manual seed script — never exposed over the API.
+   * Creates an OWNER whose tenant is itself. Used by the bootstrap and the
+   * manual seed script — never exposed over the API.
    */
-  async createSuperAdmin(
+  async createOwner(
     email: string,
     password: string,
     name: string,
@@ -67,7 +71,7 @@ export class AdminsService implements OnModuleInit {
       email: email.toLowerCase(),
       phone,
       passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
-      role: Role.SUPER_ADMIN,
+      role: Role.OWNER,
       isActive: true,
     });
   }
@@ -86,7 +90,7 @@ export class AdminsService implements OnModuleInit {
     return this.adminModel.findById(id).exec();
   }
 
-  /** Creates a staff ADMIN within the actor's tenant (owners are seeded only). */
+  /** Creates a staff admin within the actor's tenant (owners are seeded only). */
   async create(dto: CreateAdminDto, actor: AuthUser): Promise<AdminDocument> {
     const clash = await this.adminModel
       .findOne({ $or: [{ email: dto.email.toLowerCase() }, { phone: dto.phone }] })
@@ -104,7 +108,7 @@ export class AdminsService implements OnModuleInit {
       email: dto.email.toLowerCase(),
       phone: dto.phone,
       passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
-      role: Role.ADMIN,
+      role: Role.STAFF_ADMIN,
       isActive: true,
       harvesterIds: (dto.harvesterIds ?? []).map((id) => new Types.ObjectId(id)),
       createdBy: new Types.ObjectId(actor.id),

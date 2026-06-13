@@ -18,7 +18,7 @@ import {
   UpdateExpenseCategoryDto,
 } from './dto/expense-category.dto';
 
-/** All admins can read categories; only the SUPER_ADMIN may manage them. */
+/** All admins can read categories; only the OWNER may manage them. */
 @Controller('expense-categories')
 @UseGuards(RolesGuard)
 export class ExpenseCategoriesController {
@@ -30,13 +30,13 @@ export class ExpenseCategoriesController {
   }
 
   @Post()
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.OWNER)
   create(@Body() dto: CreateExpenseCategoryDto, @CurrentUser() user: AuthUser) {
     return this.categories.create(dto, user);
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.OWNER)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateExpenseCategoryDto,
@@ -46,7 +46,7 @@ export class ExpenseCategoriesController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.OWNER)
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.categories.remove(id, user);
   }

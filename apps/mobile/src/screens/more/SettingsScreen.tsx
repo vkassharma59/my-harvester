@@ -23,7 +23,7 @@ const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ label: l.label, value: l.code }
 export function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
-  const isSuperAdmin = useAuth((s) => s.admin?.role) === Role.SUPER_ADMIN;
+  const isSuperAdmin = useAuth((s) => s.admin?.role) === Role.OWNER;
   const myHarvesterIds = useAuth((s) => s.admin?.harvesterIds) ?? [];
   const { data, isLoading } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const { data: harvesters = [] } = useQuery({

@@ -57,7 +57,7 @@ export const pa = {
     expenseType: { DIESEL: 'ਡੀਜ਼ਲ', LABOUR: 'ਕਾਮੇ', SPARE_PARTS: 'ਸਪੇਅਰ ਪਾਰਟਸ', OTHER: 'ਹੋਰ' },
     labourType: { HARVESTER_DRIVER: 'ਹਾਰਵੈਸਟਰ ਚਾਲਕ', TRACTOR_DRIVER: 'ਟਰੈਕਟਰ ਚਾਲਕ', HELPER: 'ਸਹਾਇਕ', OTHER: 'ਹੋਰ' },
     wageType: { DAILY: 'ਰੋਜ਼ਾਨਾ', FIXED: 'ਨਿਸ਼ਚਿਤ' },
-    role: { SUPER_ADMIN: 'ਸੁਪਰ ਐਡਮਿਨ', STAFF_ADMIN: 'ਸਟਾਫ਼ ਐਡਮਿਨ' },
+    role: { OWNER: 'ਮਾਲਕ', STAFF_ADMIN: 'ਸਟਾਫ਼ ਐਡਮਿਨ' },
   },
   settings: {
     language: 'ਭਾਸ਼ਾ',

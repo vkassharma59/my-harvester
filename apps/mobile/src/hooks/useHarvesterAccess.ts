@@ -12,7 +12,7 @@ import { useAuth } from '@/store/auth';
  */
 export function useHarvesterAccess() {
   const admin = useAuth((s) => s.admin);
-  const isSuperAdmin = admin?.role === Role.SUPER_ADMIN;
+  const isSuperAdmin = admin?.role === Role.OWNER;
   const harvesterIds = admin?.harvesterIds ?? [];
 
   // Active harvesters the current user can access (the API scopes by role).
