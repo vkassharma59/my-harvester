@@ -1,0 +1,544 @@
+{
+  "info": {
+    "name": "Wheat Harvester API",
+    "_postman_id": "wh-api-collection",
+    "description": "All endpoints for the Wheat Harvester API.\n\nSetup:\n1. Set the `baseUrl` collection variable (default points at the EC2 instance).\n2. Run **Auth > Login** — it saves the JWT into the `token` variable automatically.\n3. Every other request inherits Bearer {{token}}.\n\nEnums: Role OWNER|STAFF_ADMIN; HarvesterType COMBINE|BHUSA; HarvestType PER_BIGHA_WITH_BHUSA|WITHOUT_BHUSA; AreaUnit BIGHA|ACRE; ExpenseType DIESEL|SPARE_PARTS|OTHER; PartyType CUSTOMER|BHUSA_BUYER|LABOUR|AGENT|FUEL_PUMP; LabourType HARVESTER_DRIVER|TRACTOR_DRIVER|HELPER|OTHER; WageType DAILY|FIXED.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://13.49.41.223/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "harvesterId", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "plotId", "value": "" },
+    { "key": "labourId", "value": "" },
+    { "key": "agentId", "value": "" },
+    { "key": "pumpId", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "expenseId", "value": "" },
+    { "key": "paymentId", "value": "" },
+    { "key": "adminId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health (public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "  pm.collectionVariables.set('token', res.accessToken);",
+                  "  console.log('Saved token');",
+                  "}",
+                  "if (res.admin && res.admin.id) pm.collectionVariables.set('adminId', res.admin.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"owner@example.com\",\n  \"password\": \"ChangeMe123!\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "identifier may be an email or a 10-digit mobile."
+          }
+        },
+        {
+          "name": "GET /auth/me",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Admins (OWNER only)",
+      "item": [
+        {
+          "name": "GET /admins",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/admins" }
+        },
+        {
+          "name": "GET /admins/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/admins/{{adminId}}" }
+        },
+        {
+          "name": "POST /admins",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Staff One\",\n  \"email\": \"staff@example.com\",\n  \"password\": \"Staff123!\",\n  \"phone\": \"9876543210\",\n  \"harvesterIds\": [\"{{harvesterId}}\"]\n}" },
+            "url": "{{baseUrl}}/admins"
+          }
+        },
+        {
+          "name": "PATCH /admins/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Staff One Updated\",\n  \"isActive\": true,\n  \"harvesterIds\": [\"{{harvesterId}}\"]\n}" },
+            "url": "{{baseUrl}}/admins/{{adminId}}"
+          }
+        },
+        {
+          "name": "PATCH /admins/:id/password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"newPassword\": \"NewStaff123!\"\n}" },
+            "url": "{{baseUrl}}/admins/{{adminId}}/password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Harvesters",
+      "item": [
+        {
+          "name": "GET /harvesters",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/harvesters?status=ACTIVE" }
+        },
+        {
+          "name": "GET /harvesters/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/harvesters/{{harvesterId}}" }
+        },
+        {
+          "name": "POST /harvesters (OWNER)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('harvesterId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Harvester 1\",\n  \"type\": \"COMBINE\",\n  \"registrationNo\": \"RJ-01-AB-1234\",\n  \"model\": \"John Deere\",\n  \"ratePerUnit\": 1500\n}" },
+            "url": "{{baseUrl}}/harvesters",
+            "description": "type COMBINE uses ratePerUnit; type BHUSA uses rateWithBhusa + rateWithoutBhusa."
+          }
+        },
+        {
+          "name": "PATCH /harvesters/:id (OWNER)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Harvester 1 (updated)\",\n  \"ratePerUnit\": 1600\n}" },
+            "url": "{{baseUrl}}/harvesters/{{harvesterId}}"
+          }
+        },
+        {
+          "name": "PATCH /harvesters/:id/activate (OWNER)",
+          "request": { "method": "PATCH", "header": [], "url": "{{baseUrl}}/harvesters/{{harvesterId}}/activate" }
+        },
+        {
+          "name": "PATCH /harvesters/:id/deactivate (OWNER)",
+          "request": { "method": "PATCH", "header": [], "url": "{{baseUrl}}/harvesters/{{harvesterId}}/deactivate" }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "GET /customers",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/customers?page=1&limit=50&search=" }
+        },
+        {
+          "name": "GET /customers/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/customers/{{customerId}}" }
+        },
+        {
+          "name": "GET /customers/:id/ledger",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/customers/{{customerId}}/ledger" }
+        },
+        {
+          "name": "POST /customers",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('customerId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Ramesh Kumar\",\n  \"phone\": \"9876500001\",\n  \"village\": \"Rampur\",\n  \"address\": \"Near temple\"\n}" },
+            "url": "{{baseUrl}}/customers",
+            "description": "Optional `id` (24-hex) for offline-created records (idempotent)."
+          }
+        },
+        {
+          "name": "PATCH /customers/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"village\": \"Rampur East\"\n}" },
+            "url": "{{baseUrl}}/customers/{{customerId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plots (Jobs)",
+      "item": [
+        {
+          "name": "GET /plots",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/plots?harvesterId={{harvesterId}}&customerId={{customerId}}" }
+        },
+        {
+          "name": "GET /plots/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/plots/{{plotId}}" }
+        },
+        {
+          "name": "POST /plots",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('plotId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"harvesterId\": \"{{harvesterId}}\",\n  \"plotName\": \"North field\",\n  \"area\": 5,\n  \"areaUnit\": \"BIGHA\",\n  \"harvestDate\": \"2026-06-10\",\n  \"harvestType\": \"PER_BIGHA_WITH_BHUSA\",\n  \"ratePerBigha\": 1500,\n  \"remarks\": \"\",\n  \"bhusaBuyers\": [],\n  \"agentId\": null\n}" },
+            "url": "{{baseUrl}}/plots",
+            "description": "For WITHOUT_BHUSA jobs, bhusaBuyers can be [{customerId, amount}]."
+          }
+        },
+        {
+          "name": "PATCH /plots/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"area\": 6,\n  \"ratePerBigha\": 1600\n}" },
+            "url": "{{baseUrl}}/plots/{{plotId}}"
+          }
+        },
+        {
+          "name": "DELETE /plots/:id",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/plots/{{plotId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "item": [
+        {
+          "name": "GET /expenses",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/expenses?harvesterId={{harvesterId}}&type=DIESEL&from=2026-06-01&to=2026-06-30" }
+        },
+        {
+          "name": "GET /expenses/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/expenses/{{expenseId}}" }
+        },
+        {
+          "name": "POST /expenses",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('expenseId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"harvesterId\": \"{{harvesterId}}\",\n  \"type\": \"DIESEL\",\n  \"pumpId\": \"{{pumpId}}\",\n  \"amount\": 2500,\n  \"date\": \"2026-06-10\",\n  \"notes\": \"Diesel fill\",\n  \"attachmentUrl\": \"\"\n}" },
+            "url": "{{baseUrl}}/expenses",
+            "description": "type: DIESEL|SPARE_PARTS|OTHER. categoryId for custom types (type=OTHER). pumpId for DIESEL."
+          }
+        },
+        {
+          "name": "PATCH /expenses/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 2700\n}" },
+            "url": "{{baseUrl}}/expenses/{{expenseId}}"
+          }
+        },
+        {
+          "name": "DELETE /expenses/:id",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/expenses/{{expenseId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Expense Categories",
+      "item": [
+        {
+          "name": "GET /expense-categories",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/expense-categories" }
+        },
+        {
+          "name": "POST /expense-categories (OWNER)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('categoryId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Transport\"\n}" },
+            "url": "{{baseUrl}}/expense-categories"
+          }
+        },
+        {
+          "name": "PATCH /expense-categories/:id (OWNER)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Transport & Food\"\n}" },
+            "url": "{{baseUrl}}/expense-categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "DELETE /expense-categories/:id (OWNER)",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/expense-categories/{{categoryId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Fuel Pumps",
+      "item": [
+        {
+          "name": "GET /fuel-pumps",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/fuel-pumps?harvesterId={{harvesterId}}" }
+        },
+        {
+          "name": "GET /fuel-pumps/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/fuel-pumps/{{pumpId}}" }
+        },
+        {
+          "name": "GET /fuel-pumps/:id/ledger",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/fuel-pumps/{{pumpId}}/ledger" }
+        },
+        {
+          "name": "POST /fuel-pumps",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('pumpId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Sharma Filling Station\",\n  \"phone\": \"9876500010\",\n  \"harvesterIds\": [\"{{harvesterId}}\"],\n  \"isActive\": true\n}" },
+            "url": "{{baseUrl}}/fuel-pumps"
+          }
+        },
+        {
+          "name": "PATCH /fuel-pumps/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"9876500011\"\n}" },
+            "url": "{{baseUrl}}/fuel-pumps/{{pumpId}}"
+          }
+        },
+        {
+          "name": "DELETE /fuel-pumps/:id",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/fuel-pumps/{{pumpId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Labour (Workers)",
+      "item": [
+        {
+          "name": "GET /labour",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/labour?harvesterId={{harvesterId}}" }
+        },
+        {
+          "name": "GET /labour/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/labour/{{labourId}}" }
+        },
+        {
+          "name": "GET /labour/:id/ledger",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/labour/{{labourId}}/ledger" }
+        },
+        {
+          "name": "POST /labour",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('labourId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Suresh\",\n  \"mobile\": \"9876500020\",\n  \"type\": \"HELPER\",\n  \"harvesterId\": \"{{harvesterId}}\",\n  \"wageType\": \"DAILY\",\n  \"dailyWage\": 500\n}" },
+            "url": "{{baseUrl}}/labour",
+            "description": "type: HARVESTER_DRIVER|TRACTOR_DRIVER|HELPER|OTHER (customType when OTHER). wageType DAILY uses dailyWage; FIXED uses customAmount."
+          }
+        },
+        {
+          "name": "PATCH /labour/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"dailyWage\": 550\n}" },
+            "url": "{{baseUrl}}/labour/{{labourId}}"
+          }
+        },
+        {
+          "name": "DELETE /labour/:id",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/labour/{{labourId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "GET /attendance",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/attendance?labourId={{labourId}}&from=2026-06-01&to=2026-06-07" }
+        },
+        {
+          "name": "PUT /attendance/week",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"labourId\": \"{{labourId}}\",\n  \"weekStart\": \"2026-06-01\",\n  \"days\": [\"2026-06-01\", \"2026-06-02\", \"2026-06-03\"]\n}" },
+            "url": "{{baseUrl}}/attendance/week",
+            "description": "Replaces the week's present days for the worker. weekStart = Monday (YYYY-MM-DD)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "item": [
+        {
+          "name": "GET /agents",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/agents?harvesterId={{harvesterId}}" }
+        },
+        {
+          "name": "GET /agents/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/agents/{{agentId}}" }
+        },
+        {
+          "name": "GET /agents/:id/ledger",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/agents/{{agentId}}/ledger" }
+        },
+        {
+          "name": "POST /agents",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('agentId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Agent Verma\",\n  \"phone\": \"9876500030\",\n  \"harvesterId\": \"{{harvesterId}}\",\n  \"commissionRate\": 200,\n  \"isActive\": true\n}" },
+            "url": "{{baseUrl}}/agents",
+            "description": "commissionRate is per unit area (e.g. 200 per bigha)."
+          }
+        },
+        {
+          "name": "PATCH /agents/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"commissionRate\": 250\n}" },
+            "url": "{{baseUrl}}/agents/{{agentId}}"
+          }
+        },
+        {
+          "name": "DELETE /agents/:id",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/agents/{{agentId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "GET /payments",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/payments?partyType=CUSTOMER&partyId={{customerId}}&harvesterId={{harvesterId}}" }
+        },
+        {
+          "name": "GET /payments/:id",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/payments/{{paymentId}}" }
+        },
+        {
+          "name": "POST /payments",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const r=pm.response.json(); if(r.id) pm.collectionVariables.set('paymentId', r.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"partyType\": \"CUSTOMER\",\n  \"partyId\": \"{{customerId}}\",\n  \"amount\": 3000,\n  \"date\": \"2026-06-11\",\n  \"notes\": \"Part payment\",\n  \"attachmentUrl\": \"\"\n}" },
+            "url": "{{baseUrl}}/payments",
+            "description": "partyType: CUSTOMER|BHUSA_BUYER|LABOUR|AGENT|FUEL_PUMP; partyId is that party's id."
+          }
+        },
+        {
+          "name": "PATCH /payments/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 3500\n}" },
+            "url": "{{baseUrl}}/payments/{{paymentId}}"
+          }
+        },
+        {
+          "name": "DELETE /payments/:id",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/payments/{{paymentId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "GET /dashboard/summary",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/dashboard/summary?harvesterId={{harvesterId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "GET /settings",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/settings" }
+        },
+        {
+          "name": "PATCH /settings",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currency\": \"INR\",\n  \"defaultAreaUnit\": \"BIGHA\",\n  \"firmName\": \"My Harvester Co.\"\n}" },
+            "url": "{{baseUrl}}/settings"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Uploads",
+      "item": [
+        {
+          "name": "POST /uploads (multipart, max 5MB)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] }
+              ]
+            },
+            "url": "{{baseUrl}}/uploads",
+            "description": "Upload a bill/receipt (any file up to 5MB). Returns { url }. Pick a file in the 'file' field before sending."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maintenance (OWNER only)",
+      "item": [
+        {
+          "name": "DELETE /maintenance/data",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/maintenance/data",
+            "description": "Wipes ALL business data for the tenant (keeps admin accounts). Irreversible."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import { ExpenseCategoriesModule } from './modules/expense-categories/expense-ca
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { FuelPumpsModule } from './modules/fuel-pumps/fuel-pumps.module';
 import { HarvestersModule } from './modules/harvesters/harvesters.module';
+import { HealthModule } from './modules/health/health.module';
 import { LabourModule } from './modules/labour/labour.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -46,6 +47,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     DashboardModule,
     MaintenanceModule,
     UploadsModule,
+    HealthModule,
   ],
   providers: [
     // Every route requires a valid JWT unless marked @Public().
