@@ -16,13 +16,20 @@ export function ForgotPasswordScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const onSend = () => {
-    if (!identifier.trim()) {
+    const id = identifier.trim();
+    if (!id) {
       setError(t('forgotPassword.required'));
+      return;
+    }
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id);
+    const isMobile = /^\d{10}$/.test(id);
+    if (!isEmail && !isMobile) {
+      setError(t('forgotPassword.invalid'));
       return;
     }
     setError(null);
     // OTP delivery isn't wired up yet — continue to the reset-code UI.
-    navigation.navigate('ResetPassword', { identifier: identifier.trim() });
+    navigation.navigate('ResetPassword', { identifier: id });
   };
 
   return (

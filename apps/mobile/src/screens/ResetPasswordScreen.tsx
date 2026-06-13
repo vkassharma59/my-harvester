@@ -23,6 +23,14 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
       setError(t('resetPassword.required'));
       return;
     }
+    if (!/^\d{6}$/.test(code)) {
+      setError(t('resetPassword.invalidCode'));
+      return;
+    }
+    if (password.length < 6) {
+      setError(t('resetPassword.weakPassword'));
+      return;
+    }
     if (password !== confirm) {
       setError(t('resetPassword.mismatch'));
       return;
