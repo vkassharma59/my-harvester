@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsOnline } from '@/offline/connectivity';
 import { pendingCount, useOutbox } from '@/offline/outbox';
+import { useOfflinePrefs } from '@/offline/prefs';
 import { colors, font, spacing } from '@/theme';
 
 /**
@@ -14,13 +15,20 @@ export function OfflineBanner() {
   const insets = useSafeAreaInsets();
   const online = useIsOnline();
   const pending = useOutbox(pendingCount);
+  const offlineEntryEnabled = useOfflinePrefs((s) => s.offlineEntryEnabled);
 
-  if (online && pending === 0) return null;
+  // Nothing to show when fully synced. With offline entry off, also hide the
+  // transient "Syncing…" strip that every online save produces as it flushes
+  // through the outbox — the user opted out of the offline experience, so we
+  // don't surface sync chrome while online.
+  if (online && (pending === 0 || !offlineEntryEnabled)) return null;
 
   const message = !online
     ? pending > 0
       ? t('offline.offlineWithPending', { count: pending })
-      : t('offline.offline')
+      : offlineEntryEnabled
+        ? t('offline.offline')
+        : t('offline.offlineDisabled')
     : t('offline.syncing', { count: pending });
 
   return (
