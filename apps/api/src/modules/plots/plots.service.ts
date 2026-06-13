@@ -3,18 +3,23 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { HarvesterType, HarvestType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Agent, AgentDocument } from '../agents/agent.schema';
 import { Harvester, HarvesterDocument } from '../harvesters/harvester.schema';
 import { Plot, PlotDocument } from './plot.schema';
 import { CreatePlotDto, UpdatePlotDto } from './dto/plot.dto';
 
+interface BhusaBuyerInput {
+  customerId: string;
+  amount: number;
+}
+
 interface ComputeInput {
   area: number;
   ratePerBigha: number;
   harvestType: HarvestType;
-  bhusaBuyerId?: string | null;
-  bhusaAmount?: number;
+  bhusaBuyers?: BhusaBuyerInput[];
 }
 
 @Injectable()
@@ -59,25 +64,43 @@ export class PlotsService {
       : harvester.rateWithoutBhusa ?? 0;
   }
 
-  /** Derives harvestingAmount/totalAmount and validates the Bhusa rules per type. */
+  /** The Bhusa buyers to apply from a DTO (new array, or legacy single field). */
+  private bhusaBuyersFromDto(dto: {
+    bhusaBuyers?: BhusaBuyerInput[];
+    bhusaBuyerId?: string;
+    bhusaAmount?: number;
+  }): BhusaBuyerInput[] {
+    if (dto.bhusaBuyers?.length) return dto.bhusaBuyers;
+    if (dto.bhusaBuyerId) return [{ customerId: dto.bhusaBuyerId, amount: dto.bhusaAmount ?? 0 }];
+    return [];
+  }
+
+  /** Normalises an existing plot's Bhusa buyers (array or legacy single field). */
+  private existingBhusaBuyers(existing: PlotDocument): BhusaBuyerInput[] {
+    if (existing.bhusaBuyers?.length) {
+      return existing.bhusaBuyers.map((b) => ({ customerId: b.customerId.toString(), amount: b.amount }));
+    }
+    if (existing.bhusaBuyerId) {
+      return [{ customerId: existing.bhusaBuyerId.toString(), amount: existing.bhusaAmount ?? 0 }];
+    }
+    return [];
+  }
+
+  /** Derives harvestingAmount/totalAmount and the Bhusa buyers per harvest type. */
   private computeAmounts(input: ComputeInput) {
     const harvestingAmount = Math.round(input.area * input.ratePerBigha * 100) / 100;
 
-    let bhusaAmount = 0;
-    let bhusaBuyerId: Types.ObjectId | null = null;
-
-    if (input.harvestType === HarvestType.WITHOUT_BHUSA) {
-      bhusaAmount = input.bhusaAmount ?? 0;
-      bhusaBuyerId = input.bhusaBuyerId ? new Types.ObjectId(input.bhusaBuyerId) : null;
-    } else if (input.bhusaBuyerId || input.bhusaAmount) {
-      throw new BadRequestException(
-        'Bhusa buyer/amount is only valid for the WITHOUT_BHUSA harvest type',
-      );
-    }
+    // Bhusa applies only to Type 2 (WITHOUT_BHUSA); ignore buyers otherwise.
+    const raw = input.harvestType === HarvestType.WITHOUT_BHUSA ? input.bhusaBuyers ?? [] : [];
+    const bhusaBuyers = raw
+      .filter((b) => b.customerId)
+      .map((b) => ({ customerId: new Types.ObjectId(b.customerId), amount: b.amount || 0 }));
+    const bhusaAmount = Math.round(bhusaBuyers.reduce((acc, b) => acc + b.amount, 0) * 100) / 100;
 
     return {
       harvestingAmount,
-      bhusaBuyerId,
+      bhusaBuyers,
+      bhusaBuyerId: null as Types.ObjectId | null,
       bhusaAmount,
       totalAmount: Math.round((harvestingAmount + bhusaAmount) * 100) / 100,
     };
@@ -99,22 +122,26 @@ export class PlotsService {
       area: dto.area,
       ratePerBigha,
       harvestType: dto.harvestType,
-      bhusaBuyerId: dto.bhusaBuyerId,
-      bhusaAmount: dto.bhusaAmount,
+      bhusaBuyers: this.bhusaBuyersFromDto(dto),
     });
     const commission = await this.resolveCommission(dto.agentId, dto.harvesterId, dto.area, user);
 
-    return this.model.create({
-      ...dto,
-      tenantId: new Types.ObjectId(user.tenantId),
-      customerId: new Types.ObjectId(dto.customerId),
-      harvesterId: new Types.ObjectId(dto.harvesterId),
-      ratePerBigha,
-      ...computed,
-      ...commission,
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    return createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        tenantId: new Types.ObjectId(user.tenantId),
+        customerId: new Types.ObjectId(dto.customerId),
+        harvesterId: new Types.ObjectId(dto.harvesterId),
+        ratePerBigha,
+        ...computed,
+        ...commission,
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
   }
 
   findAll(
@@ -144,19 +171,16 @@ export class PlotsService {
     const harvestType = dto.harvestType ?? existing.harvestType;
     const area = dto.area ?? existing.area;
     const ratePerBigha = dto.ratePerBigha ?? existing.ratePerBigha;
-    const bhusaBuyerId =
-      dto.bhusaBuyerId !== undefined
-        ? dto.bhusaBuyerId
-        : existing.bhusaBuyerId?.toString() ?? null;
-    const bhusaAmount = dto.bhusaAmount ?? existing.bhusaAmount;
+    // Use the DTO's Bhusa buyers when provided, otherwise keep the existing ones.
+    const bhusaProvided =
+      dto.bhusaBuyers !== undefined ||
+      dto.bhusaBuyerId !== undefined ||
+      dto.bhusaAmount !== undefined;
+    const bhusaBuyers = bhusaProvided
+      ? this.bhusaBuyersFromDto(dto)
+      : this.existingBhusaBuyers(existing);
 
-    const computed = this.computeAmounts({
-      area,
-      ratePerBigha,
-      harvestType,
-      bhusaBuyerId,
-      bhusaAmount,
-    });
+    const computed = this.computeAmounts({ area, ratePerBigha, harvestType, bhusaBuyers });
 
     const harvesterId = dto.harvesterId ?? existing.harvesterId.toString();
     const agentIdInput =

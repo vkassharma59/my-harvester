@@ -50,14 +50,27 @@ export function ReportsScreen() {
       </ReportCard>
 
       <ReportCard title={t('reports.expenseReport')}>
-        {(Object.keys(data.expenses) as ExpenseType[]).map((key) => (
-          <Line key={key} label={tEnum('expenseType', key)} value={money(data.expenses[key])} />
+        <Line
+          label={tEnum('expenseType', ExpenseType.DIESEL)}
+          value={money(data.expenses[ExpenseType.DIESEL])}
+        />
+        <Line
+          label={tEnum('expenseType', ExpenseType.SPARE_PARTS)}
+          value={money(data.expenses[ExpenseType.SPARE_PARTS])}
+        />
+        {data.customExpenses.map((c) => (
+          <Line key={c.id} label={c.name} value={money(c.amount)} />
         ))}
+        <Line
+          label={tEnum('expenseType', ExpenseType.OTHER)}
+          value={money(data.expenses[ExpenseType.OTHER])}
+        />
       </ReportCard>
 
       <ReportCard title={t('reports.labourPaymentReport')}>
         <Line label={t('reports.totalLabourCost')} value={money(data.labour.totalCost)} />
-        <Line label={t('reports.unpaidPartial')} value={String(data.labour.pendingPayments)} />
+        <Line label={t('reports.amountPaid')} value={money(data.labour.amountPaid)} />
+        <Line label={t('reports.remaining')} value={money(data.labour.remaining)} strong />
       </ReportCard>
 
       <ReportCard title={t('reports.harvestingReport')}>

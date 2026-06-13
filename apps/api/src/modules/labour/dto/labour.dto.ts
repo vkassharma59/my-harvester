@@ -8,9 +8,14 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { LabourType, PaymentStatus } from '@wh/shared';
+import { LabourType, PaymentStatus, WageType } from '@wh/shared';
 
 export class CreateLabourDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsString()
   @MinLength(1)
   name!: string;
@@ -22,8 +27,16 @@ export class CreateLabourDto {
   @IsEnum(LabourType)
   type!: LabourType;
 
+  @IsOptional()
+  @IsString()
+  customType?: string;
+
   @IsMongoId()
   harvesterId!: string;
+
+  @IsOptional()
+  @IsEnum(WageType)
+  wageType?: WageType;
 
   @IsOptional()
   @IsNumber()

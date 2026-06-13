@@ -1,12 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { agentsApi, paymentsApi } from '@/api/endpoints';
+import { agentsApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
+import { AttachmentPicker } from '@/components/AttachmentPicker';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -28,6 +31,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [attachment, setAttachment] = useState('');
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['agent-ledger', agentId],
@@ -39,6 +43,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
   };
 
   const onSaved = () => {
@@ -47,23 +52,29 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
   };
 
   const recordPayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.create({
+    mutationFn: () => {
+      offlineCreate('payment', {
         partyType: PartyType.AGENT,
         partyId: agentId,
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+        attachmentUrl: attachment,
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const updatePayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.update(editingId!, {
+    mutationFn: () => {
+      offlineUpdate('payment', editingId!, {
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+        attachmentUrl: attachment,
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
@@ -72,13 +83,15 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
     setPayOpen(true);
   };
 
-  const openEdit = (pay: { id: string; amount: number; notes?: string }) => {
+  const openEdit = (pay: { id: string; amount: number; notes?: string; attachmentUrl?: string }) => {
     setEditingId(pay.id);
     setAmount(String(pay.amount));
     setNotes(pay.notes ?? '');
+    setAttachment(pay.attachmentUrl ?? '');
     setPayOpen(true);
   };
 
@@ -95,11 +108,21 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
   if (isLoading) return <Loading />;
   if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
+  const phone = data.agent.phone;
+  const call = () => phone && void Linking.openURL(`tel:${phone}`).catch(() => {});
+
   return (
     <Screen refreshing={isRefetching} onRefresh={refetch}>
       <Card>
+        {phone ? (
+          <View style={styles.cardActions}>
+            <Pressable onPress={call} hitSlop={10}>
+              <Ionicons name="call" size={24} color={colors.primary} />
+            </Pressable>
+          </View>
+        ) : null}
         <Text style={styles.name}>{data.agent.name}</Text>
-        {data.agent.phone ? <Text style={styles.sub}>{data.agent.phone}</Text> : null}
+        {phone ? <Text style={styles.sub}>{phone}</Text> : null}
         <Text style={styles.sub}>
           {t('agents.commission')}: {formatCurrency(data.agent.commissionRate)} {t('agents.perUnit')}
         </Text>
@@ -148,6 +171,11 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
               <Text style={styles.plotAmount}>{formatCurrency(pay.amount)}</Text>
             </View>
             {pay.notes ? <Text style={styles.sub}>{pay.notes}</Text> : null}
+            {pay.attachmentUrl ? (
+              <Pressable onPress={() => void Linking.openURL(pay.attachmentUrl as string).catch(() => {})} hitSlop={6}>
+                <Text style={styles.editLink}>{t('attachment.view')}</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.editHint}>{t('common.tapToEdit')}</Text>
           </Card>
         ))
@@ -170,6 +198,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
               onChangeText={setNotes}
               placeholder={t('common.optional')}
             />
+            <AttachmentPicker value={attachment} onChange={setAttachment} />
             <Button
               title={t('agentLedger.savePayment')}
               onPress={onSave}
@@ -183,6 +212,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
+  cardActions: { position: 'absolute', top: spacing.lg, right: spacing.lg, flexDirection: 'row', gap: spacing.lg, zIndex: 1 },
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
   editLink: {

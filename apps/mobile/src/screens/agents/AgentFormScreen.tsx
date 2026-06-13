@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { apiErrorMessage } from '@/api/client';
 import { agentsApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
@@ -75,6 +76,11 @@ export function AgentFormScreen({ route, navigation }: Props) {
     }
   }, [existing]);
 
+  // Auto-select the sole harvester once it resolves (covers super admins with one).
+  useEffect(() => {
+    if (soleHarvesterId && !harvesterId) setHarvesterId(soleHarvesterId);
+  }, [soleHarvesterId, harvesterId]);
+
   const save = useMutation({
     mutationFn: () => {
       const body = {
@@ -84,7 +90,9 @@ export function AgentFormScreen({ route, navigation }: Props) {
         commissionRate: Number(commissionRate),
         isActive,
       };
-      return editing ? agentsApi.update(agentId, body) : agentsApi.create(body);
+      if (editing) offlineUpdate('agent', agentId, body);
+      else offlineCreate('agent', body);
+      return Promise.resolve();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agents'] });

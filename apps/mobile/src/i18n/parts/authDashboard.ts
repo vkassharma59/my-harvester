@@ -1,7 +1,7 @@
 export const part = {
   en: {
     login: {
-      title: 'Wheat Harvester',
+      title: 'My Harvester',
       subtitle: 'Owner / Admin sign in',
       identifierLabel: 'Email or mobile number',
       identifierPlaceholder: 'Email or mobile',
@@ -26,11 +26,13 @@ export const part = {
       labourSummary: 'Workers summary',
       totalLabourCost: 'Total Worker Cost',
       pendingPayments: 'Pending Payments',
+      workerPaid: 'Amount Paid',
+      workerRemaining: 'Remaining',
     },
   },
   hi: {
     login: {
-      title: 'व्हीट हार्वेस्टर',
+      title: 'माय हार्वेस्टर',
       subtitle: 'मालिक / एडमिन साइन इन',
       identifierLabel: 'ईमेल या मोबाइल नंबर',
       identifierPlaceholder: 'ईमेल या मोबाइल',
@@ -55,11 +57,13 @@ export const part = {
       labourSummary: 'कामगार सारांश',
       totalLabourCost: 'कुल कामगार लागत',
       pendingPayments: 'बकाया भुगतान',
+      workerPaid: 'भुगतान की राशि',
+      workerRemaining: 'शेष',
     },
   },
   pa: {
     login: {
-      title: 'ਵੀਟ ਹਾਰਵੈਸਟਰ',
+      title: 'ਮਾਈ ਹਾਰਵੈਸਟਰ',
       subtitle: 'ਮਾਲਕ / ਐਡਮਿਨ ਸਾਈਨ ਇਨ',
       identifierLabel: 'ਈਮੇਲ ਜਾਂ ਮੋਬਾਈਲ ਨੰਬਰ',
       identifierPlaceholder: 'ਈਮੇਲ ਜਾਂ ਮੋਬਾਈਲ',
@@ -84,6 +88,8 @@ export const part = {
       labourSummary: 'ਕਾਮੇ ਸੰਖੇਪ',
       totalLabourCost: 'ਕੁੱਲ ਕਾਮੇ ਲਾਗਤ',
       pendingPayments: 'ਬਕਾਇਆ ਭੁਗਤਾਨ',
+      workerPaid: 'ਭੁਗਤਾਨ ਕੀਤੀ ਰਕਮ',
+      workerRemaining: 'ਬਾਕੀ',
     },
   },
 } as const;

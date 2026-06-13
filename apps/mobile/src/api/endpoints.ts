@@ -4,21 +4,28 @@ import {
   AgentLedger,
   AppSettings,
   AreaUnit,
+  BhusaBuyer,
   Customer,
   CustomerLedger,
   DashboardSummary,
   Expense,
+  ExpenseCategory,
   ExpenseType,
+  FuelPump,
+  FuelPumpLedger,
   Harvester,
   HarvesterStatus,
   HarvesterType,
   HarvestType,
   Labour,
+  LabourLedger,
+  LabourListItem,
   LabourType,
   Payment,
   PartyType,
   PaymentStatus,
   Plot,
+  WageType,
 } from '@wh/shared';
 import { api } from './client';
 
@@ -127,6 +134,10 @@ export const settingsApi = {
 export interface ExpenseInput {
   harvesterId: string;
   type: ExpenseType;
+  /** A custom category id, or null for a built-in type. */
+  categoryId?: string | null;
+  /** The fuel pump a DIESEL expense was bought from, or null. */
+  pumpId?: string | null;
   amount: number;
   date?: string;
   notes?: string;
@@ -143,23 +154,67 @@ export const expensesApi = {
   remove: (id: string) => api.delete(`/expenses/${id}`).then(() => undefined),
 };
 
+// ---------- Expense categories (custom; SUPER_ADMIN manages) ----------
+export interface ExpenseCategoryInput {
+  name: string;
+  isActive?: boolean;
+}
+export const expenseCategoriesApi = {
+  list: () => api.get<ExpenseCategory[]>('/expense-categories').then((r) => r.data),
+  create: (body: ExpenseCategoryInput) =>
+    api.post<ExpenseCategory>('/expense-categories', body).then((r) => r.data),
+  update: (id: string, body: Partial<ExpenseCategoryInput>) =>
+    api.patch<ExpenseCategory>(`/expense-categories/${id}`, body).then((r) => r.data),
+  remove: (id: string) => api.delete(`/expense-categories/${id}`).then(() => undefined),
+};
+
 // ---------- Labour ----------
 export interface LabourInput {
   name: string;
   mobile: string;
   type: LabourType;
+  customType?: string;
   harvesterId: string;
+  wageType?: WageType;
   dailyWage?: number;
   customAmount?: number;
   paymentStatus?: PaymentStatus;
 }
 export const labourApi = {
   list: (harvesterId?: string) =>
-    api.get<Labour[]>('/labour', { params: { harvesterId } }).then((r) => r.data),
+    api.get<LabourListItem[]>('/labour', { params: { harvesterId } }).then((r) => r.data),
   create: (body: LabourInput) => api.post<Labour>('/labour', body).then((r) => r.data),
   update: (id: string, body: Partial<LabourInput>) =>
     api.patch<Labour>(`/labour/${id}`, body).then((r) => r.data),
   remove: (id: string) => api.delete(`/labour/${id}`).then(() => undefined),
+  ledger: (id: string) => api.get<LabourLedger>(`/labour/${id}/ledger`).then((r) => r.data),
+};
+
+// ---------- Attendance (daily workers) ----------
+export const attendanceApi = {
+  /** Present dates ('YYYY-MM-DD') for a worker within [from, to]. */
+  getRange: (labourId: string, from: string, to: string) =>
+    api.get<string[]>('/attendance', { params: { labourId, from, to } }).then((r) => r.data),
+  /** Replace a worker's attendance for one week with the given present days. */
+  setWeek: (labourId: string, weekStart: string, days: string[]) =>
+    api.put<string[]>('/attendance/week', { labourId, weekStart, days }).then((r) => r.data),
+};
+
+// ---------- Fuel pumps (diesel vendors) ----------
+export interface FuelPumpInput {
+  name: string;
+  phone?: string;
+  harvesterIds: string[];
+  isActive?: boolean;
+}
+export const fuelPumpsApi = {
+  list: (harvesterId?: string) =>
+    api.get<FuelPump[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
+  create: (body: FuelPumpInput) => api.post<FuelPump>('/fuel-pumps', body).then((r) => r.data),
+  update: (id: string, body: Partial<FuelPumpInput>) =>
+    api.patch<FuelPump>(`/fuel-pumps/${id}`, body).then((r) => r.data),
+  remove: (id: string) => api.delete(`/fuel-pumps/${id}`).then(() => undefined),
+  ledger: (id: string) => api.get<FuelPumpLedger>(`/fuel-pumps/${id}/ledger`).then((r) => r.data),
 };
 
 // ---------- Agents (commission) ----------
@@ -194,6 +249,8 @@ export interface PlotInput {
   ratePerBigha?: number;
   bhusaBuyerId?: string;
   bhusaAmount?: number;
+  /** Multiple Bhusa buyers, each with their own amount (Type 2). */
+  bhusaBuyers?: BhusaBuyer[];
   /** Commission agent for this job; null clears it. */
   agentId?: string | null;
 }
@@ -216,6 +273,7 @@ export interface PaymentInput {
   plotId?: string;
   harvesterId?: string;
   notes?: string;
+  attachmentUrl?: string;
 }
 export const paymentsApi = {
   list: (params?: { partyType?: PartyType; partyId?: string; harvesterId?: string }) =>
@@ -224,6 +282,28 @@ export const paymentsApi = {
   update: (id: string, body: Partial<PaymentInput>) =>
     api.patch<Payment>(`/payments/${id}`, body).then((r) => r.data),
   remove: (id: string) => api.delete(`/payments/${id}`).then(() => undefined),
+};
+
+// ---------- Uploads (expense bills / receipts) ----------
+export interface UploadFile {
+  uri: string;
+  name: string;
+  mimeType?: string;
+}
+export const uploadsApi = {
+  /** Upload one file (max 5 MB) and get back its public URL. */
+  upload: (file: UploadFile) => {
+    const form = new FormData();
+    // React Native's FormData file shape.
+    form.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType ?? 'application/octet-stream',
+    } as unknown as Blob);
+    return api
+      .post<{ url: string }>('/uploads', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((r) => r.data);
+  },
 };
 
 // ---------- Dashboard ----------

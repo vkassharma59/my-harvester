@@ -2,6 +2,11 @@ import { PartialType } from '@nestjs/mapped-types';
 import { IsBoolean, IsMongoId, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 export class CreateAgentDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsString()
   @MinLength(1)
   name!: string;

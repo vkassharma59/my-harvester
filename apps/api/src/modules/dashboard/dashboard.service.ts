@@ -7,11 +7,16 @@ import {
   DashboardSummary,
   ExpenseType,
   PartyType,
-  PaymentStatus,
+  WageType,
 } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { harvesterFilter } from '../../common/scope';
+import { Attendance, AttendanceDocument } from '../attendance/attendance.schema';
 import { Customer, CustomerDocument } from '../customers/customer.schema';
+import {
+  ExpenseCategory,
+  ExpenseCategoryDocument,
+} from '../expense-categories/expense-category.schema';
 import { Expense, ExpenseDocument } from '../expenses/expense.schema';
 import { Labour, LabourDocument } from '../labour/labour.schema';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
@@ -37,6 +42,9 @@ export class DashboardService {
     @InjectModel(Labour.name) private readonly labour: Model<LabourDocument>,
     @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
     @InjectModel(Customer.name) private readonly customers: Model<CustomerDocument>,
+    @InjectModel(ExpenseCategory.name)
+    private readonly expenseCategories: Model<ExpenseCategoryDocument>,
+    @InjectModel(Attendance.name) private readonly attendance: Model<AttendanceDocument>,
   ) {}
 
   async summary(user: AuthUser, harvesterId?: string): Promise<DashboardSummary> {
@@ -47,7 +55,9 @@ export class DashboardService {
     };
 
     const totalEarnings = await sum(this.plots, hMatch, 'totalAmount');
-    const expenseTotal = await sum(this.expenses, hMatch, 'amount');
+    // Worker payments are tracked in the worker ledger, not as expenses.
+    const nonLabour = { type: { $ne: ExpenseType.LABOUR } };
+    const expenseTotal = await sum(this.expenses, { ...hMatch, ...nonLabour }, 'amount');
     // Agent commission is a real cost: include it among expenses / net profit.
     const agentCommission = await sum(this.plots, hMatch, 'commissionAmount');
     const totalExpenses = expenseTotal + agentCommission;
@@ -58,8 +68,9 @@ export class DashboardService {
       'amount',
     );
 
+    // Built-in types only (categoryId null also matches legacy docs with no field).
     const expenseRows = await this.expenses.aggregate<{ _id: ExpenseType; total: number }>([
-      { $match: hMatch },
+      { $match: { ...hMatch, ...nonLabour, categoryId: null } },
       { $group: { _id: '$type', total: { $sum: '$amount' } } },
     ]);
     const expensesByType: Record<ExpenseType, number> = {
@@ -69,6 +80,22 @@ export class DashboardService {
       [ExpenseType.OTHER]: 0,
     };
     for (const r of expenseRows) expensesByType[r._id] = r.total;
+
+    // Custom (super-admin-defined) categories: sum per category, then label it.
+    const customRows = await this.expenses.aggregate<{ _id: Types.ObjectId; total: number }>([
+      { $match: { ...hMatch, categoryId: { $ne: null } } },
+      { $group: { _id: '$categoryId', total: { $sum: '$amount' } } },
+    ]);
+    const amountByCat = new Map(customRows.map((r) => [r._id.toString(), r.total]));
+    const categories = await this.expenseCategories
+      .find({ tenantId: new Types.ObjectId(user.tenantId) })
+      .sort({ name: 1 })
+      .exec();
+    // Show every active category (even at 0) plus any inactive one that still
+    // carries spend, so totals stay honest after a category is removed.
+    const customExpenses = categories
+      .filter((c) => c.isActive || (amountByCat.get(c.id) ?? 0) > 0)
+      .map((c) => ({ id: c.id, name: c.name, amount: amountByCat.get(c.id) ?? 0 }));
 
     const [hStats] = await this.plots.aggregate<{
       totalArea: number;
@@ -86,12 +113,40 @@ export class DashboardService {
       },
     ]);
 
-    const labourRows = await this.labour
-      .find(hMatch)
-      .select('dailyWage customAmount paymentStatus')
-      .exec();
-    const labourCost = labourRows.reduce((acc, l) => acc + (l.customAmount ?? l.dailyWage ?? 0), 0);
-    const labourPending = labourRows.filter((l) => l.paymentStatus !== PaymentStatus.PAID).length;
+    const labourRows = await this.labour.find(hMatch).select('dailyWage customAmount wageType').exec();
+    // Fixed workers bill a flat amount; daily workers bill rate × attended days.
+    const fixedCost = labourRows
+      .filter((l) => l.wageType === WageType.FIXED)
+      .reduce((acc, l) => acc + (l.customAmount ?? 0), 0);
+    const dailyWorkers = labourRows.filter((l) => l.wageType !== WageType.FIXED);
+    let dailyCost = 0;
+    if (dailyWorkers.length) {
+      const counts = await this.attendance.aggregate<{ _id: Types.ObjectId; days: number }>([
+        {
+          $match: {
+            tenantId: new Types.ObjectId(user.tenantId),
+            labourId: { $in: dailyWorkers.map((l) => l._id) },
+          },
+        },
+        { $group: { _id: '$labourId', days: { $sum: 1 } } },
+      ]);
+      const daysByWorker = new Map(counts.map((c) => [c._id.toString(), c.days]));
+      dailyCost = dailyWorkers.reduce(
+        (acc, l) => acc + (l.dailyWage ?? 0) * (daysByWorker.get(l._id.toString()) ?? 0),
+        0,
+      );
+    }
+    const totalWorkerCost = fixedCost + dailyCost;
+    const workerIds = labourRows.map((l) => l._id);
+    const workerPaid = await sum(
+      this.payments,
+      {
+        tenantId: new Types.ObjectId(user.tenantId),
+        partyType: PartyType.LABOUR,
+        partyId: { $in: workerIds },
+      },
+      'amount',
+    );
 
     return {
       harvesterId: harvesterId && harvesterId !== ALL_HARVESTERS ? harvesterId : ALL_HARVESTERS,
@@ -109,9 +164,11 @@ export class DashboardService {
         totalJobsCompleted: hStats?.totalPlots ?? 0,
       },
       expenses: expensesByType,
+      customExpenses,
       labour: {
-        totalCost: labourCost,
-        pendingPayments: labourPending,
+        totalCost: totalWorkerCost,
+        amountPaid: workerPaid,
+        remaining: totalWorkerCost - workerPaid,
       },
     };
   }
@@ -123,12 +180,14 @@ export class DashboardService {
       throw new NotFoundException('Customer not found');
     }
 
-    // Staff only see this customer's jobs on their assigned harvesters.
+    const cId = new Types.ObjectId(customerId);
+    // Jobs the customer owns (harvesting bill) plus jobs where they buy the
+    // Bhusa (Bhusa bill). Staff only see jobs on their assigned harvesters.
     const plots = await this.plots
       .find({
         tenantId: tenant,
-        customerId: new Types.ObjectId(customerId),
         ...harvesterFilter(user),
+        $or: [{ customerId: cId }, { bhusaBuyerId: cId }, { 'bhusaBuyers.customerId': cId }],
       })
       .sort({ harvestDate: -1 })
       .exec();
@@ -136,14 +195,28 @@ export class DashboardService {
     const payments = await this.payments
       .find({
         tenantId: tenant,
-        partyType: PartyType.CUSTOMER,
-        partyId: new Types.ObjectId(customerId),
+        partyType: { $in: [PartyType.CUSTOMER, PartyType.BHUSA_BUYER] },
+        partyId: cId,
       })
       .sort({ date: -1 })
       .exec();
 
-    const totalBillAmount = plots.reduce((acc, p) => acc + p.harvestingAmount, 0);
-    const totalHarvestedArea = plots.reduce((acc, p) => acc + p.area, 0);
+    // The Bhusa amount this customer owes on a job (their share, or legacy single).
+    const bhusaOwed = (p: PlotDocument): number => {
+      if (p.bhusaBuyers?.length) {
+        return p.bhusaBuyers.filter((b) => b.customerId.equals(cId)).reduce((a, b) => a + b.amount, 0);
+      }
+      return p.bhusaBuyerId?.equals(cId) ? p.bhusaAmount ?? 0 : 0;
+    };
+    // Owned jobs bill the harvesting amount; Bhusa-buyer jobs bill the Bhusa share.
+    const totalBillAmount = plots.reduce(
+      (acc, p) => acc + (p.customerId.equals(cId) ? p.harvestingAmount : bhusaOwed(p)),
+      0,
+    );
+    const totalHarvestedArea = plots.reduce(
+      (acc, p) => acc + (p.customerId.equals(cId) ? p.area : 0),
+      0,
+    );
     const amountPaid = payments.reduce((acc, p) => acc + p.amount, 0);
 
     return {

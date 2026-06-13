@@ -2,10 +2,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ExpenseType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { expensesApi } from '@/api/endpoints';
+import { expenseCategoriesApi, expensesApi } from '@/api/endpoints';
+import { offlineRemove } from '@/offline/enqueue';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HarvesterPicker } from '@/components/HarvesterPicker';
@@ -18,29 +19,35 @@ import { formatCurrency, formatDate } from '@/utils/format';
 
 type Props = NativeStackScreenProps<ExpensesStackParamList, 'ExpensesList'>;
 
-type TypeFilter = ExpenseType | 'ALL';
-const TYPE_OPTIONS: TypeFilter[] = [
-  'ALL',
-  ExpenseType.DIESEL,
-  ExpenseType.LABOUR,
-  ExpenseType.SPARE_PARTS,
-  ExpenseType.OTHER,
-];
+const BUILTIN_VALUES = Object.values(ExpenseType) as string[];
+// Diesel & Spare Parts first, custom types in the middle, "Other" always last.
+const LEADING_FILTERS = [ExpenseType.DIESEL, ExpenseType.SPARE_PARTS];
 
 export function ExpensesScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const selectedId = useSelectedHarvester((s) => s.selectedId);
   const harvesterId = scopedHarvesterId(selectedId);
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
+  // 'ALL', a built-in ExpenseType, or a custom category id.
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['expenses', selectedId],
     queryFn: () => expensesApi.list({ harvesterId }),
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['expense-categories'],
+    queryFn: () => expenseCategoriesApi.list(),
+  });
+  const catName = (id: string) =>
+    categories.find((c) => c.id === id)?.name ?? t('expenses.deletedCategory');
+
   const remove = useMutation({
-    mutationFn: (id: string) => expensesApi.remove(id),
+    mutationFn: (id: string) => {
+      offlineRemove('expense', id);
+      return Promise.resolve();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
@@ -57,9 +64,28 @@ export function ExpensesScreen({ navigation }: Props) {
   if (isLoading) return <Loading />;
   if (isError) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
-  const visible = typeFilter === 'ALL' ? data ?? [] : (data ?? []).filter((e) => e.type === typeFilter);
+  const chipValues: string[] = [
+    'ALL',
+    ...LEADING_FILTERS,
+    ...categories.filter((c) => c.isActive).map((c) => c.id),
+    ExpenseType.OTHER,
+  ];
+  const chipLabel = (v: string) =>
+    v === 'ALL' ? t('expenses.all') : BUILTIN_VALUES.includes(v) ? tEnum('expenseType', v) : catName(v);
+
+  const matches = (e: { type: ExpenseType; categoryId?: string | null }) => {
+    if (typeFilter === 'ALL') return true;
+    // A built-in chip shows only built-in expenses (custom ones live under their
+    // own chip even though they're stored as type OTHER).
+    if (BUILTIN_VALUES.includes(typeFilter)) return e.type === typeFilter && !e.categoryId;
+    return e.categoryId === typeFilter;
+  };
+
+  // Worker payments live in the worker ledger now, not in expenses.
+  const rows = (data ?? []).filter((e) => e.type !== ExpenseType.LABOUR);
+  const visible = rows.filter(matches);
   const total = visible.reduce((sum, e) => sum + e.amount, 0);
-  const filterLabel = typeFilter === 'ALL' ? t('expenses.all') : tEnum('expenseType', typeFilter);
+  const filterLabel = chipLabel(typeFilter);
 
   return (
     <View style={styles.root}>
@@ -70,7 +96,7 @@ export function ExpensesScreen({ navigation }: Props) {
         style={styles.chipBar}
         contentContainerStyle={styles.chips}
       >
-        {TYPE_OPTIONS.map((opt) => {
+        {chipValues.map((opt) => {
           const active = typeFilter === opt;
           return (
             <Pressable
@@ -78,9 +104,7 @@ export function ExpensesScreen({ navigation }: Props) {
               onPress={() => setTypeFilter(opt)}
               style={[styles.chip, active && styles.chipActive]}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {opt === 'ALL' ? t('expenses.all') : tEnum('expenseType', opt)}
-              </Text>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{chipLabel(opt)}</Text>
             </Pressable>
           );
         })}
@@ -115,14 +139,28 @@ export function ExpensesScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <Card onPress={() => navigation.navigate('ExpenseForm', { expenseId: item.id })}>
             <View style={styles.rowBetween}>
-              <Text style={styles.type}>{tEnum('expenseType', item.type)}</Text>
+              <Text style={styles.type}>
+                {item.categoryId ? catName(item.categoryId) : tEnum('expenseType', item.type)}
+              </Text>
               <Text style={styles.amount}>{formatCurrency(item.amount)}</Text>
             </View>
             <Text style={styles.sub}>{formatDate(item.date)}</Text>
             {item.notes ? <Text style={styles.sub}>{item.notes}</Text> : null}
-            <Pressable onPress={() => confirmDelete(item.id)} hitSlop={8} style={styles.delete}>
-              <Text style={styles.deleteText}>{t('common.delete')}</Text>
-            </Pressable>
+            <View style={styles.actions}>
+              {item.attachmentUrl ? (
+                <Pressable
+                  onPress={() => void Linking.openURL(item.attachmentUrl as string).catch(() => {})}
+                  hitSlop={8}
+                >
+                  <Text style={styles.attachLink}>{t('expenses.viewAttachment')}</Text>
+                </Pressable>
+              ) : (
+                <View />
+              )}
+              <Pressable onPress={() => confirmDelete(item.id)} hitSlop={8}>
+                <Text style={styles.deleteText}>{t('common.delete')}</Text>
+              </Pressable>
+            </View>
           </Card>
         )}
       />
@@ -161,7 +199,13 @@ const styles = StyleSheet.create({
   type: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
   amount: { fontSize: font.size.md, fontWeight: font.weight.bold, color: colors.danger },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
-  delete: { alignSelf: 'flex-end', marginTop: spacing.xs },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  attachLink: { color: colors.primary, fontSize: font.size.sm },
   deleteText: { color: colors.danger, fontSize: font.size.sm },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
 });

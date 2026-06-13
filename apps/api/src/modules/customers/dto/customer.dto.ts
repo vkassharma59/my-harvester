@@ -1,7 +1,12 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsMongoId, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateCustomerDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsString()
   @MinLength(1)
   name!: string;

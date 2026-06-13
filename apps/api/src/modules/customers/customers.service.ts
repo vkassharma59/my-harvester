@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { PartyType, Role } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { harvesterFilter } from '../../common/scope';
 import { Paginated, PaginationDto } from '../../common/dto/pagination.dto';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
@@ -51,13 +52,18 @@ export class CustomersService {
     const tenantId = new Types.ObjectId(user.tenantId);
     const phone = normalizePhone(dto.phone);
     await this.assertPhoneUnique(tenantId, phone);
-    return this.model.create({
-      ...dto,
-      phone,
-      tenantId,
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    return createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        phone,
+        tenantId,
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
   }
 
   async findAll(query: PaginationDto, user: AuthUser): Promise<Paginated<CustomerWithTotals>> {
@@ -69,9 +75,28 @@ export class CustomersService {
     // Staff see customers who have a job on their harvester(s) OR that they
     // added themselves (so a newly added customer is visible/selectable).
     if (user.role !== Role.SUPER_ADMIN) {
+      // Customers linked to the staff's jobs: plot owners AND Bhusa buyers.
       const rows = await this.plots.aggregate<{ _id: Types.ObjectId }>([
         { $match: { tenantId: tenant, ...hFilter } },
-        { $group: { _id: '$customerId' } },
+        {
+          $project: {
+            ids: {
+              $concatArrays: [
+                ['$customerId'],
+                { $cond: [{ $ifNull: ['$bhusaBuyerId', false] }, ['$bhusaBuyerId'], []] },
+                {
+                  $map: {
+                    input: { $ifNull: ['$bhusaBuyers', []] },
+                    as: 'b',
+                    in: '$$b.customerId',
+                  },
+                },
+              ],
+            },
+          },
+        },
+        { $unwind: '$ids' },
+        { $group: { _id: '$ids' } },
       ]);
       and.push({
         $or: [
@@ -97,24 +122,56 @@ export class CustomersService {
       this.model.countDocuments(filter).exec(),
     ]);
 
-    // Bill (sum of plot harvesting charges, scoped to the user's harvesters) and
-    // amount paid (customer-level), per customer on this page.
+    // Bill = harvesting charges on plots the customer OWNS + Bhusa charges on
+    // plots where they are the Bhusa BUYER (scoped to the user's harvesters);
+    // amount paid is customer-level (covers both roles).
     const ids = docs.map((d) => d._id);
-    const [billRows, paidRows] = await Promise.all([
+    const [harvestBillRows, bhusaBillRows, paidRows] = await Promise.all([
       this.plots.aggregate<{ _id: Types.ObjectId; bill: number }>([
         { $match: { tenantId: tenant, ...hFilter, customerId: { $in: ids } } },
         { $group: { _id: '$customerId', bill: { $sum: '$harvestingAmount' } } },
       ]),
+      this.plots.aggregate<{ _id: Types.ObjectId; bill: number }>([
+        { $match: { tenantId: tenant, ...hFilter } },
+        {
+          // Effective buyers: the array if present, else the legacy single field.
+          $project: {
+            buyers: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$bhusaBuyers', []] } }, 0] },
+                '$bhusaBuyers',
+                {
+                  $cond: [
+                    { $ifNull: ['$bhusaBuyerId', false] },
+                    [{ customerId: '$bhusaBuyerId', amount: { $ifNull: ['$bhusaAmount', 0] } }],
+                    [],
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        { $unwind: '$buyers' },
+        { $match: { 'buyers.customerId': { $in: ids } } },
+        { $group: { _id: '$buyers.customerId', bill: { $sum: '$buyers.amount' } } },
+      ]),
       this.payments.aggregate<{ _id: Types.ObjectId; paid: number }>([
-        { $match: { tenantId: tenant, partyType: PartyType.CUSTOMER, partyId: { $in: ids } } },
+        {
+          $match: {
+            tenantId: tenant,
+            partyType: { $in: [PartyType.CUSTOMER, PartyType.BHUSA_BUYER] },
+            partyId: { $in: ids },
+          },
+        },
         { $group: { _id: '$partyId', paid: { $sum: '$amount' } } },
       ]),
     ]);
-    const billMap = new Map(billRows.map((r) => [r._id.toString(), r.bill]));
+    const harvestBillMap = new Map(harvestBillRows.map((r) => [r._id.toString(), r.bill]));
+    const bhusaBillMap = new Map(bhusaBillRows.map((r) => [r._id.toString(), r.bill]));
     const paidMap = new Map(paidRows.map((r) => [r._id.toString(), r.paid]));
 
     const items: CustomerWithTotals[] = docs.map((d) => {
-      const totalBill = billMap.get(d.id) ?? 0;
+      const totalBill = (harvestBillMap.get(d.id) ?? 0) + (bhusaBillMap.get(d.id) ?? 0);
       const amountPaid = paidMap.get(d.id) ?? 0;
       return {
         ...(d.toJSON() as Record<string, unknown>),

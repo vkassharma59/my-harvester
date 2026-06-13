@@ -6,8 +6,10 @@ import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
-import { customersApi, paymentsApi, settingsApi } from '@/api/endpoints';
+import { customersApi, settingsApi } from '@/api/endpoints';
+import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
+import { AttachmentPicker } from '@/components/AttachmentPicker';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -32,6 +34,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [attachment, setAttachment] = useState('');
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['customer-ledger', customerId],
@@ -39,6 +42,12 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const areaUnit = settings?.defaultAreaUnit;
+  // Names to label Bhusa records ("bought from <owner>").
+  const { data: customerLookup } = useQuery({
+    queryKey: ['customers', 'lookup'],
+    queryFn: () => customersApi.list({ limit: 1000 }),
+  });
+  const ownerName = new Map((customerLookup?.items ?? []).map((c) => [c.id, c.name]));
 
   // Editable payment-reminder draft, prefilled from a template.
   const [reminder, setReminder] = useState('');
@@ -63,6 +72,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
   };
 
   const onSaved = () => {
@@ -72,23 +82,29 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   };
 
   const recordPayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.create({
+    mutationFn: () => {
+      offlineCreate('payment', {
         partyType: PartyType.CUSTOMER,
         partyId: customerId,
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+        attachmentUrl: attachment,
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
   const updatePayment = useMutation({
-    mutationFn: () =>
-      paymentsApi.update(editingId!, {
+    mutationFn: () => {
+      offlineUpdate('payment', editingId!, {
         amount: Number(amount),
         notes: notes.trim() || undefined,
-      }),
+        attachmentUrl: attachment,
+      });
+      return Promise.resolve();
+    },
     onSuccess: onSaved,
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
@@ -97,13 +113,15 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
     setPayOpen(true);
   };
 
-  const openEdit = (pay: { id: string; amount: number; notes?: string }) => {
+  const openEdit = (pay: { id: string; amount: number; notes?: string; attachmentUrl?: string }) => {
     setEditingId(pay.id);
     setAmount(String(pay.amount));
     setNotes(pay.notes ?? '');
+    setAttachment(pay.attachmentUrl ?? '');
     setPayOpen(true);
   };
 
@@ -147,6 +165,9 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         <Text style={styles.sub}>{data.customer.phone}</Text>
         {data.customer.village ? <Text style={styles.sub}>{data.customer.village}</Text> : null}
         {data.customer.address ? <Text style={styles.sub}>{data.customer.address}</Text> : null}
+        <Pressable onPress={() => navigation.navigate('CustomerForm', { customerId })} hitSlop={8}>
+          <Text style={styles.editLink}>{t('customerLedger.editCustomer')}</Text>
+        </Pressable>
       </Card>
 
       <View style={styles.grid}>
@@ -166,20 +187,37 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
       <Button title={t('customerLedger.recordPayment')} onPress={openRecord} style={{ marginVertical: spacing.md }} />
 
       <Text style={styles.sectionTitle}>{t('customerLedger.harvestingRecords', { count: data.plots.length })}</Text>
-      {data.plots.map((p) => (
-        <Card key={p.id} onPress={() => editJob(p.id)}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.plotName}>{p.plotName}</Text>
-            <Text style={styles.plotAmount}>{formatCurrency(p.harvestingAmount)}</Text>
-          </View>
-          <Text style={styles.sub}>
-            {p.area} {tEnum('areaUnit', p.areaUnit)} · {formatDate(p.harvestDate)}
-          </Text>
-          <Text style={styles.sub}>{harvestTypeLabel(p.harvesterId, p.harvestType)}</Text>
-          {p.remarks ? <Text style={styles.sub}>{p.remarks}</Text> : null}
-          <Text style={styles.editHint}>{t('customerLedger.editJob')}</Text>
-        </Card>
-      ))}
+      {data.plots.map((p) => {
+        // This customer is a Bhusa buyer (not the plot owner) on this job.
+        const isBhusaBuyer = p.bhusaBuyers?.length
+          ? p.bhusaBuyers.some((b) => b.customerId === customerId)
+          : p.bhusaBuyerId === customerId;
+        const isBhusa = p.customerId !== customerId && isBhusaBuyer;
+        const myBhusa = p.bhusaBuyers?.length
+          ? p.bhusaBuyers.filter((b) => b.customerId === customerId).reduce((a, b) => a + b.amount, 0)
+          : p.bhusaAmount ?? 0;
+        return (
+          <Card key={p.id} onPress={isBhusa ? undefined : () => editJob(p.id)}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.plotName}>{p.plotName}</Text>
+              <Text style={styles.plotAmount}>
+                {formatCurrency(isBhusa ? myBhusa : p.harvestingAmount)}
+              </Text>
+            </View>
+            {isBhusa ? (
+              <Text style={styles.sub}>
+                {t('customerLedger.bhusaFrom', { name: ownerName.get(p.customerId) ?? '' })}
+              </Text>
+            ) : null}
+            <Text style={styles.sub}>
+              {p.area} {tEnum('areaUnit', p.areaUnit)} · {formatDate(p.harvestDate)}
+            </Text>
+            {!isBhusa ? <Text style={styles.sub}>{harvestTypeLabel(p.harvesterId, p.harvestType)}</Text> : null}
+            {p.remarks ? <Text style={styles.sub}>{p.remarks}</Text> : null}
+            {!isBhusa ? <Text style={styles.editHint}>{t('customerLedger.editJob')}</Text> : null}
+          </Card>
+        );
+      })}
 
       <Text style={styles.sectionTitle}>{t('customerLedger.paymentHistory', { count: data.payments.length })}</Text>
       {data.payments.length === 0 ? (
@@ -192,6 +230,11 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
               <Text style={styles.plotAmount}>{formatCurrency(pay.amount)}</Text>
             </View>
             {pay.notes ? <Text style={styles.sub}>{pay.notes}</Text> : null}
+            {pay.attachmentUrl ? (
+              <Pressable onPress={() => void Linking.openURL(pay.attachmentUrl as string).catch(() => {})} hitSlop={6}>
+                <Text style={styles.editLink}>{t('attachment.view')}</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.editHint}>{t('common.tapToEdit')}</Text>
           </Card>
         ))
@@ -234,6 +277,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
               onChangeText={setNotes}
               placeholder={t('common.optional')}
             />
+            <AttachmentPicker value={attachment} onChange={setAttachment} />
             <Button
               title={t('customerLedger.savePayment')}
               onPress={onSave}
@@ -249,6 +293,12 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   name: { fontSize: font.size.lg, fontWeight: font.weight.bold, color: colors.text, paddingRight: 76 },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+  editLink: {
+    fontSize: font.size.sm,
+    fontWeight: font.weight.semibold,
+    color: colors.primary,
+    marginTop: spacing.sm,
+  },
   cardActions: {
     position: 'absolute',
     top: spacing.lg,

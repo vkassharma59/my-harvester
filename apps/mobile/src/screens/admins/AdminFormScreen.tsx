@@ -109,12 +109,14 @@ export function AdminFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <Button
-        title={t('adminForm.importContacts')}
-        variant="secondary"
-        onPress={importFromContacts}
-        style={{ marginBottom: spacing.lg }}
-      />
+      {!editing ? (
+        <Button
+          title={t('adminForm.importContacts')}
+          variant="secondary"
+          onPress={importFromContacts}
+          style={{ marginBottom: spacing.lg }}
+        />
+      ) : null}
       <TextField label={t('adminForm.nameLabel')} value={name} onChangeText={setName} />
       <TextField
         label={t('adminForm.emailLabel')}
