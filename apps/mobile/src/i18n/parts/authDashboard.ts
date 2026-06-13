@@ -1,7 +1,7 @@
 export const part = {
   en: {
     login: {
-      title: 'Wheat Harvester',
+      title: 'My Harvester',
       subtitle: 'Owner / Admin sign in',
       identifierLabel: 'Email or mobile number',
       identifierPlaceholder: 'Email or mobile',
@@ -32,7 +32,7 @@ export const part = {
   },
   hi: {
     login: {
-      title: 'व्हीट हार्वेस्टर',
+      title: 'माय हार्वेस्टर',
       subtitle: 'मालिक / एडमिन साइन इन',
       identifierLabel: 'ईमेल या मोबाइल नंबर',
       identifierPlaceholder: 'ईमेल या मोबाइल',
@@ -63,7 +63,7 @@ export const part = {
   },
   pa: {
     login: {
-      title: 'ਵੀਟ ਹਾਰਵੈਸਟਰ',
+      title: 'ਮਾਈ ਹਾਰਵੈਸਟਰ',
       subtitle: 'ਮਾਲਕ / ਐਡਮਿਨ ਸਾਈਨ ਇਨ',
       identifierLabel: 'ਈਮੇਲ ਜਾਂ ਮੋਬਾਈਲ ਨੰਬਰ',
       identifierPlaceholder: 'ਈਮੇਲ ਜਾਂ ਮੋਬਾਈਲ',
