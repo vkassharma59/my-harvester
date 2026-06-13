@@ -61,5 +61,8 @@ export function apiErrorMessage(error: unknown, fallback = 'Request failed'): st
     if (!error.response) return 'Cannot reach the server. Check your connection / API URL.';
     return error.message;
   }
+  // Non-network errors thrown locally (e.g. offline entry blocked) carry their
+  // own readable message.
+  if (error instanceof Error && error.message) return error.message;
   return fallback;
 }

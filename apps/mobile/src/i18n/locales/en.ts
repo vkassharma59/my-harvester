@@ -68,6 +68,9 @@ export const en = {
     rateHint:
       'Harvesting rates are set per harvester (More → Harvesters). The area unit you pick here is used in the rate labels and on new jobs.',
     save: 'Save settings',
+    offlineEntry: 'Offline data entry',
+    offlineEntryHint:
+      'Allow adding and editing records while offline. Changes are saved on this device and sync when you reconnect. Off by default.',
     dangerZone: 'Danger zone',
     dangerHint:
       'Permanently delete all business data for your account. Admin accounts are not affected.',
