@@ -19,6 +19,7 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PlotsModule } from './modules/plots/plots.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     PaymentsModule,
     DashboardModule,
     MaintenanceModule,
+    UploadsModule,
   ],
   providers: [
     // Every route requires a valid JWT unless marked @Public().

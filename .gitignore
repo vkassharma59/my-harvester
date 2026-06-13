@@ -40,3 +40,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Uploaded files (local dev storage; will move to S3)
+apps/api/uploads/

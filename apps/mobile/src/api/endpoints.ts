@@ -283,6 +283,28 @@ export const paymentsApi = {
   remove: (id: string) => api.delete(`/payments/${id}`).then(() => undefined),
 };
 
+// ---------- Uploads (expense bills / receipts) ----------
+export interface UploadFile {
+  uri: string;
+  name: string;
+  mimeType?: string;
+}
+export const uploadsApi = {
+  /** Upload one file (max 5 MB) and get back its public URL. */
+  upload: (file: UploadFile) => {
+    const form = new FormData();
+    // React Native's FormData file shape.
+    form.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType ?? 'application/octet-stream',
+    } as unknown as Blob);
+    return api
+      .post<{ url: string }>('/uploads', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((r) => r.data);
+  },
+};
+
 // ---------- Dashboard ----------
 export const dashboardApi = {
   summary: (harvesterId?: string) =>
