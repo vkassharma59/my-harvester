@@ -1,8 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { Agent, AgentDocument } from '../agents/agent.schema';
+import { Attendance, AttendanceDocument } from '../attendance/attendance.schema';
 import { Customer, CustomerDocument } from '../customers/customer.schema';
+import {
+  ExpenseCategory,
+  ExpenseCategoryDocument,
+} from '../expense-categories/expense-category.schema';
 import { Expense, ExpenseDocument } from '../expenses/expense.schema';
+import { FuelPump, FuelPumpDocument } from '../fuel-pumps/fuel-pump.schema';
 import { Harvester, HarvesterDocument } from '../harvesters/harvester.schema';
 import { Labour, LabourDocument } from '../labour/labour.schema';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
@@ -23,6 +30,11 @@ export class MaintenanceService {
     @InjectModel(Plot.name) private readonly plots: Model<PlotDocument>,
     @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
     @InjectModel(AppSettings.name) private readonly settings: Model<AppSettingsDocument>,
+    @InjectModel(Agent.name) private readonly agents: Model<AgentDocument>,
+    @InjectModel(FuelPump.name) private readonly fuelPumps: Model<FuelPumpDocument>,
+    @InjectModel(ExpenseCategory.name)
+    private readonly expenseCategories: Model<ExpenseCategoryDocument>,
+    @InjectModel(Attendance.name) private readonly attendance: Model<AttendanceDocument>,
   ) {}
 
   /**
@@ -36,6 +48,10 @@ export class MaintenanceService {
       ['payments', this.payments],
       ['expenses', this.expenses],
       ['labour', this.labour],
+      ['attendance', this.attendance],
+      ['agents', this.agents],
+      ['fuelPumps', this.fuelPumps],
+      ['expenseCategories', this.expenseCategories],
       ['customers', this.customers],
       ['harvesters', this.harvesters],
       ['settings', this.settings],

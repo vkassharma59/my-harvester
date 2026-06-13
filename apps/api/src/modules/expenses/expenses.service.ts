@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { ExpenseType, PaymentStatus } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Labour, LabourDocument } from '../labour/labour.schema';
 import { Expense, ExpenseDocument } from './expense.schema';
@@ -27,16 +28,26 @@ export class ExpensesService {
     const tenantId = new Types.ObjectId(user.tenantId);
     const labourId =
       dto.type === ExpenseType.LABOUR && dto.labourId ? new Types.ObjectId(dto.labourId) : null;
+    const categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : null;
+    const pumpId =
+      dto.type === ExpenseType.DIESEL && dto.pumpId ? new Types.ObjectId(dto.pumpId) : null;
 
-    const expense = await this.model.create({
-      ...dto,
-      tenantId,
-      harvesterId: new Types.ObjectId(dto.harvesterId),
-      labourId,
-      date: dto.date ?? new Date(),
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    const expense = await createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        tenantId,
+        harvesterId: new Types.ObjectId(dto.harvesterId),
+        categoryId,
+        pumpId,
+        labourId,
+        date: dto.date ?? new Date(),
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
 
     if (labourId) await this.recomputeLabourStatus(labourId, tenantId, user.id);
     return expense;
@@ -65,12 +76,19 @@ export class ExpensesService {
 
     const update: Record<string, unknown> = { ...dto, updatedBy: new Types.ObjectId(user.id) };
     if (dto.harvesterId) update.harvesterId = new Types.ObjectId(dto.harvesterId);
+    if (dto.categoryId !== undefined)
+      update.categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : null;
 
     const resultingType = dto.type ?? existing.type;
     if (dto.type !== undefined || dto.labourId !== undefined) {
       const linkId = dto.labourId ?? existing.labourId?.toString();
       update.labourId =
         resultingType === ExpenseType.LABOUR && linkId ? new Types.ObjectId(linkId) : null;
+    }
+    if (dto.type !== undefined || dto.pumpId !== undefined) {
+      const pid = dto.pumpId ?? existing.pumpId?.toString();
+      update.pumpId =
+        resultingType === ExpenseType.DIESEL && pid ? new Types.ObjectId(pid) : null;
     }
 
     const doc = await this.model

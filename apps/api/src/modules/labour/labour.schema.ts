@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { LabourType, PaymentStatus } from '@wh/shared';
+import { LabourType, PaymentStatus, WageType } from '@wh/shared';
 import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
 
 export type LabourDocument = HydratedDocument<Labour>;
@@ -16,8 +16,14 @@ export class Labour extends AuditedDocument {
   @Prop({ type: String, enum: LabourType, required: true, index: true })
   type!: LabourType;
 
+  @Prop({ trim: true })
+  customType?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
   harvesterId!: Types.ObjectId;
+
+  @Prop({ type: String, enum: WageType, default: WageType.DAILY })
+  wageType!: WageType;
 
   @Prop({ min: 0 })
   dailyWage?: number;

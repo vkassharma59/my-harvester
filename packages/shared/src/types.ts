@@ -8,6 +8,7 @@ import {
   PartyType,
   PaymentStatus,
   Role,
+  WageType,
 } from './enums';
 
 /** Fields present on every persisted record. `updatedBy` satisfies the audit
@@ -63,6 +64,10 @@ export interface Expense extends AuditFields {
   harvesterId: string;
   date: string; // ISO date
   type: ExpenseType;
+  /** Set for custom (super-admin-defined) categories; type is OTHER then. */
+  categoryId?: string | null;
+  /** Set for DIESEL expenses: the fuel pump the diesel was bought from. */
+  pumpId?: string | null;
   amount: number;
   notes?: string;
   attachmentUrl?: string;
@@ -70,15 +75,59 @@ export interface Expense extends AuditFields {
   labourId?: string | null;
 }
 
+/** A super-admin-defined expense category, available to all admins in the tenant. */
+export interface ExpenseCategory extends AuditFields {
+  name: string;
+  isActive: boolean;
+}
+
+/** A diesel supplier. One pump can serve multiple harvesters (many-to-many). */
+export interface FuelPump extends AuditFields {
+  name: string;
+  phone?: string;
+  harvesterIds: string[];
+  isActive: boolean;
+}
+
+/** A fuel pump's account: diesel bought (bill) vs paid, with payment history. */
+export interface FuelPumpLedger {
+  pump: FuelPump;
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
+  payments: Payment[];
+}
+
 export interface Labour extends AuditFields {
   name: string;
   mobile: string;
   type: LabourType;
+  /** Free-text role label, set only when type is OTHER. */
+  customType?: string;
   harvesterId: string;
-  /** Either a recurring daily wage or a one-off custom amount. */
+  /** DAILY: dailyWage is the per-day rate. FIXED: customAmount is the total. */
+  wageType: WageType;
   dailyWage?: number;
   customAmount?: number;
   paymentStatus: PaymentStatus;
+}
+
+/** A worker row enriched with their computed bill (drives the workers list). */
+export interface LabourListItem extends Labour {
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
+  totalWorkingDays: number;
+}
+
+/** A worker's account: what they're owed vs paid, with payment history. */
+export interface LabourLedger {
+  labour: Labour;
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
+  totalWorkingDays: number;
+  payments: Payment[];
 }
 
 /** A commission agent attached to a single harvester. Earns a per-unit-area
@@ -90,6 +139,12 @@ export interface Agent extends AuditFields {
   /** Commission amount per unit of area (e.g. 200 per bigha/acre). */
   commissionRate: number;
   isActive: boolean;
+}
+
+/** A Bhusa buyer on a job and the amount they owe for the Bhusa. */
+export interface BhusaBuyer {
+  customerId: string;
+  amount: number;
 }
 
 /** A plot of land for a harvesting job. Carries the commercial terms. */
@@ -109,8 +164,11 @@ export interface Plot extends AuditFields {
   ratePerBigha: number; // may override the configured default
   harvestingAmount: number; // computed = area * ratePerBigha
 
-  // Type 2 only: Bhusa sold to a separate buyer
+  // Type 2 only: Bhusa sold to one or more buyers, each owing their own amount.
+  bhusaBuyers?: BhusaBuyer[];
+  /** Legacy single buyer (older jobs); superseded by bhusaBuyers. */
   bhusaBuyerId?: string;
+  /** Total Bhusa amount (sum of bhusaBuyers' amounts). */
   bhusaAmount?: number;
 
   /** harvestingAmount + (bhusaAmount ?? 0) */
@@ -131,6 +189,8 @@ export interface Payment extends AuditFields {
   date: string; // ISO date
   amount: number;
   notes?: string;
+  /** Optional receipt / proof file. */
+  attachmentUrl?: string;
 }
 
 /** App-wide configurable defaults. Rates now live per-harvester. */
@@ -161,9 +221,12 @@ export interface DashboardSummary {
     totalJobsCompleted: number;
   };
   expenses: Record<ExpenseType, number>;
+  /** Super-admin-defined categories with their summed amounts. */
+  customExpenses: { id: string; name: string; amount: number }[];
   labour: {
     totalCost: number;
-    pendingPayments: number;
+    amountPaid: number;
+    remaining: number;
   };
 }
 

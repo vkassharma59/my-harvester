@@ -32,6 +32,10 @@ export class Payment extends AuditedDocument {
 
   @Prop({ trim: true })
   notes?: string;
+
+  /** Optional receipt / proof file URL. */
+  @Prop({ trim: true })
+  attachmentUrl?: string;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

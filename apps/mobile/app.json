@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Wheat Harvester",
-    "slug": "wheat-harvester",
+    "name": "My Harvester",
+    "slug": "my-harvester",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -22,7 +22,7 @@
       "package": "com.wheatharvester.app",
       "permissions": ["READ_CONTACTS"]
     },
-    "plugins": ["expo-secure-store", "expo-contacts"],
+    "plugins": ["expo-secure-store", "expo-contacts", "expo-document-picker"],
     "extra": {
       "apiUrl": "http://localhost:3000/api/v1"
     }

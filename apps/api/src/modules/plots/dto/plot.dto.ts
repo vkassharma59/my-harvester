@@ -1,6 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDate,
   IsEnum,
   IsMongoId,
@@ -9,10 +10,25 @@ import {
   IsString,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { AreaUnit, HarvestType } from '@wh/shared';
 
+export class BhusaBuyerDto {
+  @IsMongoId()
+  customerId!: string;
+
+  @IsNumber()
+  @Min(0)
+  amount!: number;
+}
+
 export class CreatePlotDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsMongoId()
   customerId!: string;
 
@@ -61,6 +77,13 @@ export class CreatePlotDto {
   @IsNumber()
   @Min(0)
   bhusaAmount?: number;
+
+  // Multiple Bhusa buyers (Type 2). Supersedes bhusaBuyerId/bhusaAmount.
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BhusaBuyerDto)
+  bhusaBuyers?: BhusaBuyerDto[];
 
   /** Optional commission agent for this job (must belong to the same harvester).
    *  null/empty clears any existing agent. */

@@ -24,11 +24,18 @@ export type MoreStackParamList = {
   HarvesterForm: { harvesterId?: string } | undefined;
   Labour: undefined;
   LabourForm: { labourId?: string } | undefined;
+  LabourLedger: { labourId: string; name: string };
+  Attendance: { labourId: string; name: string };
   Agents: undefined;
   AgentForm: { agentId?: string } | undefined;
   AgentLedger: { agentId: string; name: string };
   Admins: undefined;
   AdminForm: { adminId?: string } | undefined;
+  ExpenseCategories: undefined;
+  ExpenseCategoryForm: { categoryId?: string } | undefined;
+  FuelPumps: undefined;
+  FuelPumpForm: { pumpId?: string } | undefined;
+  FuelPumpLedger: { pumpId: string; name: string };
   Reports: undefined;
   Settings: undefined;
 };

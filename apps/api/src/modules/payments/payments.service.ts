@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Payment, PaymentDocument } from './payment.schema';
 import { CreatePaymentDto, QueryPaymentDto, UpdatePaymentDto } from './dto/payment.dto';
@@ -19,18 +20,23 @@ export class PaymentsService {
 
   create(dto: CreatePaymentDto, user: AuthUser): Promise<PaymentDocument> {
     if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
-    return this.model.create({
-      tenantId: new Types.ObjectId(user.tenantId),
-      partyType: dto.partyType,
-      partyId: new Types.ObjectId(dto.partyId),
-      plotId: this.toOid(dto.plotId),
-      harvesterId: this.toOid(dto.harvesterId),
-      date: dto.date ?? new Date(),
-      amount: dto.amount,
-      notes: dto.notes,
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    return createMaybeWithId(
+      this.model,
+      {
+        tenantId: new Types.ObjectId(user.tenantId),
+        partyType: dto.partyType,
+        partyId: new Types.ObjectId(dto.partyId),
+        plotId: this.toOid(dto.plotId),
+        harvesterId: this.toOid(dto.harvesterId),
+        date: dto.date ?? new Date(),
+        amount: dto.amount,
+        notes: dto.notes,
+        attachmentUrl: dto.attachmentUrl,
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      dto.id,
+    );
   }
 
   findAll(query: QueryPaymentDto, user: AuthUser): Promise<PaymentDocument[]> {

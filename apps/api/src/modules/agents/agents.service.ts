@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { AgentLedger, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
 import { Plot, PlotDocument } from '../plots/plot.schema';
@@ -19,13 +20,18 @@ export class AgentsService {
 
   create(dto: CreateAgentDto, user: AuthUser): Promise<AgentDocument> {
     assertCanUseHarvester(user, dto.harvesterId);
-    return this.model.create({
-      ...dto,
-      tenantId: new Types.ObjectId(user.tenantId),
-      harvesterId: new Types.ObjectId(dto.harvesterId),
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    return createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        tenantId: new Types.ObjectId(user.tenantId),
+        harvesterId: new Types.ObjectId(dto.harvesterId),
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
   }
 
   findAll(user: AuthUser, harvesterId?: string): Promise<AgentDocument[]> {
