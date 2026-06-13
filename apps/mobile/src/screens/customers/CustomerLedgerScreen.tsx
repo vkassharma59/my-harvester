@@ -9,6 +9,7 @@ import { apiErrorMessage } from '@/api/client';
 import { customersApi, settingsApi } from '@/api/endpoints';
 import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
+import { AttachmentPicker } from '@/components/AttachmentPicker';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -33,6 +34,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [attachment, setAttachment] = useState('');
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['customer-ledger', customerId],
@@ -70,6 +72,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
   };
 
   const onSaved = () => {
@@ -85,6 +88,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         partyId: customerId,
         amount: Number(amount),
         notes: notes.trim() || undefined,
+        attachmentUrl: attachment,
       });
       return Promise.resolve();
     },
@@ -97,6 +101,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
       offlineUpdate('payment', editingId!, {
         amount: Number(amount),
         notes: notes.trim() || undefined,
+        attachmentUrl: attachment,
       });
       return Promise.resolve();
     },
@@ -108,13 +113,15 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
     setPayOpen(true);
   };
 
-  const openEdit = (pay: { id: string; amount: number; notes?: string }) => {
+  const openEdit = (pay: { id: string; amount: number; notes?: string; attachmentUrl?: string }) => {
     setEditingId(pay.id);
     setAmount(String(pay.amount));
     setNotes(pay.notes ?? '');
+    setAttachment(pay.attachmentUrl ?? '');
     setPayOpen(true);
   };
 
@@ -223,6 +230,11 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
               <Text style={styles.plotAmount}>{formatCurrency(pay.amount)}</Text>
             </View>
             {pay.notes ? <Text style={styles.sub}>{pay.notes}</Text> : null}
+            {pay.attachmentUrl ? (
+              <Pressable onPress={() => void Linking.openURL(pay.attachmentUrl as string).catch(() => {})} hitSlop={6}>
+                <Text style={styles.editLink}>{t('attachment.view')}</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.editHint}>{t('common.tapToEdit')}</Text>
           </Card>
         ))
@@ -265,6 +277,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
               onChangeText={setNotes}
               placeholder={t('common.optional')}
             />
+            <AttachmentPicker value={attachment} onChange={setAttachment} />
             <Button
               title={t('customerLedger.savePayment')}
               onPress={onSave}

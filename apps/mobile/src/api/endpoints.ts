@@ -273,6 +273,7 @@ export interface PaymentInput {
   plotId?: string;
   harvesterId?: string;
   notes?: string;
+  attachmentUrl?: string;
 }
 export const paymentsApi = {
   list: (params?: { partyType?: PartyType; partyId?: string; harvesterId?: string }) =>

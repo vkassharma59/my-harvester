@@ -43,6 +43,10 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  attachmentUrl?: string;
 }
 
 export class UpdatePaymentDto extends PartialType(CreatePaymentDto) {}

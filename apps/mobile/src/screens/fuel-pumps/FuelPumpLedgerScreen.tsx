@@ -9,6 +9,7 @@ import { apiErrorMessage } from '@/api/client';
 import { fuelPumpsApi } from '@/api/endpoints';
 import { offlineCreate, offlineUpdate } from '@/offline/enqueue';
 import { AmountField } from '@/components/AmountField';
+import { AttachmentPicker } from '@/components/AttachmentPicker';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -29,6 +30,7 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [attachment, setAttachment] = useState('');
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['fuel-pump-ledger', pumpId],
@@ -40,6 +42,7 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
   };
 
   const onSaved = () => {
@@ -54,6 +57,7 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
         partyId: pumpId,
         amount: Number(amount),
         notes: notes.trim() || undefined,
+        attachmentUrl: attachment,
       });
       return Promise.resolve();
     },
@@ -66,6 +70,7 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
       offlineUpdate('payment', editingId!, {
         amount: Number(amount),
         notes: notes.trim() || undefined,
+        attachmentUrl: attachment,
       });
       return Promise.resolve();
     },
@@ -77,13 +82,15 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
     setEditingId(null);
     setAmount('');
     setNotes('');
+    setAttachment('');
     setPayOpen(true);
   };
 
-  const openEdit = (pay: { id: string; amount: number; notes?: string }) => {
+  const openEdit = (pay: { id: string; amount: number; notes?: string; attachmentUrl?: string }) => {
     setEditingId(pay.id);
     setAmount(String(pay.amount));
     setNotes(pay.notes ?? '');
+    setAttachment(pay.attachmentUrl ?? '');
     setPayOpen(true);
   };
 
@@ -144,6 +151,11 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
               <Text style={styles.payAmount}>{formatCurrency(pay.amount)}</Text>
             </View>
             {pay.notes ? <Text style={styles.sub}>{pay.notes}</Text> : null}
+            {pay.attachmentUrl ? (
+              <Pressable onPress={() => void Linking.openURL(pay.attachmentUrl as string).catch(() => {})} hitSlop={6}>
+                <Text style={styles.editLink}>{t('attachment.view')}</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.editHint}>{t('common.tapToEdit')}</Text>
           </Card>
         ))
@@ -163,6 +175,7 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
               onChangeText={setNotes}
               placeholder={t('common.optional')}
             />
+            <AttachmentPicker value={attachment} onChange={setAttachment} />
             <Button
               title={t('fuelPumpLedger.savePayment')}
               onPress={onSave}

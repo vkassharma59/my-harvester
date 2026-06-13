@@ -189,6 +189,8 @@ export interface Payment extends AuditFields {
   date: string; // ISO date
   amount: number;
   notes?: string;
+  /** Optional receipt / proof file. */
+  attachmentUrl?: string;
 }
 
 /** App-wide configurable defaults. Rates now live per-harvester. */

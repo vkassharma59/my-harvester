@@ -31,6 +31,7 @@ export class PaymentsService {
         date: dto.date ?? new Date(),
         amount: dto.amount,
         notes: dto.notes,
+        attachmentUrl: dto.attachmentUrl,
         createdBy: new Types.ObjectId(user.id),
         updatedBy: new Types.ObjectId(user.id),
       },
