@@ -10,6 +10,11 @@ import {
 } from 'class-validator';
 
 export class CreateFuelPumpDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsString()
   @MinLength(1)
   name!: string;

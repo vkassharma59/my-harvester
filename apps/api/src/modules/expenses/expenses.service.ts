@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { ExpenseType, PaymentStatus } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Labour, LabourDocument } from '../labour/labour.schema';
 import { Expense, ExpenseDocument } from './expense.schema';
@@ -31,17 +32,22 @@ export class ExpensesService {
     const pumpId =
       dto.type === ExpenseType.DIESEL && dto.pumpId ? new Types.ObjectId(dto.pumpId) : null;
 
-    const expense = await this.model.create({
-      ...dto,
-      tenantId,
-      harvesterId: new Types.ObjectId(dto.harvesterId),
-      categoryId,
-      pumpId,
-      labourId,
-      date: dto.date ?? new Date(),
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    const expense = await createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        tenantId,
+        harvesterId: new Types.ObjectId(dto.harvesterId),
+        categoryId,
+        pumpId,
+        labourId,
+        date: dto.date ?? new Date(),
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
 
     if (labourId) await this.recomputeLabourStatus(labourId, tenantId, user.id);
     return expense;

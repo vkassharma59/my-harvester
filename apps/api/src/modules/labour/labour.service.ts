@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { LabourLedger, LabourListItem, PartyType, WageType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Attendance, AttendanceDocument } from '../attendance/attendance.schema';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
@@ -55,13 +56,18 @@ export class LabourService {
 
   create(dto: CreateLabourDto, user: AuthUser): Promise<LabourDocument> {
     assertCanUseHarvester(user, dto.harvesterId);
-    return this.model.create({
-      ...dto,
-      tenantId: new Types.ObjectId(user.tenantId),
-      harvesterId: new Types.ObjectId(dto.harvesterId),
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    return createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        tenantId: new Types.ObjectId(user.tenantId),
+        harvesterId: new Types.ObjectId(dto.harvesterId),
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
   }
 
   async findAll(user: AuthUser, harvesterId?: string): Promise<LabourListItem[]> {

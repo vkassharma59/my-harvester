@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { ALL_HARVESTERS, ExpenseType, FuelPumpLedger, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { allowedHarvesterIds, assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Expense, ExpenseDocument } from '../expenses/expense.schema';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
@@ -41,13 +42,18 @@ export class FuelPumpsService {
 
   create(dto: CreateFuelPumpDto, user: AuthUser): Promise<FuelPumpDocument> {
     dto.harvesterIds.forEach((h) => assertCanUseHarvester(user, h));
-    return this.model.create({
-      ...dto,
-      tenantId: new Types.ObjectId(user.tenantId),
-      harvesterIds: dto.harvesterIds.map((h) => new Types.ObjectId(h)),
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    return createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        tenantId: new Types.ObjectId(user.tenantId),
+        harvesterIds: dto.harvesterIds.map((h) => new Types.ObjectId(h)),
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
   }
 
   findAll(user: AuthUser, harvesterId?: string): Promise<FuelPumpDocument[]> {

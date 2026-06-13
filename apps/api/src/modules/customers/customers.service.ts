@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { PartyType, Role } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { harvesterFilter } from '../../common/scope';
 import { Paginated, PaginationDto } from '../../common/dto/pagination.dto';
 import { Payment, PaymentDocument } from '../payments/payment.schema';
@@ -51,13 +52,18 @@ export class CustomersService {
     const tenantId = new Types.ObjectId(user.tenantId);
     const phone = normalizePhone(dto.phone);
     await this.assertPhoneUnique(tenantId, phone);
-    return this.model.create({
-      ...dto,
-      phone,
-      tenantId,
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    return createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        phone,
+        tenantId,
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
   }
 
   async findAll(query: PaginationDto, user: AuthUser): Promise<Paginated<CustomerWithTotals>> {

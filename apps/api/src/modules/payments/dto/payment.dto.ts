@@ -12,6 +12,11 @@ import {
 import { PartyType } from '@wh/shared';
 
 export class CreatePaymentDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsEnum(PartyType)
   partyType!: PartyType;
 

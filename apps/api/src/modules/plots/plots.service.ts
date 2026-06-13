@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { HarvesterType, HarvestType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { createMaybeWithId } from '../../common/idempotent';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Agent, AgentDocument } from '../agents/agent.schema';
 import { Harvester, HarvesterDocument } from '../harvesters/harvester.schema';
@@ -125,17 +126,22 @@ export class PlotsService {
     });
     const commission = await this.resolveCommission(dto.agentId, dto.harvesterId, dto.area, user);
 
-    return this.model.create({
-      ...dto,
-      tenantId: new Types.ObjectId(user.tenantId),
-      customerId: new Types.ObjectId(dto.customerId),
-      harvesterId: new Types.ObjectId(dto.harvesterId),
-      ratePerBigha,
-      ...computed,
-      ...commission,
-      createdBy: new Types.ObjectId(user.id),
-      updatedBy: new Types.ObjectId(user.id),
-    });
+    const { id, ...rest } = dto;
+    return createMaybeWithId(
+      this.model,
+      {
+        ...rest,
+        tenantId: new Types.ObjectId(user.tenantId),
+        customerId: new Types.ObjectId(dto.customerId),
+        harvesterId: new Types.ObjectId(dto.harvesterId),
+        ratePerBigha,
+        ...computed,
+        ...commission,
+        createdBy: new Types.ObjectId(user.id),
+        updatedBy: new Types.ObjectId(user.id),
+      },
+      id,
+    );
   }
 
   findAll(

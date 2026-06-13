@@ -24,6 +24,11 @@ export class BhusaBuyerDto {
 }
 
 export class CreatePlotDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsMongoId()
   customerId!: string;
 

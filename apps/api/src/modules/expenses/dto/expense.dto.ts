@@ -13,6 +13,11 @@ import {
 import { ExpenseType } from '@wh/shared';
 
 export class CreateExpenseDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsMongoId()
   harvesterId!: string;
 

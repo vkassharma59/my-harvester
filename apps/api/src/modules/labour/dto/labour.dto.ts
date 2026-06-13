@@ -11,6 +11,11 @@ import {
 import { LabourType, PaymentStatus, WageType } from '@wh/shared';
 
 export class CreateLabourDto {
+  /** Client-generated id for offline creates (idempotent on replay). */
+  @IsOptional()
+  @IsMongoId()
+  id?: string;
+
   @IsString()
   @MinLength(1)
   name!: string;
