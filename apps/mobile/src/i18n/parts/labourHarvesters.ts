@@ -36,6 +36,7 @@ export const part = {
       requiredNameMobile: 'Name and mobile are required.',
       requiredCustomType: 'Enter the custom worker type.',
       requiredHarvester: 'Select a harvester.',
+      requiredWage: 'Enter the daily or fixed wage.',
     },
     labourLedger: {
       editWorker: 'Edit worker →',
@@ -127,6 +128,7 @@ export const part = {
       requiredNameMobile: 'नाम और मोबाइल आवश्यक हैं।',
       requiredCustomType: 'कस्टम कामगार प्रकार दर्ज करें।',
       requiredHarvester: 'एक हार्वेस्टर चुनें।',
+      requiredWage: 'दैनिक या निश्चित मजदूरी दर्ज करें।',
     },
     labourLedger: {
       editWorker: 'कामगार संपादित करें →',
@@ -218,6 +220,7 @@ export const part = {
       requiredNameMobile: 'ਨਾਮ ਅਤੇ ਮੋਬਾਈਲ ਲੋੜੀਂਦੇ ਹਨ।',
       requiredCustomType: 'ਕਸਟਮ ਕਾਮੇ ਦੀ ਕਿਸਮ ਦਰਜ ਕਰੋ।',
       requiredHarvester: 'ਇੱਕ ਹਾਰਵੈਸਟਰ ਚੁਣੋ।',
+      requiredWage: 'ਰੋਜ਼ਾਨਾ ਜਾਂ ਨਿਸ਼ਚਿਤ ਮਜ਼ਦੂਰੀ ਦਰਜ ਕਰੋ।',
     },
     labourLedger: {
       editWorker: 'ਕਾਮਾ ਸੋਧੋ →',

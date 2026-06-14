@@ -3,7 +3,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi, settingsApi } from '@/api/endpoints';
@@ -12,6 +13,7 @@ import { AmountField } from '@/components/AmountField';
 import { AttachmentPicker } from '@/components/AttachmentPicker';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { ErrorState, Loading } from '@/components/States';
@@ -29,10 +31,12 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const harvestTypeLabel = useHarvestTypeLabel();
   const { customerId } = route.params;
   const qc = useQueryClient();
+  const insets = useSafeAreaInsets();
   const [payOpen, setPayOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
   const [attachment, setAttachment] = useState('');
 
@@ -71,6 +75,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     setPayOpen(false);
     setEditingId(null);
     setAmount('');
+    setDate(new Date());
     setNotes('');
     setAttachment('');
   };
@@ -87,6 +92,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         partyType: PartyType.CUSTOMER,
         partyId: customerId,
         amount: Number(amount),
+        date: date.toISOString(),
         notes: notes.trim() || undefined,
         attachmentUrl: attachment,
       });
@@ -100,6 +106,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     mutationFn: () => {
       offlineUpdate('payment', editingId!, {
         amount: Number(amount),
+        date: date.toISOString(),
         notes: notes.trim() || undefined,
         attachmentUrl: attachment,
       });
@@ -112,14 +119,16 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const openRecord = () => {
     setEditingId(null);
     setAmount('');
+    setDate(new Date());
     setNotes('');
     setAttachment('');
     setPayOpen(true);
   };
 
-  const openEdit = (pay: { id: string; amount: number; notes?: string; attachmentUrl?: string }) => {
+  const openEdit = (pay: { id: string; amount: number; date: string; notes?: string; attachmentUrl?: string }) => {
     setEditingId(pay.id);
     setAmount(String(pay.amount));
+    setDate(new Date(pay.date));
     setNotes(pay.notes ?? '');
     setAttachment(pay.attachmentUrl ?? '');
     setPayOpen(true);
@@ -241,12 +250,9 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
       )}
 
       <Modal visible={reminderOpen} transparent animationType="slide" onRequestClose={() => setReminderOpen(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalRoot}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
           <Pressable style={styles.backdrop} onPress={() => setReminderOpen(false)} />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xxl }]}>
             <Text style={styles.sheetTitle}>{t('customerLedger.reminderTitle')}</Text>
             <TextField
               label={t('customerLedger.reminderLabel')}
@@ -261,16 +267,14 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
       </Modal>
 
       <Modal visible={payOpen} transparent animationType="slide" onRequestClose={closeSheet}>
-        <KeyboardAvoidingView
-          style={styles.modalRoot}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
           <Pressable style={styles.backdrop} onPress={closeSheet} />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xxl }]}>
             <Text style={styles.sheetTitle}>
               {editingId ? t('customerLedger.editPayment') : t('customerLedger.recordPaymentTitle')}
             </Text>
             <AmountField label={t('customerLedger.amount')} value={amount} onChangeText={setAmount} placeholder="0" />
+            <DateField label={t('common.date')} value={date} onChange={setDate} />
             <TextField
               label={t('customerLedger.notes')}
               value={notes}

@@ -65,6 +65,7 @@ export function ReportsScreen() {
           label={tEnum('expenseType', ExpenseType.OTHER)}
           value={money(data.expenses[ExpenseType.OTHER])}
         />
+        <Line label={t('reports.agentCommission')} value={money(data.financial.agentCommission)} />
       </ReportCard>
 
       <ReportCard title={t('reports.labourPaymentReport')}>

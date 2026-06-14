@@ -41,6 +41,8 @@ export function SettingsScreen() {
   const [currency, setCurrency] = useState('INR');
   const [unit, setUnit] = useState<AreaUnit>(AreaUnit.BIGHA);
   const [firmName, setFirmName] = useState('');
+  // Language is staged locally and only applied when Save is pressed.
+  const [language, setLanguageChoice] = useState<LanguageCode>(i18n.language as LanguageCode);
 
   useEffect(() => {
     if (data) {
@@ -51,7 +53,10 @@ export function SettingsScreen() {
   }, [data, defaultFirm]);
 
   const save = useMutation({
-    mutationFn: () => settingsApi.update({ currency, defaultAreaUnit: unit, firmName: firmName.trim() }),
+    mutationFn: async () => {
+      if (language !== i18n.language) await setLanguage(language);
+      return settingsApi.update({ currency, defaultAreaUnit: unit, firmName: firmName.trim() });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['settings'] });
       Alert.alert(t('common.saved'), t('settings.savedBody'));
@@ -81,9 +86,9 @@ export function SettingsScreen() {
     <Screen>
       <Select
         label={t('settings.language')}
-        value={i18n.language}
+        value={language}
         options={LANGUAGE_OPTIONS}
-        onChange={(v) => void setLanguage(v as LanguageCode)}
+        onChange={(v) => setLanguageChoice(v as LanguageCode)}
       />
       <TextField
         label={t('settings.firmName')}
