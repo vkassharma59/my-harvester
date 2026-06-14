@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Between, Repository } from 'typeorm';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { newObjectId } from '../../common/object-id';
 import { harvesterFilter } from '../../common/scope';
-import { Labour, LabourDocument } from '../labour/labour.schema';
-import { Attendance, AttendanceDocument } from './attendance.schema';
+import { Labour } from '../labour/labour.schema';
+import { Attendance } from './attendance.schema';
 import { SetWeekDto } from './dto/attendance.dto';
 
 /** Add days to a 'YYYY-MM-DD' string, tz-safely. */
@@ -17,15 +18,15 @@ function addDays(isoDate: string, n: number): string {
 @Injectable()
 export class AttendanceService {
   constructor(
-    @InjectModel(Attendance.name) private readonly model: Model<AttendanceDocument>,
-    @InjectModel(Labour.name) private readonly labour: Model<LabourDocument>,
+    @InjectRepository(Attendance) private readonly repo: Repository<Attendance>,
+    @InjectRepository(Labour) private readonly labour: Repository<Labour>,
   ) {}
 
   /** The worker, scoped to what the user may see, or throws. */
-  private async assertWorker(labourId: string, user: AuthUser): Promise<LabourDocument> {
-    const worker = await this.labour
-      .findOne({ _id: labourId, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) })
-      .exec();
+  private async assertWorker(labourId: string, user: AuthUser): Promise<Labour> {
+    const worker = await this.labour.findOne({
+      where: { id: labourId, tenantId: user.tenantId, ...harvesterFilter(user) },
+    });
     if (!worker) throw new NotFoundException('Worker not found');
     return worker;
   }
@@ -33,39 +34,34 @@ export class AttendanceService {
   /** Present dates ('YYYY-MM-DD') for a worker within [from, to]. */
   async getRange(labourId: string, from: string, to: string, user: AuthUser): Promise<string[]> {
     await this.assertWorker(labourId, user);
-    const rows = await this.model
-      .find({
-        tenantId: new Types.ObjectId(user.tenantId),
-        labourId: new Types.ObjectId(labourId),
-        date: { $gte: from, $lte: to },
-      })
-      .select('date')
-      .exec();
+    const rows = await this.repo.find({
+      where: { tenantId: user.tenantId, labourId, date: Between(from, to) },
+      select: { date: true },
+    });
     return rows.map((r) => r.date).sort();
   }
 
   /** Replace a worker's attendance for one week with the provided present days. */
   async setWeek(dto: SetWeekDto, user: AuthUser): Promise<string[]> {
     const worker = await this.assertWorker(dto.labourId, user);
-    const tenantId = new Types.ObjectId(user.tenantId);
-    const labourId = new Types.ObjectId(dto.labourId);
     const weekEnd = addDays(dto.weekStart, 6);
     const valid = [...new Set(dto.days)].filter((d) => d >= dto.weekStart && d <= weekEnd);
 
-    await this.model.deleteMany({
-      tenantId,
-      labourId,
-      date: { $gte: dto.weekStart, $lte: weekEnd },
+    await this.repo.delete({
+      tenantId: user.tenantId,
+      labourId: dto.labourId,
+      date: Between(dto.weekStart, weekEnd),
     });
     if (valid.length) {
-      await this.model.insertMany(
+      await this.repo.insert(
         valid.map((date) => ({
-          tenantId,
-          labourId,
+          id: newObjectId(),
+          tenantId: user.tenantId,
+          labourId: dto.labourId,
           harvesterId: worker.harvesterId,
           date,
-          createdBy: new Types.ObjectId(user.id),
-          updatedBy: new Types.ObjectId(user.id),
+          createdBy: user.id,
+          updatedBy: user.id,
         })),
       );
     }

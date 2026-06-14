@@ -1,28 +1,32 @@
-import { Model, Types } from 'mongoose';
+import { ObjectLiteral, Repository } from 'typeorm';
+import { newObjectId } from './object-id';
+
+/** MySQL duplicate-key error (ER_DUP_ENTRY / errno 1062). */
+function isDuplicateKey(e: unknown): boolean {
+  const err = e as { code?: string; errno?: number };
+  return err?.code === 'ER_DUP_ENTRY' || err?.errno === 1062;
+}
 
 /**
- * Create a document, optionally with a client-supplied id, idempotently.
+ * Create a row, optionally with a client-supplied id, idempotently.
  *
  * Offline clients generate the record id themselves and may replay a create
- * (e.g. the response was lost after the server already saved it). If a record
- * with that id already exists we return the existing one instead of throwing a
+ * (e.g. the response was lost after the server already saved it). If a row with
+ * that id already exists we return the existing one instead of throwing a
  * duplicate-key error, so outbox replays are safe.
  */
-export async function createMaybeWithId(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  model: Model<any>,
+export async function createMaybeWithId<T extends ObjectLiteral>(
+  repo: Repository<T>,
   doc: Record<string, unknown>,
   providedId?: string | null,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> {
-  if (!providedId) return model.create(doc);
-
-  const _id = new Types.ObjectId(providedId);
+): Promise<T> {
+  const id = providedId || newObjectId();
   try {
-    return await model.create({ _id, ...doc });
+    await repo.insert({ id, ...doc } as never);
+    return (await repo.findOneBy({ id } as never)) as T;
   } catch (e) {
-    if ((e as { code?: number })?.code === 11000) {
-      const existing = await model.findById(_id).exec();
+    if (providedId && isDuplicateKey(e)) {
+      const existing = await repo.findOneBy({ id } as never);
       if (existing) return existing;
     }
     throw e;

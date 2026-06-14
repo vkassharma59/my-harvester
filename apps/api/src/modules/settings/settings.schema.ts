@@ -1,22 +1,17 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { Column, Entity } from 'typeorm';
 import { AreaUnit } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type AppSettingsDocument = HydratedDocument<AppSettings>;
-
-/** A single document holds the app-wide configurable defaults. */
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class AppSettings extends AuditedDocument {
-  @Prop({ required: true, default: 'INR' })
+/** A single row holds the app-wide configurable defaults (per tenant). */
+@Entity('app_settings')
+export class AppSettings extends AuditedEntity {
+  @Column({ type: 'varchar', length: 8, default: 'INR' })
   currency!: string;
 
-  @Prop({ type: String, enum: AreaUnit, default: AreaUnit.BIGHA })
+  @Column({ type: 'varchar', length: 32, default: AreaUnit.BIGHA })
   defaultAreaUnit!: AreaUnit;
 
   /** Business/firm name shown in payment reminders. */
-  @Prop({ trim: true, default: '' })
+  @Column({ type: 'varchar', length: 255, default: '' })
   firmName!: string;
 }
-
-export const AppSettingsSchema = SchemaFactory.createForClass(AppSettings);

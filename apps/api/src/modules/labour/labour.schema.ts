@@ -1,38 +1,33 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Column, Entity } from 'typeorm';
 import { LabourType, PaymentStatus, WageType } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type LabourDocument = HydratedDocument<Labour>;
-
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Labour extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+@Entity('labour')
+export class Labour extends AuditedEntity {
+  @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Prop({ required: true, trim: true })
+  @Column({ type: 'varchar', length: 32 })
   mobile!: string;
 
-  @Prop({ type: String, enum: LabourType, required: true, index: true })
+  @Column({ type: 'varchar', length: 32 })
   type!: LabourType;
 
-  @Prop({ trim: true })
-  customType?: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  customType?: string | null;
 
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
-  harvesterId!: Types.ObjectId;
+  @Column({ type: 'varchar', length: 24 })
+  harvesterId!: string;
 
-  @Prop({ type: String, enum: WageType, default: WageType.DAILY })
+  @Column({ type: 'varchar', length: 32, default: WageType.DAILY })
   wageType!: WageType;
 
-  @Prop({ min: 0 })
-  dailyWage?: number;
+  @Column({ type: 'double', nullable: true })
+  dailyWage?: number | null;
 
-  @Prop({ min: 0 })
-  customAmount?: number;
+  @Column({ type: 'double', nullable: true })
+  customAmount?: number | null;
 
-  @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
+  @Column({ type: 'varchar', length: 32, default: PaymentStatus.PENDING })
   paymentStatus!: PaymentStatus;
 }
-
-export const LabourSchema = SchemaFactory.createForClass(Labour);

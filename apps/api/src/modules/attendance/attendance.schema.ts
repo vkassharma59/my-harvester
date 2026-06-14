@@ -1,24 +1,19 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
-
-export type AttendanceDocument = HydratedDocument<Attendance>;
+import { Column, Entity, Index } from 'typeorm';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
 /**
  * One row per day a daily-wage worker was present. Existence = present;
  * unchecking a day deletes the row. `date` is a tz-safe 'YYYY-MM-DD' string.
  */
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Attendance extends AuditedDocument {
-  @Prop({ type: Types.ObjectId, ref: 'Labour', required: true, index: true })
-  labourId!: Types.ObjectId;
+@Entity('attendance')
+@Index(['labourId', 'date'], { unique: true })
+export class Attendance extends AuditedEntity {
+  @Column({ type: 'varchar', length: 24 })
+  labourId!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
-  harvesterId!: Types.ObjectId;
+  @Column({ type: 'varchar', length: 24 })
+  harvesterId!: string;
 
-  @Prop({ required: true })
+  @Column({ type: 'varchar', length: 10 })
   date!: string;
 }
-
-export const AttendanceSchema = SchemaFactory.createForClass(Attendance);
-AttendanceSchema.index({ labourId: 1, date: 1 }, { unique: true });

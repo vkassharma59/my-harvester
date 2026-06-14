@@ -1,27 +1,22 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
-
-export type AgentDocument = HydratedDocument<Agent>;
+import { Column, Entity } from 'typeorm';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
 /** A commission agent attached to a single harvester. */
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Agent extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+@Entity('agents')
+export class Agent extends AuditedEntity {
+  @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Prop({ trim: true })
-  phone?: string;
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  phone?: string | null;
 
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
-  harvesterId!: Types.ObjectId;
+  @Column({ type: 'varchar', length: 24 })
+  harvesterId!: string;
 
   /** Commission amount per unit of area (e.g. 200 per bigha/acre). */
-  @Prop({ required: true, min: 0 })
+  @Column({ type: 'double' })
   commissionRate!: number;
 
-  @Prop({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 }
-
-export const AgentSchema = SchemaFactory.createForClass(Agent);

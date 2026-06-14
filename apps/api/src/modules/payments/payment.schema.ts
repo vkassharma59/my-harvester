@@ -1,42 +1,37 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Column, Entity, Index } from 'typeorm';
 import { PartyType } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
-
-export type PaymentDocument = HydratedDocument<Payment>;
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
 /**
  * A money movement. `partyType` says whose ledger it belongs to; `partyId`
  * points at the customer / bhusa-buyer / labour accordingly. This single
- * collection lets the customer ledger and labour payment reports be rebuilt.
+ * table lets the customer ledger and labour payment reports be rebuilt.
  */
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Payment extends AuditedDocument {
-  @Prop({ type: String, enum: PartyType, required: true, index: true })
+@Entity('payments')
+@Index(['partyType', 'partyId', 'date'])
+export class Payment extends AuditedEntity {
+  @Column({ type: 'varchar', length: 32 })
   partyType!: PartyType;
 
-  @Prop({ type: Types.ObjectId, required: true, index: true })
-  partyId!: Types.ObjectId;
+  @Column({ type: 'varchar', length: 24 })
+  partyId!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Plot', default: null })
-  plotId?: Types.ObjectId | null;
+  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  plotId?: string | null;
 
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', default: null, index: true })
-  harvesterId?: Types.ObjectId | null;
+  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  harvesterId?: string | null;
 
-  @Prop({ required: true })
+  @Column({ type: 'datetime' })
   date!: Date;
 
-  @Prop({ required: true, min: 0 })
+  @Column({ type: 'double' })
   amount!: number;
 
-  @Prop({ trim: true })
-  notes?: string;
+  @Column({ type: 'text', nullable: true })
+  notes?: string | null;
 
   /** Optional receipt / proof file URL. */
-  @Prop({ trim: true })
-  attachmentUrl?: string;
+  @Column({ type: 'varchar', length: 1024, nullable: true })
+  attachmentUrl?: string | null;
 }
-
-export const PaymentSchema = SchemaFactory.createForClass(Payment);
-PaymentSchema.index({ partyType: 1, partyId: 1, date: -1 });
