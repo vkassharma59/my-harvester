@@ -10,6 +10,7 @@ export const pa = {
     loading: 'ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…',
     starting: 'ਸ਼ੁਰੂ ਹੋ ਰਿਹਾ ਹੈ…',
     search: 'ਖੋਜੋ',
+    date: 'ਤਾਰੀਖ਼',
     optional: 'ਚੋਣਵਾਂ',
     areYouSure: 'ਕੀ ਤੁਸੀਂ ਪੱਕਾ ਹੋ?',
     error: 'ਗਲਤੀ',

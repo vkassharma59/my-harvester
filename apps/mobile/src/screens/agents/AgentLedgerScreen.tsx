@@ -3,7 +3,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { agentsApi } from '@/api/endpoints';
@@ -12,6 +13,7 @@ import { AmountField } from '@/components/AmountField';
 import { AttachmentPicker } from '@/components/AttachmentPicker';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { ErrorState, Loading } from '@/components/States';
@@ -27,9 +29,11 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const { agentId } = route.params;
   const qc = useQueryClient();
+  const insets = useSafeAreaInsets();
   const [payOpen, setPayOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
   const [attachment, setAttachment] = useState('');
 
@@ -42,6 +46,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
     setPayOpen(false);
     setEditingId(null);
     setAmount('');
+    setDate(new Date());
     setNotes('');
     setAttachment('');
   };
@@ -57,6 +62,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
         partyType: PartyType.AGENT,
         partyId: agentId,
         amount: Number(amount),
+        date: date.toISOString(),
         notes: notes.trim() || undefined,
         attachmentUrl: attachment,
       });
@@ -70,6 +76,7 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
     mutationFn: () => {
       offlineUpdate('payment', editingId!, {
         amount: Number(amount),
+        date: date.toISOString(),
         notes: notes.trim() || undefined,
         attachmentUrl: attachment,
       });
@@ -82,14 +89,16 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
   const openRecord = () => {
     setEditingId(null);
     setAmount('');
+    setDate(new Date());
     setNotes('');
     setAttachment('');
     setPayOpen(true);
   };
 
-  const openEdit = (pay: { id: string; amount: number; notes?: string; attachmentUrl?: string }) => {
+  const openEdit = (pay: { id: string; amount: number; date: string; notes?: string; attachmentUrl?: string }) => {
     setEditingId(pay.id);
     setAmount(String(pay.amount));
+    setDate(new Date(pay.date));
     setNotes(pay.notes ?? '');
     setAttachment(pay.attachmentUrl ?? '');
     setPayOpen(true);
@@ -182,16 +191,14 @@ export function AgentLedgerScreen({ navigation, route }: Props) {
       )}
 
       <Modal visible={payOpen} transparent animationType="slide" onRequestClose={closeSheet}>
-        <KeyboardAvoidingView
-          style={styles.modalRoot}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
           <Pressable style={styles.backdrop} onPress={closeSheet} />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xxl }]}>
             <Text style={styles.sheetTitle}>
               {editingId ? t('agentLedger.editPayment') : t('agentLedger.recordPaymentTitle')}
             </Text>
             <AmountField label={t('agentLedger.amount')} value={amount} onChangeText={setAmount} placeholder="0" />
+            <DateField label={t('common.date')} value={date} onChange={setDate} />
             <TextField
               label={t('agentLedger.notes')}
               value={notes}

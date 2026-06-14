@@ -6,7 +6,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AreaUnit, HarvesterStatus, HarvesterType, HarvestType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { agentsApi, customersApi, harvestersApi, plotsApi, settingsApi } from '@/api/endpoints';
@@ -37,6 +37,7 @@ type Props = NativeStackScreenProps<HarvestFormParamList, 'HarvestForm'>;
 export function HarvestFormScreen({ route, navigation }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const insets = useSafeAreaInsets();
   const TYPE_OPTIONS = Object.values(HarvestType).map((v) => ({ label: tEnum('harvestType', v), value: v }));
   const plotId = route.params?.plotId;
   const editing = !!plotId;
@@ -349,9 +350,9 @@ export function HarvestFormScreen({ route, navigation }: Props) {
       />
 
       <Modal visible={bhusaOpen} transparent animationType="slide" onRequestClose={() => setBhusaOpen(false)}>
-        <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
           <Pressable style={styles.backdrop} onPress={() => setBhusaOpen(false)} />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xl }]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{t('harvestForm.bhusaBuyersTitle')}</Text>
               <Pressable onPress={() => setBhusaOpen(false)} hitSlop={8}>

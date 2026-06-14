@@ -1,13 +1,6 @@
 import { ReactNode } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { RefreshControl, StyleSheet, View, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/theme';
 
@@ -33,33 +26,34 @@ export function Screen({
   const contentStyle = [padded && styles.padded, style];
 
   if (!scroll) {
+    // Non-scrolling screens still avoid the keyboard so inputs stay visible.
     return (
-      <View style={[styles.root, { paddingBottom: insets.bottom }, ...contentStyle]}>{children}</View>
+      <KeyboardAvoidingView behavior="padding" style={styles.root}>
+        <View style={[styles.fill, { paddingBottom: insets.bottom }, ...contentStyle]}>{children}</View>
+      </KeyboardAvoidingView>
     );
   }
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.xl }, ...contentStyle]}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={spacing.xl}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        ) : undefined
+      }
     >
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.xl }, ...contentStyle]}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          onRefresh ? (
-            <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-          ) : undefined
-        }
-      >
-        {children}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {children}
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
+  fill: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   padded: { padding: spacing.lg },
 });

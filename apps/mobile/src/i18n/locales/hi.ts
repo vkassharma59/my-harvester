@@ -10,6 +10,7 @@ export const hi = {
     loading: 'लोड हो रहा है…',
     starting: 'शुरू हो रहा है…',
     search: 'खोजें',
+    date: 'तारीख़',
     optional: 'वैकल्पिक',
     areYouSure: 'क्या आप निश्चित हैं?',
     error: 'त्रुटि',

@@ -54,6 +54,8 @@ export const part = {
       contactsError: 'Could not open contacts.',
       requiredTitle: 'Required',
       requiredBody: 'Name and phone number are required.',
+      duplicateTitle: 'Customer already exists',
+      duplicateBody: 'A customer with this phone number already exists ({{name}}).',
     },
   },
   hi: {
@@ -110,6 +112,8 @@ export const part = {
       contactsError: 'संपर्क नहीं खोले जा सके।',
       requiredTitle: 'आवश्यक',
       requiredBody: 'नाम और फ़ोन नंबर आवश्यक हैं।',
+      duplicateTitle: 'ग्राहक पहले से मौजूद है',
+      duplicateBody: 'इस फ़ोन नंबर वाला ग्राहक पहले से मौजूद है ({{name}})।',
     },
   },
   pa: {
@@ -166,6 +170,8 @@ export const part = {
       contactsError: 'ਸੰਪਰਕ ਨਹੀਂ ਖੋਲ੍ਹੇ ਜਾ ਸਕੇ।',
       requiredTitle: 'ਲੋੜੀਂਦਾ',
       requiredBody: 'ਨਾਮ ਅਤੇ ਫ਼ੋਨ ਨੰਬਰ ਲੋੜੀਂਦੇ ਹਨ।',
+      duplicateTitle: 'ਗਾਹਕ ਪਹਿਲਾਂ ਤੋਂ ਮੌਜੂਦ ਹੈ',
+      duplicateBody: 'ਇਸ ਫ਼ੋਨ ਨੰਬਰ ਵਾਲਾ ਗਾਹਕ ਪਹਿਲਾਂ ਤੋਂ ਮੌਜੂਦ ਹੈ ({{name}})।',
     },
   },
 } as const;

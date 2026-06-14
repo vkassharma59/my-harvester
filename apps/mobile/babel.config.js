@@ -12,6 +12,9 @@ module.exports = function (api) {
           },
         },
       ],
+      // NOTE: react-native-reanimated/worklets needs a Babel plugin, but on
+      // Expo SDK 54 `babel-preset-expo` adds it automatically — do NOT add it
+      // here as well, or it will be registered twice and the build will fail.
     ],
   };
 };

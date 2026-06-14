@@ -127,6 +127,8 @@ export function LabourFormScreen({ route, navigation }: Props) {
     if (type === LabourType.OTHER && !customType.trim())
       return Alert.alert(t('labourForm.required'), t('labourForm.requiredCustomType'));
     if (!harvesterId) return Alert.alert(t('labourForm.required'), t('labourForm.requiredHarvester'));
+    if (!wage.trim() || !(Number(wage) > 0))
+      return Alert.alert(t('labourForm.required'), t('labourForm.requiredWage'));
     save.mutate();
   };
 
