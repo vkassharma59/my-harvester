@@ -5,6 +5,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AppState, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { authApi } from '@/api/endpoints';
 import { queryClient } from '@/api/queryClient';
@@ -43,15 +44,17 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
-        <StatusBar style="light" />
-        <NavigationContainer>
-          <View style={{ flex: 1 }}>
-            <RootNavigator />
-            <OfflineBanner />
-          </View>
-        </NavigationContainer>
-      </PersistQueryClientProvider>
+      <KeyboardProvider>
+        <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+          <StatusBar style="light" />
+          <NavigationContainer>
+            <View style={{ flex: 1 }}>
+              <RootNavigator />
+              <OfflineBanner />
+            </View>
+          </NavigationContainer>
+        </PersistQueryClientProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

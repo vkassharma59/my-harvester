@@ -10,6 +10,7 @@ export const en = {
     loading: 'Loading…',
     starting: 'Starting…',
     search: 'Search',
+    date: 'Date',
     optional: 'Optional',
     areYouSure: 'Are you sure?',
     error: 'Error',

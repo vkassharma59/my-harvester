@@ -80,10 +80,25 @@ export function CustomerFormScreen({ route, navigation }: Props) {
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
-  const onSave = () => {
+  const onSave = async () => {
     if (!form.name.trim() || !form.phone.trim()) {
       Alert.alert(t('customerForm.requiredTitle'), t('customerForm.requiredBody'));
       return;
+    }
+    // Pre-check for a customer with the same phone so the user gets immediate
+    // feedback. (Creates go through the offline outbox, where the server's
+    // duplicate 409 is treated as an idempotent replay and never surfaced.)
+    // Best-effort: if the lookup fails (offline), fall through and let it save.
+    const phone = form.phone.replace(/\D/g, '');
+    try {
+      const res = await customersApi.list({ search: phone, limit: 100 });
+      const dup = res.items.find((c) => c.phone.replace(/\D/g, '') === phone && c.id !== customerId);
+      if (dup) {
+        Alert.alert(t('customerForm.duplicateTitle'), t('customerForm.duplicateBody', { name: dup.name }));
+        return;
+      }
+    } catch {
+      // Offline / lookup failed — proceed; the outbox will sync the create.
     }
     save.mutate();
   };

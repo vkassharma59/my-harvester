@@ -3,13 +3,13 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, font, radius, spacing } from '@/theme';
 
 export interface SelectOption {
@@ -45,6 +45,7 @@ export function Select({
 }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const insets = useSafeAreaInsets();
   const selected = options.find((o) => o.value === value);
 
   const filtered = useMemo(() => {
@@ -72,14 +73,13 @@ export function Select({
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
-        <KeyboardAvoidingView
-          style={styles.modalRoot}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
           {/* Backdrop sits BEHIND the sheet so it doesn't intercept the sheet's
               touches (which would block the search input / list on Android). */}
           <Pressable style={styles.backdrop} onPress={close} />
-          <View style={styles.sheet}>
+          {/* Bottom inset keeps the last option clear of the Android nav bar
+              (edge-to-edge is on by default in release builds). */}
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xl }]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{label}</Text>
               <Pressable onPress={close} hitSlop={8}>
