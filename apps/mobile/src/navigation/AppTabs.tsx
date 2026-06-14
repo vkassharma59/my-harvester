@@ -15,6 +15,15 @@ const icons: Record<keyof AppTabsParamList, string> = {
   MoreTab: '☰',
 };
 
+// The root (first) screen of each tab's stack — where a tab press should land.
+const TAB_ROOT: Record<keyof AppTabsParamList, string> = {
+  DashboardTab: 'Dashboard',
+  HarvestsTab: 'HarvestsList',
+  CustomersTab: 'CustomersList',
+  ExpensesTab: 'ExpensesList',
+  MoreTab: 'MoreMenu',
+};
+
 function tabIcon(name: keyof AppTabsParamList) {
   return ({ focused }: { focused: boolean }) => (
     <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{icons[name]}</Text>
@@ -31,6 +40,14 @@ export function AppTabs() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: font.size.xs },
       }}
+      // Tapping any tab lands on that tab's main page rather than a screen the
+      // user left open mid-edit: jump straight to the stack's root screen.
+      screenListeners={({ navigation, route }) => ({
+        tabPress: (e) => {
+          e.preventDefault();
+          navigation.navigate(route.name, { screen: TAB_ROOT[route.name as keyof AppTabsParamList] });
+        },
+      })}
     >
       <Tab.Screen
         name="DashboardTab"

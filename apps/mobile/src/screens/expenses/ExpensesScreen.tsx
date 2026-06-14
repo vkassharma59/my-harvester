@@ -165,7 +165,12 @@ export function ExpensesScreen({ navigation }: Props) {
         )}
       />
       <View style={styles.footer}>
-        <Button title={t('expenses.addExpense')} onPress={() => navigation.navigate('ExpenseForm')} />
+        <Button
+          title={t('expenses.addExpense')}
+          onPress={() =>
+            navigation.navigate('ExpenseForm', typeFilter === 'ALL' ? undefined : { presetCategory: typeFilter })
+          }
+        />
       </View>
     </View>
   );

@@ -15,7 +15,7 @@ export type HarvestsStackParamList = {
 
 export type ExpensesStackParamList = {
   ExpensesList: undefined;
-  ExpenseForm: { expenseId?: string } | undefined;
+  ExpenseForm: { expenseId?: string; presetCategory?: string } | undefined;
 };
 
 export type MoreStackParamList = {

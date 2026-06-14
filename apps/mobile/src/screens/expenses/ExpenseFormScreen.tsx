@@ -41,7 +41,8 @@ export function ExpenseFormScreen({ route, navigation }: Props) {
     soleHarvesterId ?? scopedHarvesterId(selectedId) ?? '',
   );
   // A single selection: a built-in ExpenseType value OR a custom category id.
-  const [category, setCategory] = useState<string>(ExpenseType.DIESEL);
+  // Pre-filled from the chip the user had selected on the list, when adding new.
+  const [category, setCategory] = useState<string>(route.params?.presetCategory ?? ExpenseType.DIESEL);
   const [pumpId, setPumpId] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date());
