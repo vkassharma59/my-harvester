@@ -82,5 +82,14 @@ export const en = {
     savedBody: 'Settings updated.',
     dataCleared: 'Data cleared',
     dataClearedBody: 'Removed {{count}} records. Your account and admins are kept.',
+    otpTitle: 'Verify OTP',
+    otpSent: 'For your security, enter the 6-digit code sent to your registered mobile number before clearing all data.',
+    otpLabel: 'Enter 6-digit OTP',
+    otpPlaceholder: '••••••',
+    otpDevNote:
+      'Note: SMS OTP isn’t set up yet — you can enter any 6 digits for now. Real OTP delivery will be enabled soon.',
+    otpVerifyClear: 'Verify & clear all data',
+    otpInvalidTitle: 'Invalid OTP',
+    otpInvalidBody: 'Please enter a valid 6-digit OTP.',
   },
 } as const;
