@@ -34,7 +34,7 @@ export default (): AppConfig => ({
     port: parseInt(process.env.MYSQL_PORT ?? '3306', 10),
     username: process.env.MYSQL_USER ?? 'root',
     password: process.env.MYSQL_PASSWORD ?? '',
-    database: process.env.MYSQL_DATABASE ?? 'wheat_harvester',
+    database: process.env.MYSQL_DATABASE ?? 'myharvester_prod',
   },
   jwt: {
     secret: process.env.JWT_SECRET ?? 'dev-insecure-secret-change-me',
