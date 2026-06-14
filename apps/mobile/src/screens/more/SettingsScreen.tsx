@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AreaUnit, Role } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { harvestersApi, maintenanceApi, settingsApi } from '@/api/endpoints';
@@ -24,6 +25,7 @@ const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ label: l.label, value: l.code }
 export function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
+  const insets = useSafeAreaInsets();
   const isSuperAdmin = useAuth((s) => s.admin?.role) === Role.OWNER;
   const myHarvesterIds = useAuth((s) => s.admin?.harvesterIds) ?? [];
   const offlineEntryEnabled = useOfflinePrefs((s) => s.offlineEntryEnabled);
@@ -43,6 +45,9 @@ export function SettingsScreen() {
   const [firmName, setFirmName] = useState('');
   // Language is staged locally and only applied when Save is pressed.
   const [language, setLanguageChoice] = useState<LanguageCode>(i18n.language as LanguageCode);
+  // OTP gate for the destructive clear-all-data action.
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otp, setOtp] = useState('');
 
   useEffect(() => {
     if (data) {
@@ -74,11 +79,24 @@ export function SettingsScreen() {
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
-  const confirmClear = () =>
-    Alert.alert(t('settings.clearConfirmTitle'), t('settings.clearConfirmBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('settings.clearData'), style: 'destructive', onPress: () => clearData.mutate() },
-    ]);
+  const openOtp = () => {
+    setOtp('');
+    setOtpOpen(true);
+  };
+  const closeOtp = () => {
+    setOtpOpen(false);
+    setOtp('');
+  };
+  const verifyAndClear = () => {
+    // No SMS provider yet — accept any 6-digit code, but enforce the format.
+    if (!/^\d{6}$/.test(otp)) {
+      Alert.alert(t('settings.otpInvalidTitle'), t('settings.otpInvalidBody'));
+      return;
+    }
+    setOtpOpen(false);
+    setOtp('');
+    clearData.mutate();
+  };
 
   if (isLoading) return <Loading />;
 
@@ -120,16 +138,43 @@ export function SettingsScreen() {
       </View>
 
       {isSuperAdmin ? (
-        <View style={styles.danger}>
-          <Text style={styles.dangerTitle}>{t('settings.dangerZone')}</Text>
-          <Text style={styles.hint}>{t('settings.dangerHint')}</Text>
-          <Button
-            title={t('settings.clearData')}
-            variant="danger"
-            onPress={confirmClear}
-            loading={clearData.isPending}
-          />
-        </View>
+        <>
+          <View style={styles.danger}>
+            <Text style={styles.dangerTitle}>{t('settings.dangerZone')}</Text>
+            <Text style={styles.hint}>{t('settings.dangerHint')}</Text>
+            <Button
+              title={t('settings.clearData')}
+              variant="danger"
+              onPress={openOtp}
+              loading={clearData.isPending}
+            />
+          </View>
+
+          <Modal visible={otpOpen} transparent animationType="slide" onRequestClose={closeOtp}>
+            <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
+              <Pressable style={styles.backdrop} onPress={closeOtp} />
+              <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xxl }]}>
+                <Text style={styles.sheetTitle}>{t('settings.otpTitle')}</Text>
+                <Text style={styles.hint}>{t('settings.otpSent')}</Text>
+                <TextField
+                  label={t('settings.otpLabel')}
+                  value={otp}
+                  onChangeText={(v) => setOtp(v.replace(/[^0-9]/g, '').slice(0, 6))}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  placeholder={t('settings.otpPlaceholder')}
+                />
+                <Text style={styles.otpNote}>{t('settings.otpDevNote')}</Text>
+                <Button
+                  title={t('settings.otpVerifyClear')}
+                  variant="danger"
+                  onPress={verifyAndClear}
+                  loading={clearData.isPending}
+                />
+              </View>
+            </KeyboardAvoidingView>
+          </Modal>
+        </>
       ) : null}
     </Screen>
   );
@@ -163,5 +208,27 @@ const styles = StyleSheet.create({
     fontWeight: font.weight.bold,
     color: colors.danger,
     marginBottom: spacing.xs,
+  },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  sheetTitle: {
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  otpNote: {
+    fontSize: font.size.xs,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    marginBottom: spacing.md,
+    lineHeight: 18,
   },
 });
