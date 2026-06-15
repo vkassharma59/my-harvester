@@ -201,4 +201,13 @@ export class AdminsService implements OnModuleInit {
     );
     if (!res.affected) throw new NotFoundException('Admin not found');
   }
+
+  /** Unscoped password reset for the super-admin console (no tenant check). */
+  async resetPasswordById(id: string, newPassword: string): Promise<void> {
+    const res = await this.admins.update(
+      { id },
+      { passwordHash: await bcrypt.hash(newPassword, BCRYPT_ROUNDS) },
+    );
+    if (!res.affected) throw new NotFoundException('Admin not found');
+  }
 }

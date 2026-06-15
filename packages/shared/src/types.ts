@@ -350,6 +350,14 @@ export interface OwnerDetail extends OwnerListItem {
   payments: SubscriptionPayment[];
 }
 
+/** Result of onboarding a new owner — includes the one-time plaintext password
+ *  so the super admin can hand it over (e.g. via WhatsApp). */
+export interface OnboardOwnerResult {
+  owner: OwnerDetail;
+  /** Plaintext login password, returned ONCE at creation and never again. */
+  password: string;
+}
+
 /** KPI snapshot for the super-admin overview screen. */
 export interface AdminOverview {
   owners: {

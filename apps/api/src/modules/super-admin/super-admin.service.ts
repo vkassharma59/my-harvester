@@ -6,6 +6,7 @@ import {
   Admin as AdminDto,
   AdminOverview,
   HarvesterStatus,
+  OnboardOwnerResult,
   OwnerDetail,
   OwnerListItem,
   Paginated,
@@ -14,8 +15,10 @@ import {
   SubscriptionStatus,
   TenantUsage,
 } from '@wh/shared';
+import { generatePassword } from '../../common/password';
 import { AccountRequest } from '../account-requests/account-request.schema';
 import { Admin } from '../admins/admin.schema';
+import { AdminsService } from '../admins/admins.service';
 import { Customer } from '../customers/customer.schema';
 import { Expense } from '../expenses/expense.schema';
 import { Harvester } from '../harvesters/harvester.schema';
@@ -23,7 +26,11 @@ import { Payment } from '../payments/payment.schema';
 import { Plot } from '../plots/plot.schema';
 import { SubscriptionPayment } from '../tenants/subscription-payment.schema';
 import { Tenant } from '../tenants/tenant.schema';
+import { TenantsService } from '../tenants/tenants.service';
+import { CreateOwnerDto } from './dto/create-owner.dto';
 import { OwnersQueryDto } from './dto/owners-query.dto';
+import { ChangePlanDto, RecordPaymentDto } from './dto/subscription.dto';
+import { UpdateOwnerDto } from './dto/update-owner.dto';
 
 const DAY_MS = 86_400_000;
 const DORMANT_AFTER_DAYS = 30;
@@ -46,7 +53,65 @@ export class SuperAdminService {
     @InjectRepository(Expense) private readonly expenses: Repository<Expense>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
     @InjectRepository(AccountRequest) private readonly accountRequests: Repository<AccountRequest>,
+    private readonly adminsService: AdminsService,
+    private readonly tenantsService: TenantsService,
   ) {}
+
+  // ---------- onboarding + subscription actions (writes) ----------
+
+  /** Create an owner (login) + their trial tenant. Returns the one-time password. */
+  async onboardOwner(dto: CreateOwnerDto): Promise<OnboardOwnerResult> {
+    const password = dto.password?.trim() || generatePassword();
+    const owner = await this.adminsService.createOwner(dto.email, password, dto.name, dto.phone);
+    await this.tenantsService.createForOwner(owner, {
+      businessName: dto.businessName,
+      region: dto.region ?? null,
+      verifiedPhone: dto.phone ?? null,
+      machineNumber: dto.machineNumber ?? null,
+      soldBy: dto.soldBy ?? null,
+    });
+    return { owner: await this.ownerDetail(owner.id), password };
+  }
+
+  async updateOwner(id: string, dto: UpdateOwnerDto): Promise<OwnerDetail> {
+    await this.tenantsService.updateProfile(id, dto);
+    return this.ownerDetail(id);
+  }
+
+  async extendTrial(id: string, days: number): Promise<OwnerDetail> {
+    await this.tenantsService.extendTrial(id, days);
+    return this.ownerDetail(id);
+  }
+
+  async recordPayment(id: string, dto: RecordPaymentDto, recordedBy: string): Promise<OwnerDetail> {
+    await this.tenantsService.recordPayment(id, dto, recordedBy);
+    return this.ownerDetail(id);
+  }
+
+  async changePlan(id: string, dto: ChangePlanDto): Promise<OwnerDetail> {
+    await this.tenantsService.changePlan(id, dto.plan);
+    return this.ownerDetail(id);
+  }
+
+  async suspend(id: string): Promise<OwnerDetail> {
+    await this.tenantsService.suspend(id);
+    return this.ownerDetail(id);
+  }
+
+  async reactivate(id: string): Promise<OwnerDetail> {
+    await this.tenantsService.reactivate(id);
+    return this.ownerDetail(id);
+  }
+
+  /** Reset an owner's password; returns the new one (generated when omitted). */
+  async resetOwnerPassword(id: string, password?: string): Promise<{ password: string }> {
+    if (!(await this.tenants.exists({ where: { id } }))) {
+      throw new NotFoundException('Owner not found');
+    }
+    const next = password?.trim() || generatePassword();
+    await this.adminsService.resetPasswordById(id, next);
+    return { password: next };
+  }
 
   // ---------- overview ----------
 
