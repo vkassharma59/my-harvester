@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_URL } from '@/config';
+import { useSubscriptionBlock } from '@/offline/subscription';
 import { tokenHolder } from './token';
 
 const REQUEST_TIMEOUT = 12000;
@@ -36,12 +37,21 @@ api.interceptors.request.use((config: TimedConfig) => {
 api.interceptors.response.use(
   (response) => {
     clearTimer(response.config as TimedConfig);
+    // A successful write means the subscription paywall (if any) has lifted.
+    if (response.config.method && response.config.method.toLowerCase() !== 'get') {
+      useSubscriptionBlock.getState().clear();
+    }
     return response;
   },
   (error: AxiosError) => {
     clearTimer(error.config as TimedConfig);
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    if (status === 401) {
       tokenHolder.handleUnauthorized();
+    } else if (status === 402) {
+      // Subscription expired/suspended — writes are blocked until renewal.
+      const code = (error.response?.data as { code?: string } | undefined)?.code;
+      useSubscriptionBlock.getState().block(code);
     }
     return Promise.reject(error);
   },
