@@ -39,7 +39,7 @@ export function CustomersScreen({ navigation }: Props) {
 
       {isLoading ? (
         <Loading />
-      ) : isError ? (
+      ) : isError && !data ? (
         <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />
       ) : (
         <FlatList

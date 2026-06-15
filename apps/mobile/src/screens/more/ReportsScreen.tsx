@@ -27,13 +27,15 @@ export function ReportsScreen() {
   const currency = settings?.currency ?? 'INR';
   const money = (n: number) => formatCurrency(n, currency);
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard', selectedId],
     queryFn: () => dashboardApi.summary(harvesterId),
   });
 
   if (isLoading) return <Loading />;
-  if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
+  // Show cached data even if the latest refetch failed (e.g. offline); only fall
+  // back to the error screen when there's genuinely nothing to show.
+  if (!data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   return (
     <View style={styles.flex}>
