@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Role } from '@wh/shared';
 import { login as apiLogin, tokenStore, type LoginAdmin } from './api';
 
@@ -39,6 +39,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(ADMIN_KEY);
     setAdmin(null);
   };
+
+  // A 401 from any request (stale/expired token) bounces back to login.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      localStorage.removeItem(ADMIN_KEY);
+      setAdmin(null);
+    };
+    window.addEventListener('wh-unauthorized', onUnauthorized);
+    return () => window.removeEventListener('wh-unauthorized', onUnauthorized);
+  }, []);
 
   return <AuthContext.Provider value={{ admin, login, logout }}>{children}</AuthContext.Provider>;
 }

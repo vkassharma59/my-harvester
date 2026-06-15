@@ -46,7 +46,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    if (res.status === 401) tokenStore.clear();
+    if (res.status === 401) {
+      // Token expired or no longer valid (e.g. the account was recreated):
+      // drop it and signal the app to return to the login screen.
+      tokenStore.clear();
+      window.dispatchEvent(new Event('wh-unauthorized'));
+    }
     const raw = data?.message ?? data?.error ?? res.statusText;
     throw new ApiError(res.status, Array.isArray(raw) ? raw.join(', ') : String(raw), data?.code);
   }
