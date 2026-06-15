@@ -48,6 +48,7 @@ export const en = {
     expenseCategories: 'Expense Types',
     addExpenseCategory: 'Expense type',
     reports: 'Reports',
+    reportBug: 'Report a bug',
     settings: 'Settings',
   },
   enums: {

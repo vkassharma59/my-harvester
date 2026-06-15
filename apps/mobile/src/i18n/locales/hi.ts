@@ -48,6 +48,7 @@ export const hi = {
     expenseCategories: 'खर्च प्रकार',
     addExpenseCategory: 'खर्च प्रकार',
     reports: 'रिपोर्ट',
+    reportBug: 'समस्या बताएँ',
     settings: 'सेटिंग्स',
   },
   enums: {

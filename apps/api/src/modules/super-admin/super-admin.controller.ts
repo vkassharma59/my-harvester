@@ -3,6 +3,7 @@ import { Role } from '@wh/shared';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { BugStatusDto } from './dto/bug-status.dto';
 import { CreateOwnerDto } from './dto/create-owner.dto';
 import { OwnersQueryDto } from './dto/owners-query.dto';
 import { ChangePlanDto, ExtendTrialDto, RecordPaymentDto, ResetPasswordDto } from './dto/subscription.dto';
@@ -88,5 +89,15 @@ export class SuperAdminController {
   @Post('account-requests/:id/reject')
   rejectRequest(@Param('id') id: string) {
     return this.superAdmin.rejectAccountRequest(id);
+  }
+
+  @Get('bug-reports')
+  bugReports() {
+    return this.superAdmin.listBugReports();
+  }
+
+  @Patch('bug-reports/:id')
+  setBugStatus(@Param('id') id: string, @Body() dto: BugStatusDto) {
+    return this.superAdmin.setBugStatus(id, dto.status);
   }
 }

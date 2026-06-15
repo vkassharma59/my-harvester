@@ -6,6 +6,7 @@ const NAV = [
   { to: '/', label: 'Overview', end: true },
   { to: '/owners', label: 'Owners', end: false },
   { to: '/account-requests', label: 'Account requests', end: false },
+  { to: '/bug-reports', label: 'Bug reports', end: false },
 ];
 
 export function Layout() {

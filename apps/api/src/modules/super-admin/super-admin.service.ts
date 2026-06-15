@@ -6,6 +6,8 @@ import {
   AccountRequestStatus,
   Admin as AdminDto,
   AdminOverview,
+  BugReportItem,
+  BugStatus,
   HarvesterStatus,
   OnboardOwnerResult,
   OwnerDetail,
@@ -20,6 +22,7 @@ import { MailService } from '../../common/mail/mail.service';
 import { generatePassword } from '../../common/password';
 import { AccountRequest } from '../account-requests/account-request.schema';
 import { Admin } from '../admins/admin.schema';
+import { BugReport } from '../bug-reports/bug-report.schema';
 import { AdminsService } from '../admins/admins.service';
 import { Customer } from '../customers/customer.schema';
 import { Expense } from '../expenses/expense.schema';
@@ -55,6 +58,7 @@ export class SuperAdminService {
     @InjectRepository(Expense) private readonly expenses: Repository<Expense>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
     @InjectRepository(AccountRequest) private readonly accountRequests: Repository<AccountRequest>,
+    @InjectRepository(BugReport) private readonly bugs: Repository<BugReport>,
     private readonly adminsService: AdminsService,
     private readonly tenantsService: TenantsService,
     private readonly mail: MailService,
@@ -163,6 +167,41 @@ export class SuperAdminService {
     };
   }
 
+  // ---------- bug reports ----------
+
+  /** All bugs across tenants (open first), enriched with reporter + business. */
+  async listBugReports(): Promise<BugReportItem[]> {
+    const bugs = await this.bugs.find({ order: { status: 'ASC', createdAt: 'DESC' } });
+    if (!bugs.length) return [];
+
+    const reporterIds = [...new Set(bugs.map((b) => b.createdBy).filter((x): x is string => !!x))];
+    const tenantIds = [...new Set(bugs.map((b) => b.tenantId))];
+    const reporters = reporterIds.length ? await this.admins.find({ where: { id: In(reporterIds) } }) : [];
+    const tenants = tenantIds.length ? await this.tenants.find({ where: { id: In(tenantIds) } }) : [];
+    const reporterById = new Map(reporters.map((a) => [a.id, a.name]));
+    const businessById = new Map(tenants.map((t) => [t.id, t.businessName]));
+
+    return bugs.map((b) => ({
+      id: b.id,
+      title: b.title,
+      description: b.description,
+      screenshotUrl: b.screenshotUrl ?? null,
+      status: b.status,
+      reporterName: (b.createdBy && reporterById.get(b.createdBy)) || '—',
+      businessName: businessById.get(b.tenantId) ?? '—',
+      tenantId: b.tenantId,
+      createdAt: new Date(b.createdAt).toISOString(),
+    }));
+  }
+
+  async setBugStatus(id: string, status: BugStatus): Promise<BugReportItem> {
+    const bug = await this.bugs.findOne({ where: { id } });
+    if (!bug) throw new NotFoundException('Bug report not found');
+    bug.status = status;
+    await this.bugs.save(bug);
+    return (await this.listBugReports()).find((b) => b.id === id)!;
+  }
+
   // ---------- overview ----------
 
   async overview(): Promise<AdminOverview> {
@@ -194,6 +233,7 @@ export class SuperAdminService {
     const pendingAccountRequests = await this.accountRequests.count({
       where: { status: AccountRequestStatus.PENDING },
     });
+    const activeBugs = await this.bugs.count({ where: { status: BugStatus.OPEN } });
 
     return {
       owners: {
@@ -208,6 +248,7 @@ export class SuperAdminService {
       },
       platformVolume: Number(volRow?.vol ?? 0),
       pendingAccountRequests,
+      activeBugs,
     };
   }
 

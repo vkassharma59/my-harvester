@@ -1,6 +1,8 @@
 import type {
   AccountRequestItem,
   AdminOverview,
+  BugReportItem,
+  BugStatus,
   OnboardOwnerResult,
   OwnerDetail,
   OwnerListItem,
@@ -138,3 +140,9 @@ export const approveAccountRequest = (id: string) =>
   request<OwnerDetail>('POST', `/admin/account-requests/${id}/approve`);
 export const rejectAccountRequest = (id: string) =>
   request<AccountRequestItem>('POST', `/admin/account-requests/${id}/reject`);
+
+// ---------- bug reports ----------
+
+export const getBugReports = () => request<BugReportItem[]>('GET', '/admin/bug-reports');
+export const setBugStatus = (id: string, status: BugStatus) =>
+  request<BugReportItem>('PATCH', `/admin/bug-reports/${id}`, { status });

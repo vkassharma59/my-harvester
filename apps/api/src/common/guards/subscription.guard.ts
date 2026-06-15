@@ -6,11 +6,13 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role, SubscriptionStatus } from '@wh/shared';
 import { Tenant } from '../../modules/tenants/tenant.schema';
 import { deriveStatus } from '../../modules/tenants/tenants.service';
+import { ALLOW_EXPIRED_KEY } from '../decorators/allow-expired.decorator';
 import { AuthUser } from '../decorators/current-user.decorator';
 
 const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -29,12 +31,19 @@ const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 export class SubscriptionGuard implements CanActivate {
   private readonly logger = new Logger(SubscriptionGuard.name);
 
-  constructor(@InjectRepository(Tenant) private readonly tenants: Repository<Tenant>) {}
+  constructor(
+    @InjectRepository(Tenant) private readonly tenants: Repository<Tenant>,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<{ method: string; user?: AuthUser }>();
 
     if (READ_METHODS.has(req.method)) return true; // reads are always allowed
+    // Routes explicitly allowed when expired (e.g. reporting a bug).
+    if (this.reflector.getAllAndOverride<boolean>(ALLOW_EXPIRED_KEY, [context.getHandler(), context.getClass()])) {
+      return true;
+    }
     const user = req.user;
     if (!user) return true; // public route (no authenticated tenant)
     if (user.role === Role.SUPER_ADMIN) return true; // operator has no tenant scope

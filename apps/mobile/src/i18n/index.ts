@@ -17,10 +17,11 @@ import { part as attendance } from './parts/attendance';
 import { part as fuelPumps } from './parts/fuelPumps';
 import { part as offline } from './parts/offline';
 import { part as subscription } from './parts/subscription';
+import { part as bugReport } from './parts/bugReport';
 
 // Each part contributes its own distinct top-level namespaces, so a shallow
 // merge per language is sufficient (no namespace collisions across parts).
-const PARTS = [authDashboard, customers, expenses, harvests, labourHarvesters, adminsMore, agents, fuelPumps, attendance, offline, attachment, subscription];
+const PARTS = [authDashboard, customers, expenses, harvests, labourHarvesters, adminsMore, agents, fuelPumps, attendance, offline, attachment, subscription, bugReport];
 const bundle = (core: object, pick: (p: (typeof PARTS)[number]) => object) =>
   Object.assign({}, core, ...PARTS.map(pick));
 

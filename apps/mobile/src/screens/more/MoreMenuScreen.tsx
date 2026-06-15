@@ -20,6 +20,7 @@ const ITEMS: MenuItem[] = [
   { labelKey: 'more.staffAdmins', icon: '🧑‍💼', route: 'Admins', superAdminOnly: true },
   { labelKey: 'more.expenseCategories', icon: '🏷️', route: 'ExpenseCategories', superAdminOnly: true },
   { labelKey: 'more.reports', icon: '📊', route: 'Reports' },
+  { labelKey: 'more.reportBug', icon: '🐞', route: 'ReportBug' },
   { labelKey: 'more.settings', icon: '⚙️', route: 'Settings' },
 ];
 

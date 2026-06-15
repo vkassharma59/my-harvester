@@ -13,6 +13,7 @@ import { AdminsModule } from './modules/admins/admins.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BugReportsModule } from './modules/bug-reports/bug-reports.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ExpenseCategoriesModule } from './modules/expense-categories/expense-categories.module';
@@ -58,6 +59,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     AdminsModule,
     TenantsModule,
     SuperAdminModule,
+    BugReportsModule,
     HarvestersModule,
     CustomersModule,
     SettingsModule,

@@ -48,6 +48,7 @@ export const pa = {
     expenseCategories: 'ਖਰਚ ਕਿਸਮਾਂ',
     addExpenseCategory: 'ਖਰਚ ਕਿਸਮ',
     reports: 'ਰਿਪੋਰਟਾਂ',
+    reportBug: 'ਸਮੱਸਿਆ ਦੱਸੋ',
     settings: 'ਸੈਟਿੰਗਾਂ',
   },
   enums: {

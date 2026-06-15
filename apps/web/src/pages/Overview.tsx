@@ -27,6 +27,7 @@ export function Overview() {
               hint={`${data.trials.expiringIn30Days} within 30 days`}
             />
             <Stat label="Platform volume" value={inr(data.platformVolume)} hint="Across all tenants" />
+            <Stat label="Active bugs" value={data.activeBugs} hint="Open reports from the app" />
           </div>
 
           {(data.trials.expiringIn30Days > 0 || data.pendingAccountRequests > 0) && (

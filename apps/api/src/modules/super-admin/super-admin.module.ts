@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountRequest } from '../account-requests/account-request.schema';
 import { Admin } from '../admins/admin.schema';
 import { AdminsModule } from '../admins/admins.module';
+import { BugReport } from '../bug-reports/bug-report.schema';
 import { Customer } from '../customers/customer.schema';
 import { Expense } from '../expenses/expense.schema';
 import { Harvester } from '../harvesters/harvester.schema';
@@ -29,6 +30,7 @@ import { SuperAdminService } from './super-admin.service';
       Expense,
       Payment,
       AccountRequest,
+      BugReport,
     ]),
   ],
   controllers: [SuperAdminController],

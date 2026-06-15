@@ -1,6 +1,7 @@
 import {
   AccountRequestStatus,
   AreaUnit,
+  BugStatus,
   ExpenseType,
   HarvestType,
   HarvesterStatus,
@@ -361,6 +362,29 @@ export interface OnboardOwnerResult {
   emailed: boolean;
 }
 
+/** A bug reported from the mobile app by an owner/staff admin. */
+export interface BugReport extends AuditFields {
+  title: string;
+  description: string;
+  screenshotUrl?: string | null;
+  status: BugStatus;
+}
+
+/** A bug as shown to the super admin (enriched with reporter + business). */
+export interface BugReportItem {
+  id: string;
+  title: string;
+  description: string;
+  screenshotUrl?: string | null;
+  status: BugStatus;
+  /** Admin who filed it. */
+  reporterName: string;
+  /** The owner/tenant the reporter belongs to. */
+  businessName: string;
+  tenantId: string;
+  createdAt: string;
+}
+
 /** A self-service owner-account request, shown to the super admin for approval. */
 export interface AccountRequestItem {
   id: string;
@@ -390,4 +414,6 @@ export interface AdminOverview {
   platformVolume: number;
   /** Account requests awaiting the super admin's action. */
   pendingAccountRequests: number;
+  /** Open (unresolved) bug reports across all tenants. */
+  activeBugs: number;
 }

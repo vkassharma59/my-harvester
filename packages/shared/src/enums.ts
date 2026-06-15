@@ -111,5 +111,11 @@ export enum AccountRequestStatus {
   REJECTED = 'REJECTED',
 }
 
+/** Lifecycle of a bug reported from the mobile app. */
+export enum BugStatus {
+  OPEN = 'OPEN',
+  RESOLVED = 'RESOLVED',
+}
+
 /** Special sentinel for the dashboard "All Harvesters" consolidated view. */
 export const ALL_HARVESTERS = 'ALL' as const;

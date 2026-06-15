@@ -317,6 +317,16 @@ export const uploadsApi = {
   },
 };
 
+// ---------- Bug reports ----------
+export interface BugReportInput {
+  title: string;
+  description: string;
+  screenshotUrl?: string;
+}
+export const bugReportsApi = {
+  create: (input: BugReportInput) => api.post('/bug-reports', input).then((r) => r.data),
+};
+
 // ---------- Dashboard ----------
 export const dashboardApi = {
   summary: (harvesterId?: string) =>
