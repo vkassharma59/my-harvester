@@ -49,7 +49,7 @@ export const en = {
     addExpenseCategory: 'Expense type',
     reports: 'Reports',
     reportBug: 'Report a bug',
-    changePassword: 'Change password',
+    editProfile: 'Edit profile',
     settings: 'Settings',
   },
   enums: {

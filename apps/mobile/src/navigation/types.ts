@@ -38,7 +38,7 @@ export type MoreStackParamList = {
   FuelPumpLedger: { pumpId: string; name: string };
   Reports: undefined;
   ReportBug: undefined;
-  ChangePassword: undefined;
+  EditProfile: undefined;
   Settings: undefined;
 };
 

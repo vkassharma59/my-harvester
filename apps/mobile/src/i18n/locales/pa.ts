@@ -49,7 +49,7 @@ export const pa = {
     addExpenseCategory: 'ਖਰਚ ਕਿਸਮ',
     reports: 'ਰਿਪੋਰਟਾਂ',
     reportBug: 'ਸਮੱਸਿਆ ਦੱਸੋ',
-    changePassword: 'ਪਾਸਵਰਡ ਬਦਲੋ',
+    editProfile: 'ਪ੍ਰੋਫ਼ਾਈਲ ਬਦਲੋ',
     settings: 'ਸੈਟਿੰਗਾਂ',
   },
   enums: {

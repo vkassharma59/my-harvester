@@ -232,17 +232,37 @@ export class AdminsService implements OnModuleInit {
     if (!res.affected) throw new NotFoundException('Admin not found');
   }
 
-  /** Self-service: change your own password after verifying the current one. */
-  async changeOwnPassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    const admin = await this.admins
-      .createQueryBuilder('a')
-      .addSelect('a.passwordHash')
-      .where('a.id = :id', { id: userId })
-      .getOne();
-    if (!admin) throw new NotFoundException('Account not found');
-    if (!(await bcrypt.compare(currentPassword, admin.passwordHash))) {
-      throw new UnauthorizedException('Current password is incorrect');
+  /**
+   * Self-service profile update: rename and/or change password (the latter
+   * verifies the current password). Returns the refreshed admin.
+   */
+  async updateOwnProfile(
+    userId: string,
+    patch: { name?: string; currentPassword?: string; newPassword?: string },
+  ): Promise<Admin> {
+    const update: Partial<Pick<Admin, 'name' | 'passwordHash'>> = {};
+    if (patch.name?.trim()) update.name = patch.name.trim();
+
+    if (patch.newPassword) {
+      const admin = await this.admins
+        .createQueryBuilder('a')
+        .addSelect('a.passwordHash')
+        .where('a.id = :id', { id: userId })
+        .getOne();
+      if (!admin) throw new NotFoundException('Account not found');
+      if (!patch.currentPassword || !(await bcrypt.compare(patch.currentPassword, admin.passwordHash))) {
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+      update.passwordHash = await bcrypt.hash(patch.newPassword, BCRYPT_ROUNDS);
     }
-    await this.resetPasswordById(userId, newPassword);
+
+    if (Object.keys(update).length) {
+      const res = await this.admins.update({ id: userId }, update);
+      if (!res.affected) throw new NotFoundException('Account not found');
+    }
+
+    const refreshed = await this.findAuthById(userId);
+    if (!refreshed) throw new NotFoundException('Account not found');
+    return refreshed;
   }
 }

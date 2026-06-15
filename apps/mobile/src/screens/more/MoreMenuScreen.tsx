@@ -42,11 +42,11 @@ export function MoreMenuScreen({ navigation }: Props) {
         <View style={styles.nameRow}>
           <Text style={styles.name}>{admin?.name ?? t('more.admin')}</Text>
           <Pressable
-            onPress={() => navigation.navigate('ChangePassword')}
+            onPress={() => navigation.navigate('EditProfile')}
             hitSlop={8}
             style={({ pressed }) => [styles.changePw, pressed && styles.pressed]}
           >
-            <Text style={styles.changePwText}>🔑 {t('more.changePassword')}</Text>
+            <Text style={styles.changePwText}>✏️ {t('more.editProfile')}</Text>
           </Pressable>
         </View>
         <Text style={styles.sub}>{admin?.email}</Text>

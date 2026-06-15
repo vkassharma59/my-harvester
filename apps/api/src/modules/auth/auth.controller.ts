@@ -4,8 +4,8 @@ import { AuthUser, CurrentUser } from '../../common/decorators/current-user.deco
 import { Public } from '../../common/decorators/public.decorator';
 import { AdminsService } from '../admins/admins.service';
 import { AuthService } from './auth.service';
-import { ChangeOwnPasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,11 +27,10 @@ export class AuthController {
     return this.admins.findOne(user.id, user.tenantId);
   }
 
-  /** Change your own password (any authenticated admin). */
+  /** Update your own profile — name and/or password (any authenticated admin). */
   @AllowExpired()
-  @Patch('password')
-  async changePassword(@Body() dto: ChangeOwnPasswordDto, @CurrentUser() user: AuthUser) {
-    await this.admins.changeOwnPassword(user.id, dto.currentPassword, dto.newPassword);
-    return { success: true };
+  @Patch('profile')
+  updateProfile(@Body() dto: UpdateProfileDto, @CurrentUser() user: AuthUser) {
+    return this.admins.updateOwnProfile(user.id, dto);
   }
 }

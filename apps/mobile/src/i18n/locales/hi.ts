@@ -49,7 +49,7 @@ export const hi = {
     addExpenseCategory: 'खर्च प्रकार',
     reports: 'रिपोर्ट',
     reportBug: 'समस्या बताएँ',
-    changePassword: 'पासवर्ड बदलें',
+    editProfile: 'प्रोफ़ाइल बदलें',
     settings: 'सेटिंग्स',
   },
   enums: {
