@@ -20,6 +20,16 @@ export interface AppConfig {
     password?: string;
     name?: string;
   };
+  /** The platform operator seeded on a fresh DB; logs into the web console. */
+  superAdmin: {
+    email?: string;
+    password?: string;
+    name?: string;
+  };
+  subscription: {
+    /** Free-trial length granted to a newly onboarded owner. */
+    trialDays: number;
+  };
 }
 
 export default (): AppConfig => ({
@@ -44,5 +54,13 @@ export default (): AppConfig => ({
     email: process.env.BOOTSTRAP_ADMIN_EMAIL,
     password: process.env.BOOTSTRAP_ADMIN_PASSWORD,
     name: process.env.BOOTSTRAP_ADMIN_NAME,
+  },
+  superAdmin: {
+    email: process.env.SUPER_ADMIN_EMAIL,
+    password: process.env.SUPER_ADMIN_PASSWORD,
+    name: process.env.SUPER_ADMIN_NAME,
+  },
+  subscription: {
+    trialDays: parseInt(process.env.SUBSCRIPTION_TRIAL_DAYS ?? '365', 10),
   },
 });

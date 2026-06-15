@@ -30,22 +30,40 @@ export class AdminsService implements OnModuleInit {
     private readonly links: LinksService,
   ) {}
 
-  /** Seed the first OWNER (its own tenant) from env if none exists. */
+  /** Seed the platform super admin and (optionally) a dev OWNER on a fresh DB. */
   async onModuleInit(): Promise<void> {
-    // One-time, idempotent migration of the old role names to the new ones.
-    await this.admins.update({ role: 'SUPER_ADMIN' as Role }, { role: Role.OWNER });
+    // Legacy, idempotent migration of an old role name. (The former
+    // 'SUPER_ADMIN' → OWNER rename is intentionally gone: SUPER_ADMIN is now a
+    // real, distinct platform role and must not be rewritten.)
     await this.admins.update({ role: 'ADMIN' as Role }, { role: Role.STAFF_ADMIN });
 
-    const count = await this.admins.count();
-    if (count > 0) return;
+    await this.seedSuperAdmin();
+    await this.seedOwner();
+  }
 
-    const seed = this.config.get('bootstrapAdmin', { infer: true });
+  /** Create the platform operator (web-console login) if none exists yet. */
+  private async seedSuperAdmin(): Promise<void> {
+    const exists = await this.admins.exists({ where: { role: Role.SUPER_ADMIN } });
+    if (exists) return;
+
+    const seed = this.config.get('superAdmin', { infer: true });
     if (!seed?.email || !seed?.password) {
       this.logger.warn(
-        'No admins exist and BOOTSTRAP_ADMIN_EMAIL/PASSWORD are not set — login will be impossible until an admin is seeded.',
+        'No SUPER_ADMIN exists and SUPER_ADMIN_EMAIL/PASSWORD are not set — the web console will have no login until one is seeded.',
       );
       return;
     }
+    await this.createAdminAccount(seed.email, seed.password, seed.name ?? 'Super Admin', Role.SUPER_ADMIN);
+    this.logger.log(`Bootstrapped SUPER_ADMIN: ${seed.email}`);
+  }
+
+  /** Optional dev/owner seed (e.g. for local mobile testing) gated on env. */
+  private async seedOwner(): Promise<void> {
+    const exists = await this.admins.exists({ where: { role: Role.OWNER } });
+    if (exists) return;
+
+    const seed = this.config.get('bootstrapAdmin', { infer: true });
+    if (!seed?.email || !seed?.password) return;
 
     await this.createOwner(seed.email, seed.password, seed.name ?? 'Owner');
     this.logger.log(`Bootstrapped OWNER: ${seed.email}`);
@@ -55,7 +73,21 @@ export class AdminsService implements OnModuleInit {
    * Creates an OWNER whose tenant is itself. Used by the bootstrap and the
    * manual seed script — never exposed over the API.
    */
-  async createOwner(email: string, password: string, name: string, phone?: string): Promise<Admin> {
+  createOwner(email: string, password: string, name: string, phone?: string): Promise<Admin> {
+    return this.createAdminAccount(email, password, name, Role.OWNER, phone);
+  }
+
+  /**
+   * Creates a tenant-root admin (its tenant is itself). Shared by the OWNER and
+   * SUPER_ADMIN seeds — both are accounts that own their tenant scope.
+   */
+  private async createAdminAccount(
+    email: string,
+    password: string,
+    name: string,
+    role: Role,
+    phone?: string,
+  ): Promise<Admin> {
     const existing = await this.admins.findOne({
       where: [{ email: email.toLowerCase() }, ...(phone ? [{ phone }] : [])],
     });
@@ -64,16 +96,16 @@ export class AdminsService implements OnModuleInit {
     const id = newObjectId();
     const admin = this.admins.create({
       id,
-      tenantId: id, // an owner is its own tenant root
+      tenantId: id, // a tenant-root admin is its own tenant
       name,
       email: email.toLowerCase(),
       phone: phone ?? null,
       passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
-      role: Role.OWNER,
+      role,
       isActive: true,
     });
     const saved = await this.admins.save(admin);
-    saved.harvesterIds = []; // an owner sees all harvesters; no explicit links
+    saved.harvesterIds = []; // tenant-root sees all harvesters; no explicit links
     return saved;
   }
 
