@@ -11,6 +11,7 @@ import {
 } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { HarvesterScopeService } from '../../common/harvester-scope.service';
+import { LinksService } from '../../common/links.service';
 import { harvesterFilter } from '../../common/scope';
 import { Attendance } from '../attendance/attendance.schema';
 import { Customer } from '../customers/customer.schema';
@@ -31,6 +32,7 @@ export class DashboardService {
     @InjectRepository(ExpenseCategory) private readonly expenseCategories: Repository<ExpenseCategory>,
     @InjectRepository(Attendance) private readonly attendance: Repository<Attendance>,
     private readonly hscope: HarvesterScopeService,
+    private readonly links: LinksService,
   ) {}
 
   async summary(user: AuthUser, harvesterId?: string): Promise<DashboardSummary> {
@@ -163,6 +165,7 @@ export class DashboardService {
     const scoped = await this.plots.find({
       where: { tenantId: user.tenantId, ...(await this.hscope.where(user)) } as FindOptionsWhere<Plot>,
     });
+    await this.links.attachPlotBhusa(scoped); // hydrate bhusaBuyers for the ledger
     const isBuyer = (p: Plot): boolean =>
       p.bhusaBuyers?.length
         ? p.bhusaBuyers.some((b) => b.customerId === customerId)

@@ -43,25 +43,6 @@ export class Plot extends AuditedEntity {
   @Column(money())
   harvestingAmount!: number;
 
-  // Type 2 only: Bhusa sold to a separate buyer
-  @Column(idColumnNullable)
-  bhusaBuyerId?: string | null;
-
-  @Column(money({ default: 0 }))
-  bhusaAmount?: number;
-
-  // One or more Bhusa buyers, each owing their own amount (Type 2).
-  // (Phase 2 of the DB redesign moves this to a plot_bhusa_buyers join table.)
-  @Column({
-    type: 'json',
-    nullable: true,
-    transformer: {
-      to: (v: { customerId: string; amount: number }[]) => v ?? [],
-      from: (v: { customerId: string; amount: number }[]) => v ?? [],
-    },
-  })
-  bhusaBuyers?: { customerId: string; amount: number }[];
-
   @Column(money())
   totalAmount!: number;
 
@@ -71,4 +52,11 @@ export class Plot extends AuditedEntity {
 
   @Column(money({ default: 0 }))
   commissionAmount?: number;
+
+  // --- Bhusa buyers (Type 2) live in the plot_bhusa_buyers join table. These
+  // are NOT columns; LinksService hydrates them for the API response, keeping
+  // the legacy bhusaBuyerId/bhusaAmount fields the mobile app still reads. ---
+  bhusaBuyers?: { customerId: string; amount: number }[];
+  bhusaBuyerId?: string | null;
+  bhusaAmount?: number;
 }
