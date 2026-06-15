@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonModule } from './common/common.module';
 import { ensureDatabase } from './common/ensure-database';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from './common/guards/subscription.guard';
 import configuration, { AppConfig } from './config/configuration';
 import { AccountRequestsModule } from './modules/account-requests/account-requests.module';
 import { AdminsModule } from './modules/admins/admins.module';
@@ -74,6 +75,9 @@ import { UploadsModule } from './modules/uploads/uploads.module';
   providers: [
     // Every route requires a valid JWT unless marked @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Then: an EXPIRED/SUSPENDED tenant is read-only (writes → 402). Runs after
+    // JwtAuthGuard so req.user is set.
+    { provide: APP_GUARD, useClass: SubscriptionGuard },
   ],
 })
 export class AppModule {}
