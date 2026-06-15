@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   OnModuleInit,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -229,5 +230,19 @@ export class AdminsService implements OnModuleInit {
       { passwordHash: await bcrypt.hash(newPassword, BCRYPT_ROUNDS) },
     );
     if (!res.affected) throw new NotFoundException('Admin not found');
+  }
+
+  /** Self-service: change your own password after verifying the current one. */
+  async changeOwnPassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const admin = await this.admins
+      .createQueryBuilder('a')
+      .addSelect('a.passwordHash')
+      .where('a.id = :id', { id: userId })
+      .getOne();
+    if (!admin) throw new NotFoundException('Account not found');
+    if (!(await bcrypt.compare(currentPassword, admin.passwordHash))) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+    await this.resetPasswordById(userId, newPassword);
   }
 }

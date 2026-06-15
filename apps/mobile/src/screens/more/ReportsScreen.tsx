@@ -42,6 +42,7 @@ export function ReportsScreen() {
       <ReportCard title={t('reports.profitLoss')}>
         <Line label={t('reports.totalIncome')} value={money(data.financial.totalEarnings)} />
         <Line label={t('reports.totalExpenses')} value={money(data.financial.totalExpenses)} />
+        <Line label={t('reports.totalLabourCost')} value={money(data.labour.totalCost)} />
         <Line label={t('reports.netProfit')} value={money(data.financial.netProfit)} strong />
       </ReportCard>
 

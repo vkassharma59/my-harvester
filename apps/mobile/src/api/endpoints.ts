@@ -47,6 +47,9 @@ export const authApi = {
   login: (identifier: string, password: string) =>
     api.post<LoginResult>('/auth/login', { identifier, password }).then((r) => r.data),
   me: () => api.get<Admin>('/auth/me').then((r) => r.data),
+  /** Change your own password (verifies the current one). */
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.patch('/auth/password', { currentPassword, newPassword }).then(() => undefined),
 };
 
 // ---------- Account requests (public self-service owner signup) ----------

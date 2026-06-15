@@ -275,8 +275,6 @@ export function HarvestFormScreen({ route, navigation }: Props) {
           />
         </View>
       </View>
-      <DateField label={t('harvestForm.harvestDate')} value={harvestDate} onChange={setHarvestDate} />
-
       {isBhusaHarvester ? (
         <Select
           label={t('harvestForm.harvestTypeLabel')}
@@ -285,6 +283,8 @@ export function HarvestFormScreen({ route, navigation }: Props) {
           onChange={(v) => setHarvestType(v as HarvestType)}
         />
       ) : null}
+
+      <DateField label={t('harvestForm.harvestDate')} value={harvestDate} onChange={setHarvestDate} />
 
       {showBhusa ? (
         <Pressable onPress={() => setBhusaOpen(true)} style={styles.bhusaLink} hitSlop={6}>

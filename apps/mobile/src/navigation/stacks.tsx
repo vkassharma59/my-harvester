@@ -26,6 +26,7 @@ import { AttendanceScreen } from '@/screens/labour/AttendanceScreen';
 import { LabourFormScreen } from '@/screens/labour/LabourFormScreen';
 import { LabourLedgerScreen } from '@/screens/labour/LabourLedgerScreen';
 import { LabourScreen } from '@/screens/labour/LabourScreen';
+import { ChangePasswordScreen } from '@/screens/more/ChangePasswordScreen';
 import { MoreMenuScreen } from '@/screens/more/MoreMenuScreen';
 import { ReportBugScreen } from '@/screens/more/ReportBugScreen';
 import { ReportsScreen } from '@/screens/more/ReportsScreen';
@@ -157,6 +158,11 @@ export function MoreStack() {
       />
       <More.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />
       <More.Screen name="ReportBug" component={ReportBugScreen} options={{ title: t('nav.reportBug') }} />
+      <More.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ title: t('nav.changePassword') }}
+      />
       <More.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
     </More.Navigator>
   );

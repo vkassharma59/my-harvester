@@ -134,7 +134,9 @@ export class DashboardService {
       financial: {
         totalEarnings,
         totalExpenses,
-        netProfit: totalEarnings - totalExpenses,
+        // Worker cost is a real cost but kept out of `totalExpenses` (which is the
+        // recorded-expenses breakdown); subtract it here so net profit is honest.
+        netProfit: totalEarnings - totalExpenses - totalWorkerCost,
         pendingReceivables: Math.max(0, totalEarnings - receivedFromCustomers),
         agentCommission,
       },

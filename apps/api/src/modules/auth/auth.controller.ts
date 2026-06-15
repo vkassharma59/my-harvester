@@ -1,8 +1,10 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post } from '@nestjs/common';
+import { AllowExpired } from '../../common/decorators/allow-expired.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AdminsService } from '../admins/admins.service';
 import { AuthService } from './auth.service';
+import { ChangeOwnPasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
@@ -23,5 +25,13 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.admins.findOne(user.id, user.tenantId);
+  }
+
+  /** Change your own password (any authenticated admin). */
+  @AllowExpired()
+  @Patch('password')
+  async changePassword(@Body() dto: ChangeOwnPasswordDto, @CurrentUser() user: AuthUser) {
+    await this.admins.changeOwnPassword(user.id, dto.currentPassword, dto.newPassword);
+    return { success: true };
   }
 }
