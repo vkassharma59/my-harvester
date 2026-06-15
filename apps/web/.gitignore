@@ -1,0 +1,3 @@
+# Vite local env + cache (node_modules/ and dist/ are covered by the root ignore)
+*.local
+.vite/
