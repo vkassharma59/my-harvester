@@ -1,33 +1,35 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 import { LabourType, PaymentStatus, WageType } from '@wh/shared';
+import { idColumn, money } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
 
 @Entity('labour')
+@Index(['tenantId', 'harvesterId'])
 export class Labour extends AuditedEntity {
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 120 })
   name!: string;
 
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'varchar', length: 16 })
   mobile!: string;
 
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'enum', enum: LabourType })
   type!: LabourType;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 80, nullable: true })
   customType?: string | null;
 
-  @Column({ type: 'varchar', length: 24 })
+  @Column(idColumn)
   harvesterId!: string;
 
-  @Column({ type: 'varchar', length: 32, default: WageType.DAILY })
+  @Column({ type: 'enum', enum: WageType, default: WageType.DAILY })
   wageType!: WageType;
 
-  @Column({ type: 'double', nullable: true })
+  @Column(money({ nullable: true }))
   dailyWage?: number | null;
 
-  @Column({ type: 'double', nullable: true })
+  @Column(money({ nullable: true }))
   customAmount?: number | null;
 
-  @Column({ type: 'varchar', length: 32, default: PaymentStatus.PENDING })
+  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
   paymentStatus!: PaymentStatus;
 }

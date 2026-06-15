@@ -1,37 +1,41 @@
 import { Column, Entity, Index } from 'typeorm';
 import { ExpenseType } from '@wh/shared';
+import { idColumn, idColumnNullable, money } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
 
 @Entity('expenses')
-@Index(['harvesterId', 'date'])
+@Index(['tenantId', 'harvesterId', 'date'])
+@Index(['tenantId', 'categoryId'])
+@Index(['tenantId', 'pumpId'])
+@Index(['tenantId', 'labourId'])
 export class Expense extends AuditedEntity {
-  @Column({ type: 'varchar', length: 24 })
+  @Column(idColumn)
   harvesterId!: string;
 
   @Column({ type: 'datetime' })
   date!: Date;
 
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'enum', enum: ExpenseType })
   type!: ExpenseType;
 
   /** A custom category; null for the built-in types. */
-  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  @Column(idColumnNullable)
   categoryId?: string | null;
 
   /** Set only for DIESEL expenses: the fuel pump the diesel was bought from. */
-  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  @Column(idColumnNullable)
   pumpId?: string | null;
 
   /** Set only for LABOUR expenses: the labourer this payment is for. */
-  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  @Column(idColumnNullable)
   labourId?: string | null;
 
-  @Column({ type: 'double' })
+  @Column(money())
   amount!: number;
 
   @Column({ type: 'text', nullable: true })
   notes?: string | null;
 
-  @Column({ type: 'varchar', length: 1024, nullable: true })
+  @Column({ type: 'varchar', length: 512, nullable: true })
   attachmentUrl?: string | null;
 }

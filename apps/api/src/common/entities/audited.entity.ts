@@ -6,6 +6,7 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { idColumn, idColumnNullable } from '../columns';
 import { newObjectId } from '../object-id';
 
 /**
@@ -15,7 +16,7 @@ import { newObjectId } from '../object-id';
  */
 export abstract class AuditedEntity {
   /** 24-char hex id — mirrors a MongoDB ObjectId so clients can generate it. */
-  @PrimaryColumn({ type: 'varchar', length: 24 })
+  @PrimaryColumn(idColumn)
   id!: string;
 
   /**
@@ -24,13 +25,13 @@ export abstract class AuditedEntity {
    * tenantId to its own id; everything else inherits it.
    */
   @Index()
-  @Column({ type: 'varchar', length: 24 })
+  @Column(idColumn)
   tenantId!: string;
 
-  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  @Column(idColumnNullable)
   createdBy?: string | null;
 
-  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  @Column(idColumnNullable)
   updatedBy?: string | null;
 
   @CreateDateColumn({ type: 'datetime' })

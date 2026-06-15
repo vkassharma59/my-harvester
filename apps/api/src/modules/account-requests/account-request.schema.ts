@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { AccountRequestStatus } from '@wh/shared';
+import { idColumn } from '../../common/columns';
 import { newObjectId } from '../../common/object-id';
 
 /**
@@ -18,29 +19,29 @@ import { newObjectId } from '../../common/object-id';
  */
 @Entity('account_requests')
 export class AccountRequest {
-  @PrimaryColumn({ type: 'varchar', length: 24 })
+  @PrimaryColumn(idColumn)
   id!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 120 })
   fullName!: string;
 
   @Index()
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 160 })
   email!: string;
 
   @Index()
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'varchar', length: 16 })
   mobile!: string;
 
   /** How many harvesters the requester intends to manage (drives plan sizing). */
-  @Column({ type: 'int', default: 1 })
+  @Column({ type: 'smallint', unsigned: true, default: 1 })
   harvesterCount!: number;
 
   /** Never selected by default so it can't leak through generic queries. */
   @Column({ type: 'varchar', length: 255, select: false })
   passwordHash!: string;
 
-  @Column({ type: 'varchar', length: 32, default: AccountRequestStatus.PENDING })
+  @Column({ type: 'enum', enum: AccountRequestStatus, default: AccountRequestStatus.PENDING })
   status!: AccountRequestStatus;
 
   @CreateDateColumn({ type: 'datetime' })

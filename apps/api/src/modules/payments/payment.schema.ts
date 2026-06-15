@@ -1,37 +1,40 @@
 import { Column, Entity, Index } from 'typeorm';
 import { PartyType } from '@wh/shared';
+import { idColumn, idColumnNullable, money } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
 
 /**
  * A money movement. `partyType` says whose ledger it belongs to; `partyId`
- * points at the customer / bhusa-buyer / labour accordingly. This single
- * table lets the customer ledger and labour payment reports be rebuilt.
+ * points at the customer / bhusa-buyer / labour / agent / pump accordingly.
+ * `partyId` is polymorphic (it references different tables per `partyType`), so
+ * it intentionally has no foreign key.
  */
 @Entity('payments')
-@Index(['partyType', 'partyId', 'date'])
+@Index(['tenantId', 'partyType', 'partyId', 'date'])
+@Index(['tenantId', 'harvesterId'])
 export class Payment extends AuditedEntity {
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'enum', enum: PartyType })
   partyType!: PartyType;
 
-  @Column({ type: 'varchar', length: 24 })
+  @Column(idColumn)
   partyId!: string;
 
-  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  @Column(idColumnNullable)
   plotId?: string | null;
 
-  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  @Column(idColumnNullable)
   harvesterId?: string | null;
 
   @Column({ type: 'datetime' })
   date!: Date;
 
-  @Column({ type: 'double' })
+  @Column(money())
   amount!: number;
 
   @Column({ type: 'text', nullable: true })
   notes?: string | null;
 
   /** Optional receipt / proof file URL. */
-  @Column({ type: 'varchar', length: 1024, nullable: true })
+  @Column({ type: 'varchar', length: 512, nullable: true })
   attachmentUrl?: string | null;
 }
