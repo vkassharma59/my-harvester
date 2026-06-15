@@ -2,7 +2,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiErrorMessage } from '@/api/client';
 import { accountRequestsApi } from '@/api/endpoints';
 import { Button } from '@/components/Button';
@@ -28,6 +29,7 @@ const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 export function RequestAccountScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -35,6 +37,9 @@ export function RequestAccountScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // OTP gate: the request is only raised after the mobile number is "verified".
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otp, setOtp] = useState('');
 
   const submit = useMutation({
     mutationFn: () =>
@@ -60,6 +65,24 @@ export function RequestAccountScreen({ navigation }: Props) {
     if (!/^\d{10}$/.test(mobile)) return setError(t('requestAccount.errMobile'));
     if (password.length < 6) return setError(t('requestAccount.errPassword'));
     if (password !== confirm) return setError(t('requestAccount.errMismatch'));
+    // Fields are valid — gate the request behind mobile OTP verification.
+    setOtp('');
+    setOtpOpen(true);
+  };
+
+  const closeOtp = () => {
+    setOtpOpen(false);
+    setOtp('');
+  };
+
+  const verifyAndSubmit = () => {
+    // No SMS provider yet — accept any 6-digit code, but enforce the format.
+    if (!/^\d{6}$/.test(otp)) {
+      Alert.alert(t('requestAccount.otpInvalidTitle'), t('requestAccount.otpInvalidBody'));
+      return;
+    }
+    setOtpOpen(false);
+    setOtp('');
     submit.mutate();
   };
 
@@ -120,6 +143,30 @@ export function RequestAccountScreen({ navigation }: Props) {
         loading={submit.isPending}
         style={{ marginTop: spacing.sm }}
       />
+
+      <Modal visible={otpOpen} transparent animationType="slide" onRequestClose={closeOtp}>
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={closeOtp} />
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xxl }]}>
+            <Text style={styles.sheetTitle}>{t('requestAccount.otpTitle')}</Text>
+            <Text style={styles.hint}>{t('requestAccount.otpSent', { mobile })}</Text>
+            <TextField
+              label={t('requestAccount.otpLabel')}
+              value={otp}
+              onChangeText={(v) => setOtp(v.replace(/[^0-9]/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder={t('requestAccount.otpPlaceholder')}
+            />
+            <Text style={styles.otpNote}>{t('requestAccount.otpDevNote')}</Text>
+            <Button
+              title={t('requestAccount.otpVerify')}
+              onPress={verifyAndSubmit}
+              loading={submit.isPending}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </Screen>
   );
 }
@@ -135,4 +182,27 @@ const styles = StyleSheet.create({
   },
   noteText: { fontSize: font.size.sm, color: colors.primary, lineHeight: 19 },
   error: { color: colors.danger, marginTop: spacing.sm },
+  hint: { fontSize: font.size.xs, color: colors.textMuted, marginBottom: spacing.md, lineHeight: 18 },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  sheetTitle: {
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  otpNote: {
+    fontSize: font.size.xs,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    marginBottom: spacing.md,
+    lineHeight: 18,
+  },
 });
