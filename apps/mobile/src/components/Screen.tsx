@@ -1,6 +1,12 @@
 import { ReactNode } from 'react';
-import { RefreshControl, StyleSheet, View, ViewStyle } from 'react-native';
-import { KeyboardAvoidingView, KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import {
+  KeyboardAvoidingView,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/theme';
 
@@ -35,19 +41,19 @@ export function Screen({
   }
 
   return (
-    <KeyboardAwareScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.xl }, ...contentStyle]}
-      keyboardShouldPersistTaps="handled"
-      bottomOffset={spacing.xl}
-      refreshControl={
-        onRefresh ? (
-          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        ) : undefined
-      }
-    >
-      {children}
-    </KeyboardAwareScrollView>
+    <KeyboardAvoidingView style={styles.root} behavior="padding">
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.xl }, ...contentStyle]}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          ) : undefined
+        }
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
