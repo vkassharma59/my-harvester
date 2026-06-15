@@ -4,6 +4,7 @@ import { Between, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual, Repository
 import { ExpenseType, PaymentStatus } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Labour } from '../labour/labour.schema';
 import { Expense } from './expense.schema';
@@ -21,6 +22,7 @@ export class ExpensesService {
   constructor(
     @InjectRepository(Expense) private readonly repo: Repository<Expense>,
     @InjectRepository(Labour) private readonly labourRepo: Repository<Labour>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
   async create(dto: CreateExpenseDto, user: AuthUser): Promise<Expense> {
@@ -50,8 +52,12 @@ export class ExpensesService {
     return expense;
   }
 
-  findAll(filter: ExpenseFilter, user: AuthUser): Promise<Expense[]> {
-    return this.repo.find({ where: this.buildFilter(filter, user), order: { date: 'DESC' } });
+  async findAll(filter: ExpenseFilter, user: AuthUser): Promise<Expense[]> {
+    const harvesterWhere = await this.hscope.where(user, filter.harvesterId);
+    return this.repo.find({
+      where: this.buildFilter(filter, user, harvesterWhere),
+      order: { date: 'DESC' },
+    });
   }
 
   async findOne(id: string, user: AuthUser): Promise<Expense> {
@@ -135,10 +141,14 @@ export class ExpensesService {
     await this.labourRepo.save(labour);
   }
 
-  private buildFilter(f: ExpenseFilter, user: AuthUser): FindOptionsWhere<Expense> {
+  private buildFilter(
+    f: ExpenseFilter,
+    user: AuthUser,
+    harvesterWhere: Record<string, unknown>,
+  ): FindOptionsWhere<Expense> {
     const where: FindOptionsWhere<Expense> = {
       tenantId: user.tenantId,
-      ...harvesterFilter(user, f.harvesterId),
+      ...harvesterWhere,
     };
     if (f.type) where.type = f.type;
     if (f.from && f.to) where.date = Between(f.from, f.to);

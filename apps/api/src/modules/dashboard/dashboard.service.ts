@@ -10,6 +10,7 @@ import {
   WageType,
 } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { harvesterFilter } from '../../common/scope';
 import { Attendance } from '../attendance/attendance.schema';
 import { Customer } from '../customers/customer.schema';
@@ -29,11 +30,13 @@ export class DashboardService {
     @InjectRepository(Customer) private readonly customers: Repository<Customer>,
     @InjectRepository(ExpenseCategory) private readonly expenseCategories: Repository<ExpenseCategory>,
     @InjectRepository(Attendance) private readonly attendance: Repository<Attendance>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
   async summary(user: AuthUser, harvesterId?: string): Promise<DashboardSummary> {
-    // Scope by tenant + the user's harvester access (staff see only theirs).
-    const hScope = { tenantId: user.tenantId, ...harvesterFilter(user, harvesterId) };
+    // Scope by tenant + the user's ACTIVE harvesters (inactive ones are excluded
+    // from all jobs/expenses/labour totals).
+    const hScope = { tenantId: user.tenantId, ...(await this.hscope.where(user, harvesterId)) };
 
     // Pull the scoped jobs once; derive earnings, commission, area, plots, customers.
     const plots = await this.plots.find({ where: hScope as FindOptionsWhere<Plot> });
@@ -62,9 +65,13 @@ export class DashboardService {
     // Agent commission is a real cost: include it among expenses / net profit.
     const totalExpenses = expenseTotal + agentCommission;
 
+    // Customer payments are party-level (often not harvester-tagged), so they
+    // keep the access scope rather than the active-harvester scope — money
+    // received shouldn't disappear just because a harvester was deactivated.
     const receivedFromCustomers =
       (await this.payments.sum('amount', {
-        ...hScope,
+        tenantId: user.tenantId,
+        ...harvesterFilter(user, harvesterId),
         partyType: In([PartyType.CUSTOMER, PartyType.BHUSA_BUYER]),
       } as FindOptionsWhere<Payment>)) ?? 0;
 
@@ -154,7 +161,7 @@ export class DashboardService {
     // Jobs the customer owns (harvesting bill) plus jobs where they buy the
     // Bhusa (Bhusa bill). Staff only see jobs on their assigned harvesters.
     const scoped = await this.plots.find({
-      where: { tenantId: user.tenantId, ...harvesterFilter(user) } as FindOptionsWhere<Plot>,
+      where: { tenantId: user.tenantId, ...(await this.hscope.where(user)) } as FindOptionsWhere<Plot>,
     });
     const isBuyer = (p: Plot): boolean =>
       p.bhusaBuyers?.length

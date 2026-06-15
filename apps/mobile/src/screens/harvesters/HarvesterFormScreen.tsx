@@ -36,8 +36,6 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
   const [form, setForm] = useState<FormState>({
     name: '',
     registrationNo: '',
-    model: '',
-    notes: '',
     type: HarvesterType.COMBINE,
   });
   const [ratePerUnit, setRatePerUnit] = useState('');
@@ -62,8 +60,6 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       setForm({
         name: existing.name,
         registrationNo: existing.registrationNo ?? '',
-        model: existing.model ?? '',
-        notes: existing.notes ?? '',
         type: existing.type,
       });
       setRatePerUnit(existing.ratePerUnit != null ? String(existing.ratePerUnit) : '');
@@ -79,8 +75,6 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
     const base: HarvesterInput = {
       name: form.name,
       registrationNo: form.registrationNo || undefined,
-      model: form.model || undefined,
-      notes: form.notes || undefined,
       type: form.type,
     };
     if (form.type === HarvesterType.COMBINE) {
@@ -120,6 +114,16 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       Alert.alert(t('harvesterForm.required'), t('harvesterForm.requiredName'));
       return;
     }
+    // The default rate per unit is required (both rates for a Bhusa harvester).
+    if (isBhusa) {
+      if (!(Number(rateWithBhusa) > 0) || !(Number(rateWithoutBhusa) > 0)) {
+        Alert.alert(t('harvesterForm.required'), t('harvesterForm.requiredRates'));
+        return;
+      }
+    } else if (!(Number(ratePerUnit) > 0)) {
+      Alert.alert(t('harvesterForm.required'), t('harvesterForm.requiredRate', { unit }));
+      return;
+    }
     save.mutate();
   };
 
@@ -143,13 +147,13 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
       {isBhusa ? (
         <>
           <AmountField
-            label={t('harvesterForm.rateWithBhusa', { unit })}
+            label={`${t('harvesterForm.rateWithBhusa', { unit })} *`}
             value={rateWithBhusa}
             onChangeText={setRateWithBhusa}
             placeholder="0"
           />
           <AmountField
-            label={t('harvesterForm.rateWithoutBhusa', { unit })}
+            label={`${t('harvesterForm.rateWithoutBhusa', { unit })} *`}
             value={rateWithoutBhusa}
             onChangeText={setRateWithoutBhusa}
             placeholder="0"
@@ -157,7 +161,7 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
         </>
       ) : (
         <AmountField
-          label={t('harvesterForm.ratePerUnit', { unit })}
+          label={`${t('harvesterForm.ratePerUnit', { unit })} *`}
           value={ratePerUnit}
           onChangeText={setRatePerUnit}
           placeholder="0"
@@ -170,17 +174,6 @@ export function HarvesterFormScreen({ route, navigation }: Props) {
         onChangeText={(v) => setForm((f) => ({ ...f, registrationNo: v.toUpperCase() }))}
         autoCapitalize="characters"
         placeholder={t('harvesterForm.registrationPlaceholder')}
-      />
-      <TextField
-        label={t('harvesterForm.model')}
-        value={form.model}
-        onChangeText={(model) => setForm((f) => ({ ...f, model }))}
-      />
-      <TextField
-        label={t('harvesterForm.notes')}
-        value={form.notes}
-        onChangeText={(notes) => setForm((f) => ({ ...f, notes }))}
-        multiline
       />
 
       {editing ? (

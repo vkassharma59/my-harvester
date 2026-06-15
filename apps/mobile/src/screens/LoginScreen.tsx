@@ -70,6 +70,13 @@ export function LoginScreen() {
       <Pressable onPress={() => navigation.navigate('ForgotPassword')} hitSlop={8} style={styles.forgot}>
         <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
       </Pressable>
+
+      <View style={styles.requestRow}>
+        <Text style={styles.requestPrompt}>{t('login.noAccount')}</Text>
+        <Pressable onPress={() => navigation.navigate('RequestAccount')} hitSlop={8}>
+          <Text style={styles.requestLink}>{t('login.requestAccount')}</Text>
+        </Pressable>
+      </View>
     </Screen>
   );
 }
@@ -82,4 +89,13 @@ const styles = StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.sm, textAlign: 'center' },
   forgot: { alignSelf: 'center', marginTop: spacing.lg },
   forgotText: { color: colors.primary, fontSize: font.size.sm, fontWeight: font.weight.semibold },
+  requestRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.xl,
+    gap: spacing.xs,
+  },
+  requestPrompt: { color: colors.textMuted, fontSize: font.size.sm },
+  requestLink: { color: colors.primary, fontSize: font.size.sm, fontWeight: font.weight.bold },
 });

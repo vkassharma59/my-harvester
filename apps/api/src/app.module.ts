@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CommonModule } from './common/common.module';
 import { ensureDatabase } from './common/ensure-database';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import configuration, { AppConfig } from './config/configuration';
+import { AccountRequestsModule } from './modules/account-requests/account-requests.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
@@ -45,7 +47,9 @@ import { UploadsModule } from './modules/uploads/uploads.module';
         };
       },
     }),
+    CommonModule,
     AuthModule,
+    AccountRequestsModule,
     AdminsModule,
     HarvestersModule,
     CustomersModule,

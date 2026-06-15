@@ -4,6 +4,7 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 import { HarvesterType, HarvestType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Agent } from '../agents/agent.schema';
 import { Harvester } from '../harvesters/harvester.schema';
@@ -28,6 +29,7 @@ export class PlotsService {
     @InjectRepository(Plot) private readonly repo: Repository<Plot>,
     @InjectRepository(Harvester) private readonly harvesters: Repository<Harvester>,
     @InjectRepository(Agent) private readonly agents: Repository<Agent>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
   /** Resolves the commission for an optional agent on a job. The agent must
@@ -134,10 +136,14 @@ export class PlotsService {
     );
   }
 
-  findAll(user: AuthUser, filter: { harvesterId?: string; customerId?: string }): Promise<Plot[]> {
+  async findAll(
+    user: AuthUser,
+    filter: { harvesterId?: string; customerId?: string },
+  ): Promise<Plot[]> {
+    // Only jobs on active harvesters are listed/counted.
     const where: FindOptionsWhere<Plot> = {
       tenantId: user.tenantId,
-      ...harvesterFilter(user, filter.harvesterId),
+      ...(await this.hscope.where(user, filter.harvesterId)),
     };
     if (filter.customerId) where.customerId = filter.customerId;
     return this.repo.find({ where, order: { harvestDate: 'DESC' } });

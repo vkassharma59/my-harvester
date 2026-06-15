@@ -4,7 +4,8 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import { ALL_HARVESTERS, ExpenseType, FuelPumpLedger, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
-import { allowedHarvesterIds, assertCanUseHarvester, harvesterFilter } from '../../common/scope';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
+import { allowedHarvesterIds, assertCanUseHarvester } from '../../common/scope';
 import { Expense } from '../expenses/expense.schema';
 import { Payment } from '../payments/payment.schema';
 import { FuelPump } from './fuel-pump.schema';
@@ -16,6 +17,7 @@ export class FuelPumpsService {
     @InjectRepository(FuelPump) private readonly repo: Repository<FuelPump>,
     @InjectRepository(Expense) private readonly expenses: Repository<Expense>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
   /**
@@ -95,7 +97,7 @@ export class FuelPumpsService {
         tenantId: user.tenantId,
         type: ExpenseType.DIESEL,
         pumpId,
-        ...harvesterFilter(user),
+        ...(await this.hscope.where(user)),
       },
     });
 

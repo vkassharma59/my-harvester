@@ -38,9 +38,7 @@ export interface Admin extends AuditFields {
 export interface Harvester extends AuditFields {
   name: string; // e.g. "Harvester 1"
   registrationNo?: string;
-  model?: string;
   status: HarvesterStatus;
-  notes?: string;
 
   type: HarvesterType;
   /** COMBINE: the single per-unit harvesting rate. */

@@ -49,6 +49,19 @@ export const authApi = {
   me: () => api.get<Admin>('/auth/me').then((r) => r.data),
 };
 
+// ---------- Account requests (public self-service owner signup) ----------
+export interface AccountRequestInput {
+  fullName: string;
+  email: string;
+  mobile: string;
+  harvesterCount: number;
+  password: string;
+}
+export const accountRequestsApi = {
+  create: (body: AccountRequestInput) =>
+    api.post<{ id: string; status: string }>('/account-requests', body).then((r) => r.data),
+};
+
 // ---------- Admins (OWNER only) ----------
 export interface CreateAdminInput {
   name: string;
@@ -78,8 +91,6 @@ export const adminsApi = {
 export interface HarvesterInput {
   name: string;
   registrationNo?: string;
-  model?: string;
-  notes?: string;
   type: HarvesterType;
   ratePerUnit?: number;
   rateWithBhusa?: number;

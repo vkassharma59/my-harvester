@@ -10,14 +10,8 @@ export class Harvester extends AuditedEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   registrationNo?: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  model?: string | null;
-
   @Column({ type: 'varchar', length: 32, default: HarvesterStatus.ACTIVE })
   status!: HarvesterStatus;
-
-  @Column({ type: 'text', nullable: true })
-  notes?: string | null;
 
   @Column({ type: 'varchar', length: 32, default: HarvesterType.COMBINE })
   type!: HarvesterType;

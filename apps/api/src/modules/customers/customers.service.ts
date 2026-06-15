@@ -4,7 +4,7 @@ import { In, Not, Repository } from 'typeorm';
 import { PartyType, Role } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
-import { harvesterFilter } from '../../common/scope';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { Paginated, PaginationDto } from '../../common/dto/pagination.dto';
 import { Payment } from '../payments/payment.schema';
 import { Plot } from '../plots/plot.schema';
@@ -37,6 +37,7 @@ export class CustomersService {
     @InjectRepository(Customer) private readonly repo: Repository<Customer>,
     @InjectRepository(Plot) private readonly plots: Repository<Plot>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
   /** Rejects a customer whose phone already exists in this tenant. */
@@ -62,8 +63,9 @@ export class CustomersService {
 
   async findAll(query: PaginationDto, user: AuthUser): Promise<Paginated<CustomerWithTotals>> {
     const tenantId = user.tenantId;
-    const hWhere = harvesterFilter(user);
-    // Plots the user can see — used for both staff visibility and the bill totals.
+    // Plots on ACTIVE harvesters the user can see — drives both staff visibility
+    // and the bill totals, so deactivating a harvester drops its jobs/bills.
+    const hWhere = await this.hscope.where(user);
     const scopedPlots = await this.plots.find({ where: { tenantId, ...hWhere } });
 
     const qb = this.repo.createQueryBuilder('c').where('c.tenantId = :tenantId', { tenantId });

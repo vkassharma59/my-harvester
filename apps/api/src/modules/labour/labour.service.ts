@@ -4,6 +4,7 @@ import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { LabourLedger, LabourListItem, PartyType, WageType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Attendance } from '../attendance/attendance.schema';
 import { Payment } from '../payments/payment.schema';
@@ -16,6 +17,7 @@ export class LabourService {
     @InjectRepository(Labour) private readonly repo: Repository<Labour>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
     @InjectRepository(Attendance) private readonly attendance: Repository<Attendance>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
   /** A worker's account: bill (fixed amount, or daily rate × working days) vs paid. */
@@ -66,7 +68,7 @@ export class LabourService {
   async findAll(user: AuthUser, harvesterId?: string): Promise<LabourListItem[]> {
     const tenantId = user.tenantId;
     const workers = await this.repo.find({
-      where: { tenantId, ...harvesterFilter(user, harvesterId) },
+      where: { tenantId, ...(await this.hscope.where(user, harvesterId)) },
       order: { createdAt: 'DESC' },
     });
     if (!workers.length) return [];

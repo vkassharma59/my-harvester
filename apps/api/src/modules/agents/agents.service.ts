@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { AgentLedger, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Payment } from '../payments/payment.schema';
 import { Plot } from '../plots/plot.schema';
@@ -16,6 +17,7 @@ export class AgentsService {
     @InjectRepository(Agent) private readonly repo: Repository<Agent>,
     @InjectRepository(Plot) private readonly plots: Repository<Plot>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
   create(dto: CreateAgentDto, user: AuthUser): Promise<Agent> {
@@ -34,9 +36,9 @@ export class AgentsService {
     );
   }
 
-  findAll(user: AuthUser, harvesterId?: string): Promise<Agent[]> {
+  async findAll(user: AuthUser, harvesterId?: string): Promise<Agent[]> {
     return this.repo.find({
-      where: { tenantId: user.tenantId, ...harvesterFilter(user, harvesterId) },
+      where: { tenantId: user.tenantId, ...(await this.hscope.where(user, harvesterId)) },
       order: { createdAt: 'DESC' },
     });
   }
@@ -67,7 +69,7 @@ export class AgentsService {
     const agent = await this.findOne(agentId, user);
 
     const plots = await this.plots.find({
-      where: { tenantId: user.tenantId, agentId, ...harvesterFilter(user) },
+      where: { tenantId: user.tenantId, agentId, ...(await this.hscope.where(user)) },
       order: { harvestDate: 'DESC' },
     });
 
