@@ -5,6 +5,7 @@ import { AgentLedger, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
 import { HarvesterScopeService } from '../../common/harvester-scope.service';
+import { LinksService } from '../../common/links.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Payment } from '../payments/payment.schema';
 import { Plot } from '../plots/plot.schema';
@@ -18,6 +19,7 @@ export class AgentsService {
     @InjectRepository(Plot) private readonly plots: Repository<Plot>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
     private readonly hscope: HarvesterScopeService,
+    private readonly links: LinksService,
   ) {}
 
   create(dto: CreateAgentDto, user: AuthUser): Promise<Agent> {
@@ -72,6 +74,7 @@ export class AgentsService {
       where: { tenantId: user.tenantId, agentId, ...(await this.hscope.where(user)) },
       order: { harvestDate: 'DESC' },
     });
+    await this.links.attachPlotBhusa(plots);
 
     const payments = await this.payments.find({
       where: { tenantId: user.tenantId, partyType: PartyType.AGENT, partyId: agentId },

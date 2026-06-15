@@ -24,12 +24,7 @@ export class Admin extends AuditedEntity {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
-  /** Harvesters a staff admin may access (empty/ignored for OWNER).
-   *  (Phase 2 of the DB redesign moves this to an admin_harvesters table.) */
-  @Column({
-    type: 'json',
-    nullable: true,
-    transformer: { to: (v: string[]) => v ?? [], from: (v: string[]) => v ?? [] },
-  })
+  /** Harvesters a staff admin may access (empty/ignored for OWNER). Stored in
+   *  the admin_harvesters join table; hydrated by LinksService (not a column). */
   harvesterIds!: string[];
 }

@@ -3,8 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { HarvesterType, HarvestType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
-import { createMaybeWithId } from '../../common/idempotent';
 import { HarvesterScopeService } from '../../common/harvester-scope.service';
+import { createMaybeWithId } from '../../common/idempotent';
+import { LinksService } from '../../common/links.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
 import { Agent } from '../agents/agent.schema';
 import { Harvester } from '../harvesters/harvester.schema';
@@ -30,6 +31,7 @@ export class PlotsService {
     @InjectRepository(Harvester) private readonly harvesters: Repository<Harvester>,
     @InjectRepository(Agent) private readonly agents: Repository<Agent>,
     private readonly hscope: HarvesterScopeService,
+    private readonly links: LinksService,
   ) {}
 
   /** Resolves the commission for an optional agent on a job. The agent must
@@ -72,33 +74,29 @@ export class PlotsService {
     return [];
   }
 
-  /** Normalises an existing plot's Bhusa buyers (array or legacy single field). */
-  private existingBhusaBuyers(existing: Plot): BhusaBuyerInput[] {
-    if (existing.bhusaBuyers?.length) return existing.bhusaBuyers;
-    if (existing.bhusaBuyerId) {
-      return [{ customerId: existing.bhusaBuyerId, amount: existing.bhusaAmount ?? 0 }];
-    }
-    return [];
-  }
-
   /** Derives harvestingAmount/totalAmount and the Bhusa buyers per harvest type. */
   private computeAmounts(input: ComputeInput) {
     const harvestingAmount = Math.round(input.area * input.ratePerBigha * 100) / 100;
-
     // Bhusa applies only to Type 2 (WITHOUT_BHUSA); ignore buyers otherwise.
     const raw = input.harvestType === HarvestType.WITHOUT_BHUSA ? input.bhusaBuyers ?? [] : [];
     const bhusaBuyers = raw
       .filter((b) => b.customerId)
       .map((b) => ({ customerId: b.customerId, amount: b.amount || 0 }));
     const bhusaAmount = Math.round(bhusaBuyers.reduce((acc, b) => acc + b.amount, 0) * 100) / 100;
-
     return {
       harvestingAmount,
       bhusaBuyers,
-      bhusaBuyerId: null as string | null,
       bhusaAmount,
       totalAmount: Math.round((harvestingAmount + bhusaAmount) * 100) / 100,
     };
+  }
+
+  /** Populate the derived Bhusa response fields (kept for the mobile contract). */
+  private hydrateBhusa(plot: Plot, buyers: BhusaBuyerInput[]): Plot {
+    plot.bhusaBuyers = buyers;
+    plot.bhusaAmount = Math.round(buyers.reduce((a, b) => a + b.amount, 0) * 100) / 100;
+    plot.bhusaBuyerId = buyers.length === 1 ? buyers[0].customerId : null;
+    return plot;
   }
 
   async create(dto: CreatePlotDto, user: AuthUser): Promise<Plot> {
@@ -118,8 +116,9 @@ export class PlotsService {
     });
     const commission = await this.resolveCommission(dto.agentId, dto.harvesterId, dto.area, user);
 
+    // The Bhusa fields aren't columns anymore, so they're ignored by the insert.
     const { id, ...rest } = dto;
-    return createMaybeWithId(
+    const plot = await createMaybeWithId(
       this.repo,
       {
         ...rest,
@@ -127,26 +126,27 @@ export class PlotsService {
         customerId: dto.customerId,
         harvesterId: dto.harvesterId,
         ratePerBigha,
-        ...computed,
+        harvestingAmount: computed.harvestingAmount,
+        totalAmount: computed.totalAmount,
         ...commission,
         createdBy: user.id,
         updatedBy: user.id,
       },
       id,
     );
+    await this.links.setPlotBhusa(plot.id, computed.bhusaBuyers);
+    return this.hydrateBhusa(plot, computed.bhusaBuyers);
   }
 
-  async findAll(
-    user: AuthUser,
-    filter: { harvesterId?: string; customerId?: string },
-  ): Promise<Plot[]> {
-    // Only jobs on active harvesters are listed/counted.
+  async findAll(user: AuthUser, filter: { harvesterId?: string; customerId?: string }): Promise<Plot[]> {
     const where: FindOptionsWhere<Plot> = {
       tenantId: user.tenantId,
       ...(await this.hscope.where(user, filter.harvesterId)),
     };
     if (filter.customerId) where.customerId = filter.customerId;
-    return this.repo.find({ where, order: { harvestDate: 'DESC' } });
+    const plots = await this.repo.find({ where, order: { harvestDate: 'DESC' } });
+    await this.links.attachPlotBhusa(plots);
+    return plots;
   }
 
   async findOne(id: string, user: AuthUser): Promise<Plot> {
@@ -154,12 +154,13 @@ export class PlotsService {
       where: { id, tenantId: user.tenantId, ...harvesterFilter(user) },
     });
     if (!doc) throw new NotFoundException('Plot not found');
+    await this.links.attachPlotBhusa([doc]);
     return doc;
   }
 
   async update(id: string, dto: UpdatePlotDto, user: AuthUser): Promise<Plot> {
     if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
-    const existing = await this.findOne(id, user);
+    const existing = await this.findOne(id, user); // attaches existing.bhusaBuyers
 
     const harvestType = dto.harvestType ?? existing.harvestType;
     const area = dto.area ?? existing.area;
@@ -167,7 +168,7 @@ export class PlotsService {
     // Use the DTO's Bhusa buyers when provided, otherwise keep the existing ones.
     const bhusaProvided =
       dto.bhusaBuyers !== undefined || dto.bhusaBuyerId !== undefined || dto.bhusaAmount !== undefined;
-    const bhusaBuyers = bhusaProvided ? this.bhusaBuyersFromDto(dto) : this.existingBhusaBuyers(existing);
+    const bhusaBuyers = bhusaProvided ? this.bhusaBuyersFromDto(dto) : existing.bhusaBuyers ?? [];
 
     const computed = this.computeAmounts({ area, ratePerBigha, harvestType, bhusaBuyers });
 
@@ -175,6 +176,7 @@ export class PlotsService {
     const agentIdInput = dto.agentId !== undefined ? dto.agentId : existing.agentId ?? null;
     const commission = await this.resolveCommission(agentIdInput, harvesterId, area, user);
 
+    // Bhusa fields on the dto set transient props only; save persists columns.
     Object.assign(existing, {
       ...dto,
       ...(dto.customerId ? { customerId: dto.customerId } : {}),
@@ -182,16 +184,22 @@ export class PlotsService {
       area,
       ratePerBigha,
       harvestType,
-      ...computed,
+      harvestingAmount: computed.harvestingAmount,
+      totalAmount: computed.totalAmount,
       ...commission,
       updatedBy: user.id,
     });
-
-    return this.repo.save(existing);
+    const saved = await this.repo.save(existing);
+    await this.links.setPlotBhusa(saved.id, computed.bhusaBuyers);
+    return this.hydrateBhusa(saved, computed.bhusaBuyers);
   }
 
   async remove(id: string, user: AuthUser): Promise<void> {
-    const doc = await this.findOne(id, user);
+    const doc = await this.repo.findOne({
+      where: { id, tenantId: user.tenantId, ...harvesterFilter(user) },
+    });
+    if (!doc) throw new NotFoundException('Plot not found');
+    await this.links.setPlotBhusa(id, []); // clear the join rows first
     await this.repo.remove(doc);
   }
 }

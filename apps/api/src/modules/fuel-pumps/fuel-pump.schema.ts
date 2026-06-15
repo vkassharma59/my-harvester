@@ -9,15 +9,10 @@ export class FuelPump extends AuditedEntity {
   @Column({ type: 'varchar', length: 16, nullable: true })
   phone?: string | null;
 
-  /** Harvesters this pump supplies diesel to (many-to-many, stored as JSON).
-   *  (Phase 2 of the DB redesign moves this to a fuel_pump_harvesters table.) */
-  @Column({
-    type: 'json',
-    nullable: true,
-    transformer: { to: (v: string[]) => v ?? [], from: (v: string[]) => v ?? [] },
-  })
-  harvesterIds!: string[];
-
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
+
+  /** Harvesters this pump supplies diesel to (many-to-many). Stored in the
+   *  fuel_pump_harvesters join table; hydrated by LinksService (not a column). */
+  harvesterIds!: string[];
 }

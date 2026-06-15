@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { Not, Repository } from 'typeorm';
 import { Role } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { LinksService } from '../../common/links.service';
 import { newObjectId } from '../../common/object-id';
 import { AppConfig } from '../../config/configuration';
 import { Admin } from './admin.schema';
@@ -26,6 +27,7 @@ export class AdminsService implements OnModuleInit {
   constructor(
     @InjectRepository(Admin) private readonly admins: Repository<Admin>,
     private readonly config: ConfigService<AppConfig, true>,
+    private readonly links: LinksService,
   ) {}
 
   /** Seed the first OWNER (its own tenant) from env if none exists. */
@@ -69,24 +71,29 @@ export class AdminsService implements OnModuleInit {
       passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
       role: Role.OWNER,
       isActive: true,
-      harvesterIds: [],
     });
-    return this.admins.save(admin);
+    const saved = await this.admins.save(admin);
+    saved.harvesterIds = []; // an owner sees all harvesters; no explicit links
+    return saved;
   }
 
   /** Login lookup — global, by email OR mobile number, includes the password hash. */
   async findByIdentifierWithHash(identifier: string): Promise<Admin | null> {
     const value = identifier.trim();
-    return this.admins
+    const admin = await this.admins
       .createQueryBuilder('a')
       .addSelect('a.passwordHash')
       .where('a.email = :email OR a.phone = :phone', { email: value.toLowerCase(), phone: value })
       .getOne();
+    if (admin) await this.links.attachAdminHarvesters([admin]);
+    return admin;
   }
 
   /** Auth lookup by id (unscoped) — used by the JWT strategy to validate a token. */
   async findAuthById(id: string): Promise<Admin | null> {
-    return this.admins.findOneBy({ id });
+    const admin = await this.admins.findOneBy({ id });
+    if (admin) await this.links.attachAdminHarvesters([admin]);
+    return admin;
   }
 
   /** Creates a staff admin within the actor's tenant (owners are seeded only). */
@@ -110,20 +117,26 @@ export class AdminsService implements OnModuleInit {
       passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
       role: Role.STAFF_ADMIN,
       isActive: true,
-      harvesterIds: dto.harvesterIds ?? [],
       createdBy: actor.id,
       updatedBy: actor.id,
     });
-    return this.admins.save(admin);
+    const saved = await this.admins.save(admin);
+    const harvesterIds = dto.harvesterIds ?? [];
+    await this.links.setAdminHarvesters(saved.id, harvesterIds);
+    saved.harvesterIds = harvesterIds;
+    return saved;
   }
 
-  findAll(tenantId: string): Promise<Admin[]> {
-    return this.admins.find({ where: { tenantId }, order: { createdAt: 'DESC' } });
+  async findAll(tenantId: string): Promise<Admin[]> {
+    const admins = await this.admins.find({ where: { tenantId }, order: { createdAt: 'DESC' } });
+    await this.links.attachAdminHarvesters(admins);
+    return admins;
   }
 
   async findOne(id: string, tenantId: string): Promise<Admin> {
     const admin = await this.admins.findOne({ where: { id, tenantId } });
     if (!admin) throw new NotFoundException('Admin not found');
+    await this.links.attachAdminHarvesters([admin]);
     return admin;
   }
 
@@ -142,7 +155,11 @@ export class AdminsService implements OnModuleInit {
     Object.assign(admin, dto);
     if (dto.email) admin.email = dto.email.toLowerCase();
     admin.updatedBy = actor.id;
-    return this.admins.save(admin);
+    const saved = await this.admins.save(admin);
+
+    if (dto.harvesterIds !== undefined) await this.links.setAdminHarvesters(saved.id, dto.harvesterIds ?? []);
+    await this.links.attachAdminHarvesters([saved]);
+    return saved;
   }
 
   async changePassword(id: string, dto: ChangePasswordDto, actor: AuthUser): Promise<void> {

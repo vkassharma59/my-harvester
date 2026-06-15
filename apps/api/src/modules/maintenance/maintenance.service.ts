@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ObjectLiteral, Repository } from 'typeorm';
+import { LinksService } from '../../common/links.service';
 import { Agent } from '../agents/agent.schema';
 import { Attendance } from '../attendance/attendance.schema';
 import { Customer } from '../customers/customer.schema';
@@ -31,6 +32,7 @@ export class MaintenanceService {
     @InjectRepository(FuelPump) private readonly fuelPumps: Repository<FuelPump>,
     @InjectRepository(ExpenseCategory) private readonly expenseCategories: Repository<ExpenseCategory>,
     @InjectRepository(Attendance) private readonly attendance: Repository<Attendance>,
+    private readonly links: LinksService,
   ) {}
 
   /**
@@ -38,6 +40,12 @@ export class MaintenanceService {
    * preserved — only operational records are removed.
    */
   async clearTenantData(tenantId: string): Promise<ClearDataResult> {
+    // Clear join rows for the tenant's plots/pumps first (no FK cascade yet).
+    const plotIds = (await this.plots.find({ where: { tenantId }, select: { id: true } })).map((p) => p.id);
+    const pumpIds = (await this.fuelPumps.find({ where: { tenantId }, select: { id: true } })).map((p) => p.id);
+    await this.links.clearPlotBhusaForPlots(plotIds);
+    await this.links.clearPumpHarvestersForPumps(pumpIds);
+
     const targets: [string, Repository<ObjectLiteral>][] = [
       ['plots', this.plots],
       ['payments', this.payments],
