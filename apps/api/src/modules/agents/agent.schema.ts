@@ -1,20 +1,22 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
+import { money, idColumn } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
 
 /** A commission agent attached to a single harvester. */
 @Entity('agents')
+@Index(['tenantId', 'harvesterId'])
 export class Agent extends AuditedEntity {
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 120 })
   name!: string;
 
-  @Column({ type: 'varchar', length: 32, nullable: true })
+  @Column({ type: 'varchar', length: 16, nullable: true })
   phone?: string | null;
 
-  @Column({ type: 'varchar', length: 24 })
+  @Column(idColumn)
   harvesterId!: string;
 
   /** Commission amount per unit of area (e.g. 200 per bigha/acre). */
-  @Column({ type: 'double' })
+  @Column(money())
   commissionRate!: number;
 
   @Column({ type: 'boolean', default: true })
