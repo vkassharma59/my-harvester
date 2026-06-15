@@ -358,29 +358,6 @@ export interface OnboardOwnerResult {
   password: string;
 }
 
-// ---------- abuse review (repeat free-trial detection) ----------
-
-/** The shared attribute that grouped these tenants as a possible duplicate. */
-export type AbuseSignal = 'machineNumber' | 'verifiedPhone' | 'loginPhone';
-
-/** A tenant appearing in an abuse-flag group (lightweight, for the review list). */
-export interface AbuseFlagTenant {
-  id: string;
-  businessName: string;
-  name: string;
-  email: string;
-  status: SubscriptionStatus;
-  createdAt: string;
-}
-
-/** A set of tenants that share a suspicious signal (e.g. same machine number) —
- *  likely the same business opening a fresh account to re-claim a free trial. */
-export interface AbuseFlagGroup {
-  signal: AbuseSignal;
-  value: string;
-  tenants: AbuseFlagTenant[];
-}
-
 /** KPI snapshot for the super-admin overview screen. */
 export interface AdminOverview {
   owners: {

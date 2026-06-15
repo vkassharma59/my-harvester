@@ -1,5 +1,4 @@
 import type {
-  AbuseFlagGroup,
   AdminOverview,
   OnboardOwnerResult,
   OwnerDetail,
@@ -86,8 +85,6 @@ export const listOwners = (p: OwnersParams) => {
 };
 
 export const getOwner = (id: string) => request<OwnerDetail>('GET', `/admin/owners/${id}`);
-
-export const getFlags = () => request<AbuseFlagGroup[]>('GET', '/admin/flags');
 
 export interface OnboardInput {
   name: string;

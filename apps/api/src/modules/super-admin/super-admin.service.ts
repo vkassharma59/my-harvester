@@ -2,9 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import {
-  AbuseFlagGroup,
-  AbuseFlagTenant,
-  AbuseSignal,
   AccountRequestStatus,
   Admin as AdminDto,
   AdminOverview,
@@ -213,54 +210,6 @@ export class SuperAdminService {
       users: users.map((u) => this.adminToDto(u)),
       payments: payments.map((p) => this.paymentToDto(p)),
     };
-  }
-
-  // ---------- abuse flags ----------
-
-  /**
-   * Groups of tenants sharing a signal that suggests the same business opened a
-   * new account to re-claim a free trial: a duplicate machine (harvester reg)
-   * number, verified phone, or owner login phone. Reviewed manually by the super
-   * admin before granting/keeping a trial.
-   */
-  async flags(): Promise<AbuseFlagGroup[]> {
-    const tenants = await this.tenants.find();
-    const owners = await this.admins.find({ where: { role: Role.OWNER } });
-    const ownerById = new Map(owners.map((o) => [o.id, o]));
-
-    const toFlagTenant = (t: Tenant): AbuseFlagTenant => {
-      const owner = ownerById.get(t.id);
-      return {
-        id: t.id,
-        businessName: t.businessName,
-        name: owner?.name ?? '',
-        email: owner?.email ?? '',
-        status: t.status,
-        createdAt: new Date(t.createdAt).toISOString(),
-      };
-    };
-
-    const groups: AbuseFlagGroup[] = [];
-    const collect = (signal: AbuseSignal, keyOf: (t: Tenant) => string | null | undefined) => {
-      const buckets = new Map<string, { value: string; tenants: Tenant[] }>();
-      for (const t of tenants) {
-        const raw = keyOf(t)?.trim();
-        if (!raw) continue;
-        const norm = raw.toLowerCase();
-        const bucket = buckets.get(norm) ?? { value: raw, tenants: [] };
-        bucket.tenants.push(t);
-        buckets.set(norm, bucket);
-      }
-      for (const { value, tenants: ts } of buckets.values()) {
-        if (ts.length > 1) groups.push({ signal, value, tenants: ts.map(toFlagTenant) });
-      }
-    };
-
-    collect('machineNumber', (t) => t.machineNumber);
-    collect('verifiedPhone', (t) => t.verifiedPhone);
-    collect('loginPhone', (t) => ownerById.get(t.id)?.phone);
-
-    return groups;
   }
 
   // ---------- helpers ----------

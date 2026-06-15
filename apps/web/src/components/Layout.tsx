@@ -5,7 +5,6 @@ import { Button, cn } from './ui';
 const NAV = [
   { to: '/', label: 'Overview', end: true },
   { to: '/owners', label: 'Owners', end: false },
-  { to: '/flags', label: 'Abuse flags', end: false },
 ];
 
 export function Layout() {

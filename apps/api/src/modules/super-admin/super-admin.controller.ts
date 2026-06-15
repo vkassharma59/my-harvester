@@ -25,11 +25,6 @@ export class SuperAdminController {
     return this.superAdmin.overview();
   }
 
-  @Get('flags')
-  flags() {
-    return this.superAdmin.flags();
-  }
-
   @Get('owners')
   owners(@Query() query: OwnersQueryDto) {
     return this.superAdmin.listOwners(query);
