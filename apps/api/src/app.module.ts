@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonModule } from './common/common.module';
 import { ensureDatabase } from './common/ensure-database';
+import { MailModule } from './common/mail/mail.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from './common/guards/subscription.guard';
 import configuration, { AppConfig } from './config/configuration';
@@ -51,6 +52,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
       },
     }),
     CommonModule,
+    MailModule,
     AuthModule,
     AccountRequestsModule,
     AdminsModule,

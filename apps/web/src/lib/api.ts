@@ -89,11 +89,8 @@ export const getOwner = (id: string) => request<OwnerDetail>('GET', `/admin/owne
 export interface OnboardInput {
   name: string;
   email: string;
-  phone?: string;
-  businessName?: string;
-  region?: string;
-  machineNumber?: string;
-  soldBy?: string;
+  phone: string;
+  password: string;
 }
 export const onboardOwner = (dto: OnboardInput) =>
   request<OnboardOwnerResult>('POST', '/admin/owners', dto);

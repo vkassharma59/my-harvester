@@ -15,6 +15,7 @@ import {
   SubscriptionStatus,
   TenantUsage,
 } from '@wh/shared';
+import { MailService } from '../../common/mail/mail.service';
 import { generatePassword } from '../../common/password';
 import { AccountRequest } from '../account-requests/account-request.schema';
 import { Admin } from '../admins/admin.schema';
@@ -55,22 +56,18 @@ export class SuperAdminService {
     @InjectRepository(AccountRequest) private readonly accountRequests: Repository<AccountRequest>,
     private readonly adminsService: AdminsService,
     private readonly tenantsService: TenantsService,
+    private readonly mail: MailService,
   ) {}
 
   // ---------- onboarding + subscription actions (writes) ----------
 
-  /** Create an owner (login) + their trial tenant. Returns the one-time password. */
+  /** Create an owner (login) + their trial tenant, and email them the password. */
   async onboardOwner(dto: CreateOwnerDto): Promise<OnboardOwnerResult> {
     const password = dto.password?.trim() || generatePassword();
     const owner = await this.adminsService.createOwner(dto.email, password, dto.name, dto.phone);
-    await this.tenantsService.createForOwner(owner, {
-      businessName: dto.businessName,
-      region: dto.region ?? null,
-      verifiedPhone: dto.phone ?? null,
-      machineNumber: dto.machineNumber ?? null,
-      soldBy: dto.soldBy ?? null,
-    });
-    return { owner: await this.ownerDetail(owner.id), password };
+    await this.tenantsService.createForOwner(owner, { verifiedPhone: dto.phone });
+    const emailed = await this.mail.sendOwnerWelcome(owner.email, owner.name, password);
+    return { owner: await this.ownerDetail(owner.id), password, emailed };
   }
 
   async updateOwner(id: string, dto: UpdateOwnerDto): Promise<OwnerDetail> {

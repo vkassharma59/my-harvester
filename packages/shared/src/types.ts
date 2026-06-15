@@ -351,11 +351,13 @@ export interface OwnerDetail extends OwnerListItem {
 }
 
 /** Result of onboarding a new owner — includes the one-time plaintext password
- *  so the super admin can hand it over (e.g. via WhatsApp). */
+ *  so the super admin can hand it over (e.g. via WhatsApp) as a fallback. */
 export interface OnboardOwnerResult {
   owner: OwnerDetail;
   /** Plaintext login password, returned ONCE at creation and never again. */
   password: string;
+  /** Whether the credentials email was actually sent (false if SMTP off / failed). */
+  emailed: boolean;
 }
 
 /** KPI snapshot for the super-admin overview screen. */
