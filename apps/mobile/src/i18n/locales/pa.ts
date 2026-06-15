@@ -17,6 +17,7 @@ export const pa = {
     saved: 'ਸੇਵ ਹੋ ਗਿਆ',
     showAll: 'ਸਾਰੇ ਵੇਖੋ',
     tapToEdit: 'ਸੋਧਣ ਲਈ ਟੈਪ ਕਰੋ',
+    ok: 'ਠੀਕ ਹੈ',
   },
   tabs: {
     dashboard: 'ਡੈਸ਼ਬੋਰਡ',

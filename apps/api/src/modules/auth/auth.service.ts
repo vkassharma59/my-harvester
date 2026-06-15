@@ -33,11 +33,13 @@ export class AuthService {
       sub: admin.id,
       email: admin.email,
       role: admin.role,
-      tenantId: admin.tenantId.toString(),
+      tenantId: admin.tenantId,
     };
+    // Strip the password hash before returning the admin to the client.
+    const { passwordHash: _hash, ...safe } = admin;
     return {
       accessToken: await this.jwt.signAsync(payload),
-      admin: admin.toJSON() as unknown as Admin,
+      admin: safe as unknown as Admin,
     };
   }
 }

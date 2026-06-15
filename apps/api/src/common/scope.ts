@@ -1,5 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
-import { Types } from 'mongoose';
+import { In } from 'typeorm';
 import { ALL_HARVESTERS, Role } from '@wh/shared';
 import { AuthUser } from './decorators/current-user.decorator';
 
@@ -9,31 +9,29 @@ import { AuthUser } from './decorators/current-user.decorator';
  *    requested harvester from the dashboard dropdown).
  *  - A staff admin only sees the harvesters assigned to them.
  *
- * Returns a Mongoose filter fragment on `harvesterId` to merge with `{ tenantId }`.
+ * Returns a TypeORM where-fragment on `harvesterId` to merge with `{ tenantId }`.
  */
 export function harvesterFilter(user: AuthUser, requested?: string): Record<string, unknown> {
   const wantsAll = !requested || requested === ALL_HARVESTERS;
 
   if (user.role === Role.OWNER) {
-    return wantsAll ? {} : { harvesterId: new Types.ObjectId(requested) };
+    return wantsAll ? {} : { harvesterId: requested };
   }
 
   // Staff admin — restricted to their assigned harvesters.
   const allowed = user.harvesterIds ?? [];
   if (!wantsAll) {
-    if (!allowed.includes(requested as string)) {
-      // Asked for a harvester they don't own → match nothing.
-      return { harvesterId: { $in: [] as Types.ObjectId[] } };
-    }
-    return { harvesterId: new Types.ObjectId(requested) };
+    // Asked for a harvester they don't own → match nothing.
+    if (!allowed.includes(requested as string)) return { harvesterId: In([] as string[]) };
+    return { harvesterId: requested };
   }
-  return { harvesterId: { $in: allowed.map((id) => new Types.ObjectId(id)) } };
+  return { harvesterId: In(allowed) };
 }
 
-/** The set of harvester ids a user may read, or `null` for "all in tenant" (super admin). */
-export function allowedHarvesterIds(user: AuthUser): Types.ObjectId[] | null {
+/** The set of harvester ids a user may read, or `null` for "all in tenant" (owner). */
+export function allowedHarvesterIds(user: AuthUser): string[] | null {
   if (user.role === Role.OWNER) return null;
-  return (user.harvesterIds ?? []).map((id) => new Types.ObjectId(id));
+  return user.harvesterIds ?? [];
 }
 
 /** Throws unless the user is allowed to write to the given harvester. */

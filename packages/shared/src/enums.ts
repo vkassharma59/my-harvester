@@ -74,5 +74,12 @@ export enum HarvesterStatus {
   INACTIVE = 'INACTIVE',
 }
 
+/** A self-service owner account request, approved by the platform admin. */
+export enum AccountRequestStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
 /** Special sentinel for the dashboard "All Harvesters" consolidated view. */
 export const ALL_HARVESTERS = 'ALL' as const;

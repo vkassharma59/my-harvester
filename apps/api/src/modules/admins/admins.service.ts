@@ -6,13 +6,14 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Model, Types } from 'mongoose';
+import { Not, Repository } from 'typeorm';
 import { Role } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { newObjectId } from '../../common/object-id';
 import { AppConfig } from '../../config/configuration';
-import { Admin, AdminDocument } from './admin.schema';
+import { Admin } from './admin.schema';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ChangePasswordDto, UpdateAdminDto } from './dto/update-admin.dto';
 
@@ -23,17 +24,17 @@ export class AdminsService implements OnModuleInit {
   private readonly logger = new Logger(AdminsService.name);
 
   constructor(
-    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
+    @InjectRepository(Admin) private readonly admins: Repository<Admin>,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   /** Seed the first OWNER (its own tenant) from env if none exists. */
   async onModuleInit(): Promise<void> {
     // One-time, idempotent migration of the old role names to the new ones.
-    await this.adminModel.updateMany({ role: 'SUPER_ADMIN' }, { $set: { role: Role.OWNER } });
-    await this.adminModel.updateMany({ role: 'ADMIN' }, { $set: { role: Role.STAFF_ADMIN } });
+    await this.admins.update({ role: 'SUPER_ADMIN' as Role }, { role: Role.OWNER });
+    await this.admins.update({ role: 'ADMIN' as Role }, { role: Role.STAFF_ADMIN });
 
-    const count = await this.adminModel.estimatedDocumentCount();
+    const count = await this.admins.count();
     if (count > 0) return;
 
     const seed = this.config.get('bootstrapAdmin', { infer: true });
@@ -52,49 +53,47 @@ export class AdminsService implements OnModuleInit {
    * Creates an OWNER whose tenant is itself. Used by the bootstrap and the
    * manual seed script — never exposed over the API.
    */
-  async createOwner(
-    email: string,
-    password: string,
-    name: string,
-    phone?: string,
-  ): Promise<AdminDocument> {
-    const existing = await this.adminModel
-      .findOne({ $or: [{ email: email.toLowerCase() }, ...(phone ? [{ phone }] : [])] })
-      .exec();
+  async createOwner(email: string, password: string, name: string, phone?: string): Promise<Admin> {
+    const existing = await this.admins.findOne({
+      where: [{ email: email.toLowerCase() }, ...(phone ? [{ phone }] : [])],
+    });
     if (existing) throw new ConflictException('An admin with this email or mobile already exists');
 
-    const id = new Types.ObjectId();
-    return this.adminModel.create({
-      _id: id,
+    const id = newObjectId();
+    const admin = this.admins.create({
+      id,
       tenantId: id, // an owner is its own tenant root
       name,
       email: email.toLowerCase(),
-      phone,
+      phone: phone ?? null,
       passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
       role: Role.OWNER,
       isActive: true,
+      harvesterIds: [],
     });
+    return this.admins.save(admin);
   }
 
   /** Login lookup — global, by email OR mobile number, includes the password hash. */
-  async findByIdentifierWithHash(identifier: string): Promise<AdminDocument | null> {
+  async findByIdentifierWithHash(identifier: string): Promise<Admin | null> {
     const value = identifier.trim();
-    return this.adminModel
-      .findOne({ $or: [{ email: value.toLowerCase() }, { phone: value }] })
-      .select('+passwordHash')
-      .exec();
+    return this.admins
+      .createQueryBuilder('a')
+      .addSelect('a.passwordHash')
+      .where('a.email = :email OR a.phone = :phone', { email: value.toLowerCase(), phone: value })
+      .getOne();
   }
 
   /** Auth lookup by id (unscoped) — used by the JWT strategy to validate a token. */
-  async findAuthById(id: string): Promise<AdminDocument | null> {
-    return this.adminModel.findById(id).exec();
+  async findAuthById(id: string): Promise<Admin | null> {
+    return this.admins.findOneBy({ id });
   }
 
   /** Creates a staff admin within the actor's tenant (owners are seeded only). */
-  async create(dto: CreateAdminDto, actor: AuthUser): Promise<AdminDocument> {
-    const clash = await this.adminModel
-      .findOne({ $or: [{ email: dto.email.toLowerCase() }, { phone: dto.phone }] })
-      .exec();
+  async create(dto: CreateAdminDto, actor: AuthUser): Promise<Admin> {
+    const clash = await this.admins.findOne({
+      where: [{ email: dto.email.toLowerCase() }, ...(dto.phone ? [{ phone: dto.phone }] : [])],
+    });
     if (clash) {
       throw new ConflictException(
         clash.phone === dto.phone
@@ -102,71 +101,55 @@ export class AdminsService implements OnModuleInit {
           : 'An admin with this email already exists',
       );
     }
-    return this.adminModel.create({
-      tenantId: new Types.ObjectId(actor.tenantId),
+    const admin = this.admins.create({
+      id: newObjectId(),
+      tenantId: actor.tenantId,
       name: dto.name,
       email: dto.email.toLowerCase(),
-      phone: dto.phone,
+      phone: dto.phone ?? null,
       passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
       role: Role.STAFF_ADMIN,
       isActive: true,
-      harvesterIds: (dto.harvesterIds ?? []).map((id) => new Types.ObjectId(id)),
-      createdBy: new Types.ObjectId(actor.id),
-      updatedBy: new Types.ObjectId(actor.id),
+      harvesterIds: dto.harvesterIds ?? [],
+      createdBy: actor.id,
+      updatedBy: actor.id,
     });
+    return this.admins.save(admin);
   }
 
-  findAll(tenantId: string): Promise<AdminDocument[]> {
-    return this.adminModel
-      .find({ tenantId: new Types.ObjectId(tenantId) })
-      .sort({ createdAt: -1 })
-      .exec();
+  findAll(tenantId: string): Promise<Admin[]> {
+    return this.admins.find({ where: { tenantId }, order: { createdAt: 'DESC' } });
   }
 
-  async findOne(id: string, tenantId: string): Promise<AdminDocument> {
-    const admin = await this.adminModel
-      .findOne({ _id: id, tenantId: new Types.ObjectId(tenantId) })
-      .exec();
+  async findOne(id: string, tenantId: string): Promise<Admin> {
+    const admin = await this.admins.findOne({ where: { id, tenantId } });
     if (!admin) throw new NotFoundException('Admin not found');
     return admin;
   }
 
-  async update(id: string, dto: UpdateAdminDto, actor: AuthUser): Promise<AdminDocument> {
+  async update(id: string, dto: UpdateAdminDto, actor: AuthUser): Promise<Admin> {
     if (dto.email) {
-      const clash = await this.adminModel
-        .findOne({ email: dto.email.toLowerCase(), _id: { $ne: id } })
-        .exec();
+      const clash = await this.admins.findOne({ where: { email: dto.email.toLowerCase(), id: Not(id) } });
       if (clash) throw new ConflictException('An admin with this email already exists');
     }
     if (dto.phone) {
-      const clash = await this.adminModel.findOne({ phone: dto.phone, _id: { $ne: id } }).exec();
+      const clash = await this.admins.findOne({ where: { phone: dto.phone, id: Not(id) } });
       if (clash) throw new ConflictException('An admin with this mobile number already exists');
     }
-    const admin = await this.adminModel
-      .findOneAndUpdate(
-        { _id: id, tenantId: new Types.ObjectId(actor.tenantId) },
-        {
-          ...dto,
-          ...(dto.email ? { email: dto.email.toLowerCase() } : {}),
-          updatedBy: new Types.ObjectId(actor.id),
-        },
-        { new: true, runValidators: true },
-      )
-      .exec();
+    const admin = await this.admins.findOne({ where: { id, tenantId: actor.tenantId } });
     if (!admin) throw new NotFoundException('Admin not found');
-    return admin;
+
+    Object.assign(admin, dto);
+    if (dto.email) admin.email = dto.email.toLowerCase();
+    admin.updatedBy = actor.id;
+    return this.admins.save(admin);
   }
 
   async changePassword(id: string, dto: ChangePasswordDto, actor: AuthUser): Promise<void> {
-    const result = await this.adminModel
-      .findOneAndUpdate(
-        { _id: id, tenantId: new Types.ObjectId(actor.tenantId) },
-        {
-          passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS),
-          updatedBy: new Types.ObjectId(actor.id),
-        },
-      )
-      .exec();
-    if (!result) throw new NotFoundException('Admin not found');
+    const res = await this.admins.update(
+      { id, tenantId: actor.tenantId },
+      { passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS), updatedBy: actor.id },
+    );
+    if (!res.affected) throw new NotFoundException('Admin not found');
   }
 }

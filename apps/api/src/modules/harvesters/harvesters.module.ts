@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Harvester, HarvesterSchema } from './harvester.schema';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Harvester } from './harvester.schema';
 import { HarvestersController } from './harvesters.controller';
 import { HarvestersService } from './harvesters.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Harvester.name, schema: HarvesterSchema }])],
+  imports: [TypeOrmModule.forFeature([Harvester])],
   controllers: [HarvestersController],
   providers: [HarvestersService],
   exports: [HarvestersService],

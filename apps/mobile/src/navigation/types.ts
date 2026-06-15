@@ -45,6 +45,7 @@ export type RootStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;
   ResetPassword: { identifier: string };
+  RequestAccount: undefined;
 };
 
 export type DashboardStackParamList = {

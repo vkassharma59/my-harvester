@@ -1,47 +1,34 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Column, Entity } from 'typeorm';
 import { Role } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type AdminDocument = HydratedDocument<Admin>;
-
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Admin extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+@Entity('admins')
+export class Admin extends AuditedEntity {
+  @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Prop({ required: true, unique: true, lowercase: true, trim: true })
+  @Column({ type: 'varchar', length: 255, unique: true })
   email!: string;
 
-  /** Mobile number — a unique login identity (sparse so seeded owners may omit it). */
-  @Prop({ trim: true, unique: true, sparse: true })
-  phone?: string;
+  /** Mobile number — a unique login identity (nullable so seeded owners may omit it). */
+  @Column({ type: 'varchar', length: 32, nullable: true, unique: true })
+  phone?: string | null;
 
   /** Never selected by default so it cannot leak through generic queries. */
-  @Prop({ required: true, select: false })
+  @Column({ type: 'varchar', length: 255, select: false })
   passwordHash!: string;
 
-  @Prop({ type: String, enum: Role, default: Role.STAFF_ADMIN })
+  @Column({ type: 'varchar', length: 32, default: Role.STAFF_ADMIN })
   role!: Role;
 
-  @Prop({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   /** Harvesters a staff admin may access (empty/ignored for OWNER). */
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Harvester' }], default: [] })
-  harvesterIds!: Types.ObjectId[];
+  @Column({
+    type: 'json',
+    nullable: true,
+    transformer: { to: (v: string[]) => v ?? [], from: (v: string[]) => v ?? [] },
+  })
+  harvesterIds!: string[];
 }
-
-export const AdminSchema = SchemaFactory.createForClass(Admin);
-
-// Defence in depth: strip the hash from any serialized output.
-AdminSchema.set('toJSON', {
-  ...(AUDITED_SCHEMA_OPTIONS.toJSON as object),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  transform: (_doc: any, ret: any) => {
-    ret.id = ret._id?.toString();
-    delete ret._id;
-    delete ret.passwordHash;
-    return ret;
-  },
-});

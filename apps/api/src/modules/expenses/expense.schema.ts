@@ -1,42 +1,37 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Column, Entity, Index } from 'typeorm';
 import { ExpenseType } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type ExpenseDocument = HydratedDocument<Expense>;
+@Entity('expenses')
+@Index(['harvesterId', 'date'])
+export class Expense extends AuditedEntity {
+  @Column({ type: 'varchar', length: 24 })
+  harvesterId!: string;
 
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Expense extends AuditedDocument {
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
-  harvesterId!: Types.ObjectId;
-
-  @Prop({ required: true })
+  @Column({ type: 'datetime' })
   date!: Date;
 
-  @Prop({ type: String, enum: ExpenseType, required: true, index: true })
+  @Column({ type: 'varchar', length: 32 })
   type!: ExpenseType;
 
-  /** A super-admin-defined custom category; null for the built-in types. */
-  @Prop({ type: Types.ObjectId, ref: 'ExpenseCategory', default: null, index: true })
-  categoryId?: Types.ObjectId | null;
+  /** A custom category; null for the built-in types. */
+  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  categoryId?: string | null;
 
   /** Set only for DIESEL expenses: the fuel pump the diesel was bought from. */
-  @Prop({ type: Types.ObjectId, ref: 'FuelPump', default: null, index: true })
-  pumpId?: Types.ObjectId | null;
+  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  pumpId?: string | null;
 
   /** Set only for LABOUR expenses: the labourer this payment is for. */
-  @Prop({ type: Types.ObjectId, ref: 'Labour', default: null, index: true })
-  labourId?: Types.ObjectId | null;
+  @Column({ type: 'varchar', length: 24, nullable: true, default: null })
+  labourId?: string | null;
 
-  @Prop({ required: true, min: 0 })
+  @Column({ type: 'double' })
   amount!: number;
 
-  @Prop({ trim: true })
-  notes?: string;
+  @Column({ type: 'text', nullable: true })
+  notes?: string | null;
 
-  @Prop({ trim: true })
-  attachmentUrl?: string;
+  @Column({ type: 'varchar', length: 1024, nullable: true })
+  attachmentUrl?: string | null;
 }
-
-export const ExpenseSchema = SchemaFactory.createForClass(Expense);
-ExpenseSchema.index({ harvesterId: 1, date: -1 });

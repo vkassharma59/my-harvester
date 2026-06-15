@@ -85,6 +85,8 @@ export const part = {
       addHarvester: 'Add harvester',
       required: 'Required',
       requiredName: 'Harvester name is required.',
+      requiredRate: 'Enter the default rate per {{unit}}.',
+      requiredRates: 'Enter both rates (with and without Bhusa).',
     },
     harvesterType: {
       COMBINE: 'Combine Harvester',
@@ -177,6 +179,8 @@ export const part = {
       addHarvester: 'हार्वेस्टर जोड़ें',
       required: 'आवश्यक',
       requiredName: 'हार्वेस्टर का नाम आवश्यक है।',
+      requiredRate: 'प्रति {{unit}} डिफ़ॉल्ट दर दर्ज करें।',
+      requiredRates: 'दोनों दरें दर्ज करें (भूसे सहित और बिना)।',
     },
     harvesterType: {
       COMBINE: 'कंबाइन हार्वेस्टर',
@@ -269,6 +273,8 @@ export const part = {
       addHarvester: 'ਹਾਰਵੈਸਟਰ ਸ਼ਾਮਲ ਕਰੋ',
       required: 'ਲੋੜੀਂਦਾ',
       requiredName: 'ਹਾਰਵੈਸਟਰ ਦਾ ਨਾਮ ਲੋੜੀਂਦਾ ਹੈ।',
+      requiredRate: 'ਪ੍ਰਤੀ {{unit}} ਡਿਫਾਲਟ ਰੇਟ ਦਰਜ ਕਰੋ।',
+      requiredRates: 'ਦੋਵੇਂ ਰੇਟ ਦਰਜ ਕਰੋ (ਤੂੜੀ ਸਮੇਤ ਅਤੇ ਬਿਨਾਂ)।',
     },
     harvesterType: {
       COMBINE: 'ਕੰਬਾਈਨ ਹਾਰਵੈਸਟਰ',

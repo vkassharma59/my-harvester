@@ -1,23 +1,22 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { Column, Entity } from 'typeorm';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type FuelPumpDocument = HydratedDocument<FuelPump>;
-
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class FuelPump extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+@Entity('fuel_pumps')
+export class FuelPump extends AuditedEntity {
+  @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Prop({ trim: true })
-  phone?: string;
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  phone?: string | null;
 
-  /** Harvesters this pump supplies diesel to (many-to-many). */
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Harvester' }], default: [], index: true })
-  harvesterIds!: Types.ObjectId[];
+  /** Harvesters this pump supplies diesel to (many-to-many, stored as JSON). */
+  @Column({
+    type: 'json',
+    nullable: true,
+    transformer: { to: (v: string[]) => v ?? [], from: (v: string[]) => v ?? [] },
+  })
+  harvesterIds!: string[];
 
-  @Prop({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 }
-
-export const FuelPumpSchema = SchemaFactory.createForClass(FuelPump);

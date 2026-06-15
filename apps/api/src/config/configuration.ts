@@ -1,8 +1,16 @@
+export interface MysqlConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+}
+
 export interface AppConfig {
   port: number;
   nodeEnv: string;
   corsOrigins: string[];
-  mongoUri: string;
+  mysql: MysqlConfig;
   jwt: {
     secret: string;
     expiresIn: string;
@@ -21,7 +29,13 @@ export default (): AppConfig => ({
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean),
-  mongoUri: process.env.MONGODB_URI ?? 'mongodb://localhost:27017/wheat_harvester',
+  mysql: {
+    host: process.env.MYSQL_HOST ?? 'localhost',
+    port: parseInt(process.env.MYSQL_PORT ?? '3306', 10),
+    username: process.env.MYSQL_USER ?? 'root',
+    password: process.env.MYSQL_PASSWORD ?? '',
+    database: process.env.MYSQL_DATABASE ?? 'myharvester_prod',
+  },
   jwt: {
     secret: process.env.JWT_SECRET ?? 'dev-insecure-secret-change-me',
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',

@@ -1,16 +1,11 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { Column, Entity } from 'typeorm';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type ExpenseCategoryDocument = HydratedDocument<ExpenseCategory>;
-
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class ExpenseCategory extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+@Entity('expense_categories')
+export class ExpenseCategory extends AuditedEntity {
+  @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Prop({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 }
-
-export const ExpenseCategorySchema = SchemaFactory.createForClass(ExpenseCategory);

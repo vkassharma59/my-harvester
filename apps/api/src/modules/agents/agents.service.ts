@@ -1,106 +1,93 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AgentLedger, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
-import { Payment, PaymentDocument } from '../payments/payment.schema';
-import { Plot, PlotDocument } from '../plots/plot.schema';
-import { Agent, AgentDocument } from './agent.schema';
+import { Payment } from '../payments/payment.schema';
+import { Plot } from '../plots/plot.schema';
+import { Agent } from './agent.schema';
 import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
 
 @Injectable()
 export class AgentsService {
   constructor(
-    @InjectModel(Agent.name) private readonly model: Model<AgentDocument>,
-    @InjectModel(Plot.name) private readonly plots: Model<PlotDocument>,
-    @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
+    @InjectRepository(Agent) private readonly repo: Repository<Agent>,
+    @InjectRepository(Plot) private readonly plots: Repository<Plot>,
+    @InjectRepository(Payment) private readonly payments: Repository<Payment>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
-  create(dto: CreateAgentDto, user: AuthUser): Promise<AgentDocument> {
+  create(dto: CreateAgentDto, user: AuthUser): Promise<Agent> {
     assertCanUseHarvester(user, dto.harvesterId);
     const { id, ...rest } = dto;
     return createMaybeWithId(
-      this.model,
+      this.repo,
       {
         ...rest,
-        tenantId: new Types.ObjectId(user.tenantId),
-        harvesterId: new Types.ObjectId(dto.harvesterId),
-        createdBy: new Types.ObjectId(user.id),
-        updatedBy: new Types.ObjectId(user.id),
+        tenantId: user.tenantId,
+        harvesterId: dto.harvesterId,
+        createdBy: user.id,
+        updatedBy: user.id,
       },
       id,
     );
   }
 
-  findAll(user: AuthUser, harvesterId?: string): Promise<AgentDocument[]> {
-    const filter: FilterQuery<AgentDocument> = {
-      tenantId: new Types.ObjectId(user.tenantId),
-      ...harvesterFilter(user, harvesterId),
-    };
-    return this.model.find(filter).sort({ createdAt: -1 }).exec();
+  async findAll(user: AuthUser, harvesterId?: string): Promise<Agent[]> {
+    return this.repo.find({
+      where: { tenantId: user.tenantId, ...(await this.hscope.where(user, harvesterId)) },
+      order: { createdAt: 'DESC' },
+    });
   }
 
-  async findOne(id: string, user: AuthUser): Promise<AgentDocument> {
-    const doc = await this.model
-      .findOne({ _id: id, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) })
-      .exec();
+  async findOne(id: string, user: AuthUser): Promise<Agent> {
+    const doc = await this.repo.findOne({
+      where: { id, tenantId: user.tenantId, ...harvesterFilter(user) },
+    });
     if (!doc) throw new NotFoundException('Agent not found');
     return doc;
   }
 
-  async update(id: string, dto: UpdateAgentDto, user: AuthUser): Promise<AgentDocument> {
+  async update(id: string, dto: UpdateAgentDto, user: AuthUser): Promise<Agent> {
     if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
-    const update: Record<string, unknown> = { ...dto, updatedBy: new Types.ObjectId(user.id) };
-    if (dto.harvesterId) update.harvesterId = new Types.ObjectId(dto.harvesterId);
-    const doc = await this.model
-      .findOneAndUpdate(
-        { _id: id, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) },
-        update,
-        { new: true, runValidators: true },
-      )
-      .exec();
-    if (!doc) throw new NotFoundException('Agent not found');
-    return doc;
+    const doc = await this.findOne(id, user);
+    Object.assign(doc, dto);
+    doc.updatedBy = user.id;
+    return this.repo.save(doc);
   }
 
   async remove(id: string, user: AuthUser): Promise<void> {
-    const res = await this.model
-      .findOneAndDelete({
-        _id: id,
-        tenantId: new Types.ObjectId(user.tenantId),
-        ...harvesterFilter(user),
-      })
-      .exec();
-    if (!res) throw new NotFoundException('Agent not found');
+    const doc = await this.findOne(id, user);
+    await this.repo.remove(doc);
   }
 
   /** Commission earned (from jobs) vs paid (from payments) for one agent. */
   async ledger(agentId: string, user: AuthUser): Promise<AgentLedger> {
-    const tenant = new Types.ObjectId(user.tenantId);
     const agent = await this.findOne(agentId, user);
 
-    const plots = await this.plots
-      .find({ tenantId: tenant, agentId: new Types.ObjectId(agentId), ...harvesterFilter(user) })
-      .sort({ harvestDate: -1 })
-      .exec();
+    const plots = await this.plots.find({
+      where: { tenantId: user.tenantId, agentId, ...(await this.hscope.where(user)) },
+      order: { harvestDate: 'DESC' },
+    });
 
-    const payments = await this.payments
-      .find({ tenantId: tenant, partyType: PartyType.AGENT, partyId: new Types.ObjectId(agentId) })
-      .sort({ date: -1 })
-      .exec();
+    const payments = await this.payments.find({
+      where: { tenantId: user.tenantId, partyType: PartyType.AGENT, partyId: agentId },
+      order: { date: 'DESC' },
+    });
 
     const totalCommission = plots.reduce((acc, p) => acc + (p.commissionAmount ?? 0), 0);
     const amountPaid = payments.reduce((acc, p) => acc + p.amount, 0);
 
     return {
-      agent: agent.toJSON() as unknown as AgentLedger['agent'],
-      plots: plots.map((p) => p.toJSON()) as unknown as AgentLedger['plots'],
+      agent: agent as unknown as AgentLedger['agent'],
+      plots: plots as unknown as AgentLedger['plots'],
       totalCommission,
       amountPaid,
       outstanding: totalCommission - amountPaid,
-      payments: payments.map((p) => p.toJSON()) as unknown as AgentLedger['payments'],
+      payments: payments as unknown as AgentLedger['payments'],
     };
   }
 }

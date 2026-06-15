@@ -17,6 +17,7 @@ export const en = {
     saved: 'Saved',
     showAll: 'Show all',
     tapToEdit: 'Tap to edit',
+    ok: 'OK',
   },
   tabs: {
     dashboard: 'Dashboard',

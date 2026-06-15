@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ALL_HARVESTERS, HarvesterStatus } from '@wh/shared';
@@ -23,6 +23,18 @@ export function HarvesterPicker() {
     queryKey: ['harvesters', HarvesterStatus.ACTIVE],
     queryFn: () => harvestersApi.list(HarvesterStatus.ACTIVE),
   });
+
+  // If the selected harvester was deactivated, it's no longer in the list —
+  // fall back to "All Harvesters" so the chip and the data don't mismatch.
+  useEffect(() => {
+    if (
+      selectedId !== ALL_HARVESTERS &&
+      harvesters.length > 0 &&
+      !harvesters.some((h) => h.id === selectedId)
+    ) {
+      setSelected(ALL_HARVESTERS);
+    }
+  }, [harvesters, selectedId, setSelected]);
 
   // Staff with a single harvester don't need a switcher — it's auto-scoped.
   if (!showPicker) return null;

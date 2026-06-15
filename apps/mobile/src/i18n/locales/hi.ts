@@ -17,6 +17,7 @@ export const hi = {
     saved: 'सेव हो गया',
     showAll: 'सभी दिखाएँ',
     tapToEdit: 'बदलने के लिए टैप करें',
+    ok: 'ठीक है',
   },
   tabs: {
     dashboard: 'डैशबोर्ड',
