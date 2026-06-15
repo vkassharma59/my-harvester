@@ -5,10 +5,40 @@
  */
 
 export enum Role {
+  /** The platform operator (us). Manages every tenant from the web console;
+   *  the only role that reads across tenants. Not used by the mobile app. */
+  SUPER_ADMIN = 'SUPER_ADMIN',
   /** A harvester business owner — the tenant root that owns all its data. */
   OWNER = 'OWNER',
   /** Staff working under an owner, scoped to assigned harvesters. */
   STAFF_ADMIN = 'STAFF_ADMIN',
+}
+
+/** A tenant's subscription lifecycle. Drives whether the owner can still write. */
+export enum SubscriptionStatus {
+  /** Inside the free period (default for a freshly onboarded owner). */
+  TRIAL = 'TRIAL',
+  /** Paid and current. */
+  ACTIVE = 'ACTIVE',
+  /** Trial/period lapsed — reads still work, writes are blocked. */
+  EXPIRED = 'EXPIRED',
+  /** Manually disabled by the super admin (e.g. abuse). */
+  SUSPENDED = 'SUSPENDED',
+}
+
+/** Subscription plan. Kept deliberately minimal until paid plans launch. */
+export enum Plan {
+  FREE_TRIAL = 'FREE_TRIAL',
+  PAID = 'PAID',
+}
+
+/** How a subscription payment was collected. India: mostly cash/UPI, recorded
+ *  manually by the super admin (no automated card billing yet). */
+export enum PaymentMethod {
+  CASH = 'CASH',
+  UPI = 'UPI',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  OTHER = 'OTHER',
 }
 
 export enum ExpenseType {
