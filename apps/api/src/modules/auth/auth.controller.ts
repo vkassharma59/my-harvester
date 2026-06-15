@@ -1,9 +1,11 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post } from '@nestjs/common';
+import { AllowExpired } from '../../common/decorators/allow-expired.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AdminsService } from '../admins/admins.service';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -23,5 +25,12 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.admins.findOne(user.id, user.tenantId);
+  }
+
+  /** Update your own profile — name and/or password (any authenticated admin). */
+  @AllowExpired()
+  @Patch('profile')
+  updateProfile(@Body() dto: UpdateProfileDto, @CurrentUser() user: AuthUser) {
+    return this.admins.updateOwnProfile(user.id, dto);
   }
 }

@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { authApi } from '@/api/endpoints';
 import { queryClient } from '@/api/queryClient';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { loadStoredLanguage } from '@/i18n';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { initConnectivity } from '@/offline/connectivity';
@@ -48,6 +49,7 @@ export default function App() {
         <NavigationContainer>
           <View style={{ flex: 1 }}>
             <RootNavigator />
+            <SubscriptionBanner />
             <OfflineBanner />
           </View>
         </NavigationContainer>

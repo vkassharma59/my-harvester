@@ -20,6 +20,25 @@ export interface AppConfig {
     password?: string;
     name?: string;
   };
+  /** The platform operator seeded on a fresh DB; logs into the web console. */
+  superAdmin: {
+    email?: string;
+    password?: string;
+    name?: string;
+  };
+  subscription: {
+    /** Free-trial length granted to a newly onboarded owner. */
+    trialDays: number;
+  };
+  /** Outbound email (owner welcome credentials). Disabled until host+auth set. */
+  mail: {
+    host?: string;
+    port: number;
+    secure: boolean;
+    user?: string;
+    pass?: string;
+    from: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -44,5 +63,21 @@ export default (): AppConfig => ({
     email: process.env.BOOTSTRAP_ADMIN_EMAIL,
     password: process.env.BOOTSTRAP_ADMIN_PASSWORD,
     name: process.env.BOOTSTRAP_ADMIN_NAME,
+  },
+  superAdmin: {
+    email: process.env.SUPER_ADMIN_EMAIL,
+    password: process.env.SUPER_ADMIN_PASSWORD,
+    name: process.env.SUPER_ADMIN_NAME,
+  },
+  subscription: {
+    trialDays: parseInt(process.env.SUBSCRIPTION_TRIAL_DAYS ?? '365', 10),
+  },
+  mail: {
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT ?? '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM ?? 'Wheat Harvester <no-reply@wheat-harvester.app>',
   },
 });

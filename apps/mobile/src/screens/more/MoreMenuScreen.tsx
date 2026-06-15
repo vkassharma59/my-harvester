@@ -20,6 +20,7 @@ const ITEMS: MenuItem[] = [
   { labelKey: 'more.staffAdmins', icon: '🧑‍💼', route: 'Admins', superAdminOnly: true },
   { labelKey: 'more.expenseCategories', icon: '🏷️', route: 'ExpenseCategories', superAdminOnly: true },
   { labelKey: 'more.reports', icon: '📊', route: 'Reports' },
+  { labelKey: 'more.reportBug', icon: '🐞', route: 'ReportBug' },
   { labelKey: 'more.settings', icon: '⚙️', route: 'Settings' },
 ];
 
@@ -38,7 +39,16 @@ export function MoreMenuScreen({ navigation }: Props) {
   return (
     <Screen>
       <View style={styles.profile}>
-        <Text style={styles.name}>{admin?.name ?? t('more.admin')}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{admin?.name ?? t('more.admin')}</Text>
+          <Pressable
+            onPress={() => navigation.navigate('EditProfile')}
+            hitSlop={8}
+            style={({ pressed }) => [styles.changePw, pressed && styles.pressed]}
+          >
+            <Text style={styles.changePwText}>✏️ {t('more.editProfile')}</Text>
+          </Pressable>
+        </View>
         <Text style={styles.sub}>{admin?.email}</Text>
         {admin?.role ? <Text style={styles.role}>{tEnum('role', admin.role)}</Text> : null}
       </View>
@@ -66,7 +76,16 @@ export function MoreMenuScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   profile: { marginBottom: spacing.xl },
-  name: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: colors.text },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  name: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: colors.text, flexShrink: 1 },
+  changePw: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  changePwText: { fontSize: font.size.xs, color: colors.primary, fontWeight: font.weight.semibold },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
   role: { fontSize: font.size.xs, color: colors.primary, marginTop: spacing.xs, fontWeight: font.weight.semibold },
   menu: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },

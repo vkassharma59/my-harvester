@@ -40,7 +40,7 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const [notes, setNotes] = useState('');
   const [attachment, setAttachment] = useState('');
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['customer-ledger', customerId],
     queryFn: () => customersApi.ledger(customerId),
   });
@@ -147,7 +147,9 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const editJob = (plotId: string) => navigation.navigate('HarvestForm', { plotId });
 
   if (isLoading) return <Loading />;
-  if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
+  // Show cached data even if the latest refetch failed (e.g. offline); only fall
+  // back to the error screen when there's genuinely nothing to show.
+  if (!data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   const callCustomer = () => void Linking.openURL(`tel:${data.customer.phone}`).catch(() => {});
   const sendWhatsApp = () => {

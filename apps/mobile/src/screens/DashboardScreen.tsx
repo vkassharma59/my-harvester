@@ -23,7 +23,7 @@ export function DashboardScreen() {
   const currency = settingsQ.data?.currency ?? 'INR';
   const areaUnit = settingsQ.data?.defaultAreaUnit;
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard', selectedId],
     queryFn: () => dashboardApi.summary(harvesterId),
   });
@@ -36,7 +36,9 @@ export function DashboardScreen() {
   const hasActiveAgent = (agentsQ.data ?? []).some((a) => a.isActive);
 
   if (isLoading) return <Loading />;
-  if (isError || !data) {
+  // Show cached data even if the latest refetch failed (e.g. offline); only fall
+  // back to the error screen when there's genuinely nothing to show.
+  if (!data) {
     return (
       <Screen>
         <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />

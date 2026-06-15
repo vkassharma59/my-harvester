@@ -47,6 +47,9 @@ export const authApi = {
   login: (identifier: string, password: string) =>
     api.post<LoginResult>('/auth/login', { identifier, password }).then((r) => r.data),
   me: () => api.get<Admin>('/auth/me').then((r) => r.data),
+  /** Update your own profile: name and/or password (verifies the current one). */
+  updateProfile: (input: { name?: string; currentPassword?: string; newPassword?: string }) =>
+    api.patch<Admin>('/auth/profile', input).then((r) => r.data),
 };
 
 // ---------- Account requests (public self-service owner signup) ----------
@@ -315,6 +318,16 @@ export const uploadsApi = {
       .post<{ url: string }>('/uploads', form, { headers: { 'Content-Type': 'multipart/form-data' } })
       .then((r) => r.data);
   },
+};
+
+// ---------- Bug reports ----------
+export interface BugReportInput {
+  title: string;
+  description: string;
+  screenshotUrl?: string;
+}
+export const bugReportsApi = {
+  create: (input: BugReportInput) => api.post('/bug-reports', input).then((r) => r.data),
 };
 
 // ---------- Dashboard ----------

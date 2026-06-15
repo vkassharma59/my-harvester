@@ -4,13 +4,16 @@ import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonModule } from './common/common.module';
 import { ensureDatabase } from './common/ensure-database';
+import { MailModule } from './common/mail/mail.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from './common/guards/subscription.guard';
 import configuration, { AppConfig } from './config/configuration';
 import { AccountRequestsModule } from './modules/account-requests/account-requests.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BugReportsModule } from './modules/bug-reports/bug-reports.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ExpenseCategoriesModule } from './modules/expense-categories/expense-categories.module';
@@ -23,6 +26,8 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PlotsModule } from './modules/plots/plots.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { SuperAdminModule } from './modules/super-admin/super-admin.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
@@ -48,9 +53,13 @@ import { UploadsModule } from './modules/uploads/uploads.module';
       },
     }),
     CommonModule,
+    MailModule,
     AuthModule,
     AccountRequestsModule,
     AdminsModule,
+    TenantsModule,
+    SuperAdminModule,
+    BugReportsModule,
     HarvestersModule,
     CustomersModule,
     SettingsModule,
@@ -70,6 +79,9 @@ import { UploadsModule } from './modules/uploads/uploads.module';
   providers: [
     // Every route requires a valid JWT unless marked @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Then: an EXPIRED/SUSPENDED tenant is read-only (writes → 402). Runs after
+    // JwtAuthGuard so req.user is set.
+    { provide: APP_GUARD, useClass: SubscriptionGuard },
   ],
 })
 export class AppModule {}

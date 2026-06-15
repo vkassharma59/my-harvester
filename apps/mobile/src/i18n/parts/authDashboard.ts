@@ -34,6 +34,16 @@ export const part = {
       errMobile: 'Enter a valid 10-digit mobile number.',
       errPassword: 'Password must be at least 6 characters.',
       errMismatch: 'Passwords do not match.',
+      otpTitle: 'Verify your mobile',
+      otpSent:
+        'For your security, enter the 6-digit code sent to {{mobile}} to verify your number before we raise your request.',
+      otpLabel: 'Enter 6-digit OTP',
+      otpPlaceholder: '••••••',
+      otpDevNote:
+        'Note: SMS OTP isn’t set up yet — you can enter any 6 digits for now. Real OTP delivery will be enabled soon.',
+      otpVerify: 'Verify & submit request',
+      otpInvalidTitle: 'Invalid OTP',
+      otpInvalidBody: 'Please enter a valid 6-digit OTP.',
     },
     forgotPassword: {
       title: 'Reset password',
@@ -114,6 +124,16 @@ export const part = {
       errMobile: 'मान्य 10 अंकों का मोबाइल नंबर दर्ज करें।',
       errPassword: 'पासवर्ड कम से कम 6 अक्षर का होना चाहिए।',
       errMismatch: 'पासवर्ड मेल नहीं खाते।',
+      otpTitle: 'अपना मोबाइल सत्यापित करें',
+      otpSent:
+        'सुरक्षा के लिए, अनुरोध भेजने से पहले अपना नंबर सत्यापित करने हेतु {{mobile}} पर भेजा गया 6 अंकों का कोड दर्ज करें।',
+      otpLabel: '6 अंकों का OTP दर्ज करें',
+      otpPlaceholder: '••••••',
+      otpDevNote:
+        'ध्यान दें: SMS OTP अभी सेट नहीं हुआ है — फ़िलहाल आप कोई भी 6 अंक दर्ज कर सकते हैं। वास्तविक OTP जल्द ही सक्षम होगा।',
+      otpVerify: 'सत्यापित करें और अनुरोध भेजें',
+      otpInvalidTitle: 'अमान्य OTP',
+      otpInvalidBody: 'कृपया मान्य 6 अंकों का OTP दर्ज करें।',
     },
     forgotPassword: {
       title: 'पासवर्ड रीसेट करें',
@@ -194,6 +214,16 @@ export const part = {
       errMobile: 'ਮਾਨਯ 10 ਅੰਕਾਂ ਦਾ ਮੋਬਾਈਲ ਨੰਬਰ ਦਰਜ ਕਰੋ।',
       errPassword: 'ਪਾਸਵਰਡ ਘੱਟੋ-ਘੱਟ 6 ਅੱਖਰਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
       errMismatch: 'ਪਾਸਵਰਡ ਮੇਲ ਨਹੀਂ ਖਾਂਦੇ।',
+      otpTitle: 'ਆਪਣਾ ਮੋਬਾਈਲ ਤਸਦੀਕ ਕਰੋ',
+      otpSent:
+        'ਤੁਹਾਡੀ ਸੁਰੱਖਿਆ ਲਈ, ਬੇਨਤੀ ਭੇਜਣ ਤੋਂ ਪਹਿਲਾਂ ਆਪਣਾ ਨੰਬਰ ਤਸਦੀਕ ਕਰਨ ਲਈ {{mobile}} ਤੇ ਭੇਜਿਆ 6 ਅੰਕਾਂ ਦਾ ਕੋਡ ਦਰਜ ਕਰੋ।',
+      otpLabel: '6 ਅੰਕਾਂ ਦਾ OTP ਦਰਜ ਕਰੋ',
+      otpPlaceholder: '••••••',
+      otpDevNote:
+        'ਨੋਟ: SMS OTP ਅਜੇ ਸੈੱਟ ਨਹੀਂ ਹੋਇਆ — ਫ਼ਿਲਹਾਲ ਤੁਸੀਂ ਕੋਈ ਵੀ 6 ਅੰਕ ਦਰਜ ਕਰ ਸਕਦੇ ਹੋ। ਅਸਲੀ OTP ਜਲਦੀ ਚਾਲੂ ਹੋਵੇਗਾ।',
+      otpVerify: 'ਤਸਦੀਕ ਕਰੋ ਅਤੇ ਬੇਨਤੀ ਭੇਜੋ',
+      otpInvalidTitle: 'ਗਲਤ OTP',
+      otpInvalidBody: 'ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 6 ਅੰਕਾਂ ਦਾ OTP ਦਰਜ ਕਰੋ।',
     },
     forgotPassword: {
       title: 'ਪਾਸਵਰਡ ਰੀਸੈੱਟ ਕਰੋ',
