@@ -42,7 +42,12 @@ export function Overview() {
                   </li>
                 )}
                 {data.pendingAccountRequests > 0 && (
-                  <li>📨 {data.pendingAccountRequests} pending account request(s)</li>
+                  <li>
+                    📨 {data.pendingAccountRequests} pending account request(s) —{' '}
+                    <Link to="/account-requests" className="font-medium text-brand-700 hover:underline">
+                      review
+                    </Link>
+                  </li>
                 )}
               </ul>
             </Card>

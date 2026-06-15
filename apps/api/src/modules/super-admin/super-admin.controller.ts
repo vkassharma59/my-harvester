@@ -74,4 +74,19 @@ export class SuperAdminController {
   resetPassword(@Param('id') id: string, @Body() dto: ResetPasswordDto) {
     return this.superAdmin.resetOwnerPassword(id, dto.password);
   }
+
+  @Get('account-requests')
+  accountRequests() {
+    return this.superAdmin.listAccountRequests();
+  }
+
+  @Post('account-requests/:id/approve')
+  approveRequest(@Param('id') id: string) {
+    return this.superAdmin.approveAccountRequest(id);
+  }
+
+  @Post('account-requests/:id/reject')
+  rejectRequest(@Param('id') id: string) {
+    return this.superAdmin.rejectAccountRequest(id);
+  }
 }

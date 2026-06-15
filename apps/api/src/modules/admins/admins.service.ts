@@ -77,6 +77,16 @@ export class AdminsService implements OnModuleInit {
     return this.createAdminAccount(email, password, name, Role.OWNER, phone);
   }
 
+  /** Creates an OWNER from an already-hashed password (approving a request). */
+  async createOwnerWithHash(
+    email: string,
+    passwordHash: string,
+    name: string,
+    phone?: string,
+  ): Promise<Admin> {
+    return this.persistTenantRoot(email, passwordHash, name, Role.OWNER, phone);
+  }
+
   /**
    * Creates a tenant-root admin (its tenant is itself). Shared by the OWNER and
    * SUPER_ADMIN seeds — both are accounts that own their tenant scope.
@@ -84,6 +94,16 @@ export class AdminsService implements OnModuleInit {
   private async createAdminAccount(
     email: string,
     password: string,
+    name: string,
+    role: Role,
+    phone?: string,
+  ): Promise<Admin> {
+    return this.persistTenantRoot(email, await bcrypt.hash(password, BCRYPT_ROUNDS), name, role, phone);
+  }
+
+  private async persistTenantRoot(
+    email: string,
+    passwordHash: string,
     name: string,
     role: Role,
     phone?: string,
@@ -100,7 +120,7 @@ export class AdminsService implements OnModuleInit {
       name,
       email: email.toLowerCase(),
       phone: phone ?? null,
-      passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
+      passwordHash,
       role,
       isActive: true,
     });

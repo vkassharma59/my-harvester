@@ -1,4 +1,5 @@
 import type {
+  AccountRequestItem,
   AdminOverview,
   OnboardOwnerResult,
   OwnerDetail,
@@ -129,3 +130,11 @@ export const reactivateOwner = (id: string) =>
 
 export const resetPassword = (id: string, password?: string) =>
   request<{ password: string }>('POST', `/admin/owners/${id}/reset-password`, password ? { password } : {});
+
+// ---------- account requests ----------
+
+export const getAccountRequests = () => request<AccountRequestItem[]>('GET', '/admin/account-requests');
+export const approveAccountRequest = (id: string) =>
+  request<OwnerDetail>('POST', `/admin/account-requests/${id}/approve`);
+export const rejectAccountRequest = (id: string) =>
+  request<AccountRequestItem>('POST', `/admin/account-requests/${id}/reject`);

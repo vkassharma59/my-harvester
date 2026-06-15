@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import {
+  AccountRequestItem,
   AccountRequestStatus,
   Admin as AdminDto,
   AdminOverview,
@@ -108,6 +109,58 @@ export class SuperAdminService {
     const next = password?.trim() || generatePassword();
     await this.adminsService.resetPasswordById(id, next);
     return { password: next };
+  }
+
+  // ---------- account requests (self-service owner signups) ----------
+
+  async listAccountRequests(): Promise<AccountRequestItem[]> {
+    const requests = await this.accountRequests.find({ order: { createdAt: 'DESC' } });
+    return requests.map((r) => this.toRequestItem(r));
+  }
+
+  /** Approve a request → mint the owner (reusing their chosen password hash). */
+  async approveAccountRequest(id: string): Promise<OwnerDetail> {
+    const request = await this.accountRequests
+      .createQueryBuilder('r')
+      .addSelect('r.passwordHash')
+      .where('r.id = :id', { id })
+      .getOne();
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.status !== AccountRequestStatus.PENDING) {
+      throw new BadRequestException('This request has already been processed');
+    }
+    const owner = await this.adminsService.createOwnerWithHash(
+      request.email,
+      request.passwordHash,
+      request.fullName,
+      request.mobile,
+    );
+    await this.tenantsService.createForOwner(owner, { verifiedPhone: request.mobile });
+    request.status = AccountRequestStatus.APPROVED;
+    await this.accountRequests.save(request);
+    return this.ownerDetail(owner.id);
+  }
+
+  async rejectAccountRequest(id: string): Promise<AccountRequestItem> {
+    const request = await this.accountRequests.findOne({ where: { id } });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.status !== AccountRequestStatus.PENDING) {
+      throw new BadRequestException('This request has already been processed');
+    }
+    request.status = AccountRequestStatus.REJECTED;
+    return this.toRequestItem(await this.accountRequests.save(request));
+  }
+
+  private toRequestItem(r: AccountRequest): AccountRequestItem {
+    return {
+      id: r.id,
+      fullName: r.fullName,
+      email: r.email,
+      mobile: r.mobile,
+      harvesterCount: r.harvesterCount,
+      status: r.status,
+      createdAt: new Date(r.createdAt).toISOString(),
+    };
   }
 
   // ---------- overview ----------

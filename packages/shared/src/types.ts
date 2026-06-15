@@ -1,4 +1,5 @@
 import {
+  AccountRequestStatus,
   AreaUnit,
   ExpenseType,
   HarvestType,
@@ -358,6 +359,17 @@ export interface OnboardOwnerResult {
   password: string;
   /** Whether the credentials email was actually sent (false if SMTP off / failed). */
   emailed: boolean;
+}
+
+/** A self-service owner-account request, shown to the super admin for approval. */
+export interface AccountRequestItem {
+  id: string;
+  fullName: string;
+  email: string;
+  mobile: string;
+  harvesterCount: number;
+  status: AccountRequestStatus;
+  createdAt: string;
 }
 
 /** KPI snapshot for the super-admin overview screen. */
