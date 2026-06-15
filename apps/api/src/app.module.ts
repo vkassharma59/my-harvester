@@ -23,6 +23,7 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PlotsModule } from './modules/plots/plots.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 
@@ -53,6 +54,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     AccountRequestsModule,
     AdminsModule,
     TenantsModule,
+    SuperAdminModule,
     HarvestersModule,
     CustomersModule,
     SettingsModule,
