@@ -1,6 +1,8 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { idColumn } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
+import { Harvester } from '../harvesters/harvester.schema';
+import { Labour } from '../labour/labour.schema';
 
 /**
  * One row per day a daily-wage worker was present. Existence = present;
@@ -19,4 +21,12 @@ export class Attendance extends AuditedEntity {
   /** Stored as a SQL DATE; TypeORM reads/writes it as a 'YYYY-MM-DD' string. */
   @Column({ type: 'date' })
   date!: string;
+
+  @ManyToOne(() => Labour, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'labourId' })
+  labour?: Labour;
+
+  @ManyToOne(() => Harvester, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester;
 }

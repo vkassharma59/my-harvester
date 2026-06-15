@@ -1,7 +1,10 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { AreaUnit, HarvestType } from '@wh/shared';
 import { idColumn, idColumnNullable, money } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
+import { Agent } from '../agents/agent.schema';
+import { Customer } from '../customers/customer.schema';
+import { Harvester } from '../harvesters/harvester.schema';
 
 /** A harvesting job on a plot of land, carrying its commercial terms. */
 @Entity('plots')
@@ -52,6 +55,19 @@ export class Plot extends AuditedEntity {
 
   @Column(money({ default: 0 }))
   commissionAmount?: number;
+
+  // --- Foreign keys (the id columns above are the FK columns) ---
+  @ManyToOne(() => Customer, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'customerId' })
+  customer?: Customer;
+
+  @ManyToOne(() => Harvester, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester;
+
+  @ManyToOne(() => Agent, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'agentId' })
+  agent?: Agent | null;
 
   // --- Bhusa buyers (Type 2) live in the plot_bhusa_buyers join table. These
   // are NOT columns; LinksService hydrates them for the API response, keeping

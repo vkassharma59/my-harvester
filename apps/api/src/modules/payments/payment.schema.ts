@@ -1,7 +1,9 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { PartyType } from '@wh/shared';
 import { idColumn, idColumnNullable, money } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
+import { Harvester } from '../harvesters/harvester.schema';
+import { Plot } from '../plots/plot.schema';
 
 /**
  * A money movement. `partyType` says whose ledger it belongs to; `partyId`
@@ -37,4 +39,13 @@ export class Payment extends AuditedEntity {
   /** Optional receipt / proof file URL. */
   @Column({ type: 'varchar', length: 512, nullable: true })
   attachmentUrl?: string | null;
+
+  // --- Foreign keys (partyId is polymorphic, so it has no FK) ---
+  @ManyToOne(() => Plot, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'plotId' })
+  plot?: Plot | null;
+
+  @ManyToOne(() => Harvester, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester | null;
 }
