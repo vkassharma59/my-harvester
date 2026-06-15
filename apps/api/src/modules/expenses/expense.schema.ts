@@ -1,7 +1,11 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { ExpenseType } from '@wh/shared';
 import { idColumn, idColumnNullable, money } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
+import { ExpenseCategory } from '../expense-categories/expense-category.schema';
+import { FuelPump } from '../fuel-pumps/fuel-pump.schema';
+import { Harvester } from '../harvesters/harvester.schema';
+import { Labour } from '../labour/labour.schema';
 
 @Entity('expenses')
 @Index(['tenantId', 'harvesterId', 'date'])
@@ -38,4 +42,21 @@ export class Expense extends AuditedEntity {
 
   @Column({ type: 'varchar', length: 512, nullable: true })
   attachmentUrl?: string | null;
+
+  // --- Foreign keys (the id columns above are the FK columns) ---
+  @ManyToOne(() => Harvester, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester;
+
+  @ManyToOne(() => ExpenseCategory, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'categoryId' })
+  category?: ExpenseCategory | null;
+
+  @ManyToOne(() => FuelPump, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'pumpId' })
+  pump?: FuelPump | null;
+
+  @ManyToOne(() => Labour, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'labourId' })
+  labour?: Labour | null;
 }

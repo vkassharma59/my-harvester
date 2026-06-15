@@ -1,6 +1,7 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { money, idColumn } from '../../common/columns';
 import { AuditedEntity } from '../../common/entities/audited.entity';
+import { Harvester } from '../harvesters/harvester.schema';
 
 /** A commission agent attached to a single harvester. */
 @Entity('agents')
@@ -21,4 +22,8 @@ export class Agent extends AuditedEntity {
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
+
+  @ManyToOne(() => Harvester, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester;
 }
