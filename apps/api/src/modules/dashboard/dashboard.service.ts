@@ -129,48 +129,6 @@ export class DashboardService {
         })) ?? 0
       : 0;
 
-    // Pending receivables. Customer payments are customer-level (not tagged to a
-    // harvester), so for the "all" view we net total earnings against everything
-    // received. For a single harvester we can't just filter payments by
-    // harvesterId (they'd all be excluded → pending == earnings); instead we
-    // allocate each customer's outstanding to this harvester by its share of
-    // that customer's total billing across all harvesters.
-    const wantsAll = !harvesterId || harvesterId === ALL_HARVESTERS;
-    let pendingReceivables: number;
-    if (wantsAll) {
-      pendingReceivables = Math.max(0, totalEarnings - receivedFromCustomers);
-    } else if (customerSet.size === 0) {
-      pendingReceivables = 0;
-    } else {
-      const custIds = [...customerSet];
-      const billedHere = new Map<string, number>();
-      for (const p of plots) billedHere.set(p.customerId, (billedHere.get(p.customerId) ?? 0) + (p.totalAmount ?? 0));
-
-      const allPlots = await this.plots.find({
-        where: { tenantId: user.tenantId, customerId: In(custIds), ...(await this.hscope.where(user)) } as FindOptionsWhere<Plot>,
-        select: { customerId: true, totalAmount: true },
-      });
-      const billedAll = new Map<string, number>();
-      for (const p of allPlots) billedAll.set(p.customerId, (billedAll.get(p.customerId) ?? 0) + (p.totalAmount ?? 0));
-
-      const payRows = await this.payments.find({
-        where: { tenantId: user.tenantId, partyType: PartyType.CUSTOMER, partyId: In(custIds) } as FindOptionsWhere<Payment>,
-        select: { partyId: true, amount: true },
-      });
-      const paidByCustomer = new Map<string, number>();
-      for (const r of payRows) paidByCustomer.set(r.partyId, (paidByCustomer.get(r.partyId) ?? 0) + r.amount);
-
-      let pending = 0;
-      for (const c of custIds) {
-        const all = billedAll.get(c) ?? 0;
-        if (all <= 0) continue;
-        const here = billedHere.get(c) ?? 0;
-        const outstanding = Math.max(0, all - (paidByCustomer.get(c) ?? 0));
-        pending += outstanding * (here / all);
-      }
-      pendingReceivables = pending;
-    }
-
     return {
       harvesterId: harvesterId && harvesterId !== ALL_HARVESTERS ? harvesterId : ALL_HARVESTERS,
       financial: {
@@ -179,7 +137,7 @@ export class DashboardService {
         // Worker cost is a real cost but kept out of `totalExpenses` (which is the
         // recorded-expenses breakdown); subtract it here so net profit is honest.
         netProfit: totalEarnings - totalExpenses - totalWorkerCost,
-        pendingReceivables,
+        pendingReceivables: Math.max(0, totalEarnings - receivedFromCustomers),
         agentCommission,
       },
       harvesting: {
