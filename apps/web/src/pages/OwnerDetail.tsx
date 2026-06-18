@@ -99,8 +99,8 @@ export function OwnerDetail() {
           <Card>
             <CardHeader title={`Staff users (${owner.users.length})`} />
             <SimpleTable
-              cols={['Name', 'Email', 'Active']}
-              rows={owner.users.map((u) => [u.name, u.email, u.isActive ? 'Yes' : 'No'])}
+              cols={['Name', 'Mobile', 'Active']}
+              rows={owner.users.map((u) => [u.name, u.phone || '—', u.isActive ? 'Yes' : 'No'])}
               empty="No staff users."
             />
           </Card>

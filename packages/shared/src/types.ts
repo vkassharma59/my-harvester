@@ -31,7 +31,8 @@ export interface AuditFields {
 
 export interface Admin extends AuditFields {
   name: string;
-  email: string;
+  /** Optional for staff admins (they can log in by mobile); owners always have one. */
+  email?: string;
   phone?: string;
   role: Role;
   isActive: boolean;

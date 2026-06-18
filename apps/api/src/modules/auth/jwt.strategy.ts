@@ -9,7 +9,8 @@ import { AdminsService } from '../admins/admins.service';
 
 export interface JwtPayload {
   sub: string;
-  email: string;
+  /** Absent for staff admins created without an email. */
+  email?: string;
   role: Role;
   tenantId: string;
 }
@@ -35,7 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     return {
       id: admin.id,
-      email: admin.email,
+      email: admin.email ?? undefined,
       role: admin.role,
       tenantId: admin.tenantId.toString(),
       harvesterIds: (admin.harvesterIds ?? []).map((h) => h.toString()),

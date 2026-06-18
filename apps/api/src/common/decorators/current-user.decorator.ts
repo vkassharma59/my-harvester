@@ -3,7 +3,8 @@ import { Role } from '@wh/shared';
 
 export interface AuthUser {
   id: string;
-  email: string;
+  /** Absent for staff admins created without an email. */
+  email?: string;
   role: Role;
   /** The tenant (owner) this user belongs to — used to scope every query. */
   tenantId: string;

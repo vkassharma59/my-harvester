@@ -55,7 +55,7 @@ export function AdminsScreen({ navigation }: Props) {
                     {item.name}
                     {item.id === meId ? `  ${t('admins.youSuffix')}` : ''}
                   </Text>
-                  <Text style={styles.sub}>{item.email}</Text>
+                  {item.email ? <Text style={styles.sub}>{item.email}</Text> : null}
                   {item.phone ? <Text style={styles.sub}>{item.phone}</Text> : null}
                   {isOwner ? (
                     <Text style={styles.harvesters}>{t('admins.adminOfAll')}</Text>

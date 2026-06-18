@@ -75,7 +75,7 @@ export class SuperAdminService {
     const owner = await this.adminsService.createOwner(dto.email, password, dto.name, dto.phone);
     await this.tenantsService.createForOwner(owner, { verifiedPhone: dto.phone });
     await this.ownerDetails.upsert(owner.id, { state: dto.state, district: dto.district });
-    const emailed = await this.mail.sendOwnerWelcome(owner.email, owner.name, password);
+    const emailed = await this.mail.sendOwnerWelcome(owner.email ?? dto.email, owner.name, password);
     return { owner: await this.ownerDetail(owner.id), password, emailed };
   }
 
@@ -465,7 +465,7 @@ export class SuperAdminService {
       createdAt: new Date(a.createdAt).toISOString(),
       updatedAt: new Date(a.updatedAt).toISOString(),
       name: a.name,
-      email: a.email,
+      email: a.email ?? undefined,
       phone: a.phone ?? undefined,
       role: a.role,
       isActive: a.isActive,

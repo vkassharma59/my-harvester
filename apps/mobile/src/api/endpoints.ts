@@ -70,7 +70,8 @@ export const accountRequestsApi = {
 // ---------- Admins (OWNER only) ----------
 export interface CreateAdminInput {
   name: string;
-  email: string;
+  /** Optional — staff admins can sign in by mobile instead. */
+  email?: string;
   password: string;
   phone: string;
   harvesterIds?: string[];
