@@ -60,7 +60,7 @@ export function FuelPumpsScreen({ navigation }: Props) {
                 </Text>
               </View>
               <View style={styles.right}>
-                <Text style={styles.amountLabel}>{t('fuelPumps.remaining')}</Text>
+                <Text style={styles.amountLabel}>{t('fuelPumpLedger.remaining')}</Text>
                 <Text
                   style={[styles.amount, item.remaining > 0 ? styles.due : styles.clear]}
                   numberOfLines={1}
@@ -68,7 +68,7 @@ export function FuelPumpsScreen({ navigation }: Props) {
                   {formatCurrency(item.remaining)}
                 </Text>
                 <Text style={styles.billLabel}>
-                  {t('fuelPumps.billLabel', { amount: formatCurrency(item.totalBill) })}
+                  {t('fuelPumpLedger.billLabel', { amount: formatCurrency(item.totalBill) })}
                 </Text>
               </View>
             </View>

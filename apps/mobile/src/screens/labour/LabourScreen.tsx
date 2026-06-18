@@ -64,7 +64,7 @@ export function LabourScreen({ navigation }: Props) {
                   </Text>
                 </View>
                 <View style={styles.right}>
-                  <Text style={styles.amountLabel}>{t('labour.remaining')}</Text>
+                  <Text style={styles.amountLabel}>{t('labourLedger.remaining')}</Text>
                   <Text
                     style={[styles.amount, item.remaining > 0 ? styles.due : styles.clear]}
                     numberOfLines={1}
@@ -72,7 +72,7 @@ export function LabourScreen({ navigation }: Props) {
                     {formatCurrency(item.remaining)}
                   </Text>
                   <Text style={styles.billLabel}>
-                    {t('labour.billLabel', { amount: formatCurrency(item.totalBill) })}
+                    {t('labourLedger.billLabel', { amount: formatCurrency(item.totalBill) })}
                   </Text>
                 </View>
               </View>
