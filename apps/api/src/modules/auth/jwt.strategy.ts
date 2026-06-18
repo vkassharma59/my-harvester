@@ -2,10 +2,11 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Role } from '@wh/shared';
+import { Role, SubscriptionStatus } from '@wh/shared';
 import { AppConfig } from '../../config/configuration';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { AdminsService } from '../admins/admins.service';
+import { TenantsService } from '../tenants/tenants.service';
 
 export interface JwtPayload {
   sub: string;
@@ -20,6 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     config: ConfigService<AppConfig, true>,
     private readonly admins: AdminsService,
+    private readonly tenants: TenantsService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -33,6 +35,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const admin = await this.admins.findAuthById(payload.sub).catch(() => null);
     if (!admin || !admin.isActive) {
       throw new UnauthorizedException('Account is inactive or no longer exists');
+    }
+    // A suspended business locks out the owner and their staff on every request,
+    // so an active session ends the moment the account is suspended.
+    if (admin.role !== Role.SUPER_ADMIN) {
+      const tenant = await this.tenants.findById(admin.tenantId.toString());
+      if (tenant?.status === SubscriptionStatus.SUSPENDED) {
+        throw new UnauthorizedException('This account has been suspended.');
+      }
     }
     return {
       id: admin.id,

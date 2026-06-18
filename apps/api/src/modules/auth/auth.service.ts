@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Admin } from '@wh/shared';
+import { Admin, Role, SubscriptionStatus } from '@wh/shared';
 import { AdminsService } from '../admins/admins.service';
+import { TenantsService } from '../tenants/tenants.service';
 import { JwtPayload } from './jwt.strategy';
 import { LoginDto } from './dto/login.dto';
 
@@ -15,6 +16,7 @@ export interface LoginResult {
 export class AuthService {
   constructor(
     private readonly admins: AdminsService,
+    private readonly tenants: TenantsService,
     private readonly jwt: JwtService,
   ) {}
 
@@ -27,6 +29,15 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, admin.passwordHash);
     if (!ok) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // A suspended business is locked out entirely — the owner and their staff
+    // cannot sign in (super admin has no tenant and is exempt).
+    if (admin.role !== Role.SUPER_ADMIN) {
+      const tenant = await this.tenants.findById(admin.tenantId);
+      if (tenant?.status === SubscriptionStatus.SUSPENDED) {
+        throw new ForbiddenException('This account has been suspended. Please contact support.');
+      }
     }
 
     const payload: JwtPayload = {
