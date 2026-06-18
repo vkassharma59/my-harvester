@@ -129,6 +129,33 @@ export class DashboardService {
         })) ?? 0
       : 0;
 
+    // Pending receivables. Customer + Bhusa-buyer payments are party-level (they
+    // carry no harvesterId), so filtering them by harvesterId for a single
+    // harvester would exclude them all and leave pending == earnings. For "all"
+    // we net total earnings against everything received; for one harvester we
+    // net its earnings against payments from the parties (landowners + Bhusa
+    // buyers) billed on that harvester.
+    const wantsAll = !harvesterId || harvesterId === ALL_HARVESTERS;
+    let pendingReceivables: number;
+    if (wantsAll) {
+      pendingReceivables = Math.max(0, totalEarnings - receivedFromCustomers);
+    } else {
+      await this.links.attachPlotBhusa(plots); // hydrate bhusaBuyers onto the scoped plots
+      const partyIds = new Set<string>();
+      for (const p of plots) {
+        partyIds.add(p.customerId);
+        for (const b of p.bhusaBuyers ?? []) partyIds.add(b.customerId);
+      }
+      const received = partyIds.size
+        ? (await this.payments.sum('amount', {
+            tenantId: user.tenantId,
+            partyType: In([PartyType.CUSTOMER, PartyType.BHUSA_BUYER]),
+            partyId: In([...partyIds]),
+          } as FindOptionsWhere<Payment>)) ?? 0
+        : 0;
+      pendingReceivables = Math.max(0, totalEarnings - received);
+    }
+
     return {
       harvesterId: harvesterId && harvesterId !== ALL_HARVESTERS ? harvesterId : ALL_HARVESTERS,
       financial: {
@@ -137,7 +164,7 @@ export class DashboardService {
         // Worker cost is a real cost but kept out of `totalExpenses` (which is the
         // recorded-expenses breakdown); subtract it here so net profit is honest.
         netProfit: totalEarnings - totalExpenses - totalWorkerCost,
-        pendingReceivables: Math.max(0, totalEarnings - receivedFromCustomers),
+        pendingReceivables,
         agentCommission,
       },
       harvesting: {

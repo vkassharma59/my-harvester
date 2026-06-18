@@ -1,5 +1,9 @@
 # Deploying Wheat Harvester (API + Web admin) on EC2
 
+> **Setting up a brand-new server from scratch?** Follow the step-by-step
+> [SERVER_SETUP.md](SERVER_SETUP.md) (DB + API + web dashboard). This file is the
+> quick reference / architecture overview.
+
 This deploys two things to an Ubuntu EC2 instance:
 
 - **API** — the NestJS server (`@wh/api`), run by **PM2** on port `3000`, prefix `/api/v1`.
