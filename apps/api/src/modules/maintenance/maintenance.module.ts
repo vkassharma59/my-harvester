@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AdminsModule } from '../admins/admins.module';
 import { Agent } from '../agents/agent.schema';
 import { Attendance } from '../attendance/attendance.schema';
 import { Customer } from '../customers/customer.schema';
@@ -16,6 +17,7 @@ import { MaintenanceService } from './maintenance.service';
 
 @Module({
   imports: [
+    AdminsModule,
     TypeOrmModule.forFeature([
       Harvester,
       Customer,

@@ -85,14 +85,13 @@ export const hi = {
     savedBody: 'सेटिंग्स अपडेट हो गईं।',
     dataCleared: 'डेटा हटाया गया',
     dataClearedBody: '{{count}} रिकॉर्ड हटाए गए। आपका खाता और एडमिन रखे गए हैं।',
-    otpTitle: 'OTP सत्यापित करें',
-    otpSent: 'सुरक्षा के लिए, सारा डेटा हटाने से पहले अपने पंजीकृत मोबाइल नंबर पर भेजा गया 6 अंकों का कोड दर्ज करें।',
-    otpLabel: '6 अंकों का OTP दर्ज करें',
-    otpPlaceholder: '••••••',
-    otpDevNote:
-      'नोट: SMS OTP अभी सेट नहीं हुआ है — फ़िलहाल आप कोई भी 6 अंक दर्ज कर सकते हैं। असली OTP जल्द ही चालू किया जाएगा।',
-    otpVerifyClear: 'सत्यापित करें और सारा डेटा हटाएँ',
-    otpInvalidTitle: 'अमान्य OTP',
-    otpInvalidBody: 'कृपया मान्य 6 अंकों का OTP दर्ज करें।',
+    confirmClearTitle: 'सारा डेटा हटाने की पुष्टि करें',
+    confirmClearBody:
+      'इससे आपका सारा व्यावसायिक डेटा स्थायी रूप से मिट जाएगा। पुष्टि के लिए अपना पासवर्ड दर्ज करें।',
+    passwordLabel: 'पासवर्ड',
+    passwordPlaceholder: '••••••••',
+    confirmClearBtn: 'सत्यापित करें और सारा डेटा हटाएँ',
+    passwordRequiredTitle: 'पासवर्ड आवश्यक है',
+    passwordRequiredBody: 'जारी रखने के लिए कृपया अपना पासवर्ड दर्ज करें।',
   },
 } as const;

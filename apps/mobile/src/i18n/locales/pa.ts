@@ -85,14 +85,13 @@ export const pa = {
     savedBody: 'ਸੈਟਿੰਗਾਂ ਅੱਪਡੇਟ ਹੋ ਗਈਆਂ।',
     dataCleared: 'ਡਾਟਾ ਮਿਟਾਇਆ ਗਿਆ',
     dataClearedBody: '{{count}} ਰਿਕਾਰਡ ਮਿਟਾਏ ਗਏ। ਤੁਹਾਡਾ ਖਾਤਾ ਅਤੇ ਐਡਮਿਨ ਰੱਖੇ ਗਏ ਹਨ।',
-    otpTitle: 'OTP ਤਸਦੀਕ ਕਰੋ',
-    otpSent: 'ਤੁਹਾਡੀ ਸੁਰੱਖਿਆ ਲਈ, ਸਾਰਾ ਡਾਟਾ ਮਿਟਾਉਣ ਤੋਂ ਪਹਿਲਾਂ ਆਪਣੇ ਰਜਿਸਟਰਡ ਮੋਬਾਈਲ ਨੰਬਰ ਤੇ ਭੇਜਿਆ 6 ਅੰਕਾਂ ਦਾ ਕੋਡ ਦਰਜ ਕਰੋ।',
-    otpLabel: '6 ਅੰਕਾਂ ਦਾ OTP ਦਰਜ ਕਰੋ',
-    otpPlaceholder: '••••••',
-    otpDevNote:
-      'ਨੋਟ: SMS OTP ਅਜੇ ਸੈੱਟ ਨਹੀਂ ਹੋਇਆ — ਫ਼ਿਲਹਾਲ ਤੁਸੀਂ ਕੋਈ ਵੀ 6 ਅੰਕ ਦਰਜ ਕਰ ਸਕਦੇ ਹੋ। ਅਸਲੀ OTP ਜਲਦੀ ਚਾਲੂ ਕੀਤਾ ਜਾਵੇਗਾ।',
-    otpVerifyClear: 'ਤਸਦੀਕ ਕਰੋ ਅਤੇ ਸਾਰਾ ਡਾਟਾ ਮਿਟਾਓ',
-    otpInvalidTitle: 'ਗਲਤ OTP',
-    otpInvalidBody: 'ਕਿਰਪਾ ਕਰਕੇ ਸਹੀ 6 ਅੰਕਾਂ ਦਾ OTP ਦਰਜ ਕਰੋ।',
+    confirmClearTitle: 'ਸਾਰਾ ਡਾਟਾ ਮਿਟਾਉਣ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ',
+    confirmClearBody:
+      'ਇਸ ਨਾਲ ਤੁਹਾਡਾ ਸਾਰਾ ਕਾਰੋਬਾਰੀ ਡਾਟਾ ਪੱਕੇ ਤੌਰ ਤੇ ਮਿਟ ਜਾਵੇਗਾ। ਪੁਸ਼ਟੀ ਲਈ ਆਪਣਾ ਪਾਸਵਰਡ ਦਰਜ ਕਰੋ।',
+    passwordLabel: 'ਪਾਸਵਰਡ',
+    passwordPlaceholder: '••••••••',
+    confirmClearBtn: 'ਤਸਦੀਕ ਕਰੋ ਅਤੇ ਸਾਰਾ ਡਾਟਾ ਮਿਟਾਓ',
+    passwordRequiredTitle: 'ਪਾਸਵਰਡ ਲੋੜੀਂਦਾ ਹੈ',
+    passwordRequiredBody: 'ਜਾਰੀ ਰੱਖਣ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਪਾਸਵਰਡ ਦਰਜ ਕਰੋ।',
   },
 } as const;
