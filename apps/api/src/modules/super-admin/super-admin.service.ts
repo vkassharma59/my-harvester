@@ -21,6 +21,7 @@ import {
   TenantUsage,
 } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { LinksService } from '../../common/links.service';
 import { MailService } from '../../common/mail/mail.service';
 import { generatePassword } from '../../common/password';
 import { DashboardService } from '../dashboard/dashboard.service';
@@ -69,6 +70,7 @@ export class SuperAdminService {
     private readonly tenantsService: TenantsService,
     private readonly ownerDetails: OwnerDetailsService,
     private readonly dashboard: DashboardService,
+    private readonly links: LinksService,
     private readonly mail: MailService,
   ) {}
 
@@ -329,6 +331,9 @@ export class SuperAdminService {
       where: { tenantId: id, role: Role.STAFF_ADMIN },
       order: { createdAt: 'DESC' },
     });
+    // harvesterIds isn't a column — hydrate it so the usage card can scope staff
+    // to a harvester (otherwise every staff member looks unassigned).
+    await this.links.attachAdminHarvesters(users);
     const harvesters = await this.harvesters.find({
       where: { tenantId: id, status: HarvesterStatus.ACTIVE },
       order: { name: 'ASC' },
