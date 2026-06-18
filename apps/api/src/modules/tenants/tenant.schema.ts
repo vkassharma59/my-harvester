@@ -30,14 +30,6 @@ export class Tenant {
   @Column({ type: 'varchar', length: 120, nullable: true })
   region?: string | null;
 
-  /** Indian State / UT the owner operates from. */
-  @Column({ type: 'varchar', length: 80, nullable: true })
-  state?: string | null;
-
-  /** District within `state`. */
-  @Column({ type: 'varchar', length: 80, nullable: true })
-  district?: string | null;
-
   /** OTP-verified mobile — the anti-abuse identity anchor. */
   @Column({ type: 'varchar', length: 16, nullable: true })
   verifiedPhone?: string | null;

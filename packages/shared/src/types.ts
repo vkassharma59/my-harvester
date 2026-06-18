@@ -265,10 +265,6 @@ export interface Tenant {
   businessName: string;
   /** Village / mandi — used for filtering and abuse clustering. */
   region?: string | null;
-  /** Indian State / UT the owner operates from. */
-  state?: string | null;
-  /** District within `state`. */
-  district?: string | null;
   /** OTP-verified mobile — the anti-abuse identity anchor. */
   verifiedPhone?: string | null;
   /** Harvester registration number; duplicates flag likely repeat free trials. */

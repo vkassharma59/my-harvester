@@ -12,8 +12,6 @@ import { Tenant } from './tenant.schema';
 export interface CreateTenantOptions {
   businessName?: string;
   region?: string | null;
-  state?: string | null;
-  district?: string | null;
   verifiedPhone?: string | null;
   machineNumber?: string | null;
   soldBy?: string | null;
@@ -105,8 +103,6 @@ export class TenantsService implements OnApplicationBootstrap {
       id: owner.id,
       businessName: opts.businessName?.trim() || owner.name,
       region: opts.region ?? null,
-      state: opts.state ?? null,
-      district: opts.district ?? null,
       verifiedPhone: opts.verifiedPhone ?? owner.phone ?? null,
       machineNumber: opts.machineNumber ?? null,
       soldBy: opts.soldBy ?? null,
@@ -132,17 +128,7 @@ export class TenantsService implements OnApplicationBootstrap {
   async updateProfile(
     id: string,
     patch: Partial<
-      Pick<
-        Tenant,
-        | 'businessName'
-        | 'region'
-        | 'state'
-        | 'district'
-        | 'verifiedPhone'
-        | 'machineNumber'
-        | 'soldBy'
-        | 'notes'
-      >
+      Pick<Tenant, 'businessName' | 'region' | 'verifiedPhone' | 'machineNumber' | 'soldBy' | 'notes'>
     >,
   ): Promise<Tenant> {
     const tenant = await this.getOrThrow(id);

@@ -27,6 +27,8 @@ import { AdminsService } from '../admins/admins.service';
 import { Customer } from '../customers/customer.schema';
 import { Expense } from '../expenses/expense.schema';
 import { Harvester } from '../harvesters/harvester.schema';
+import { OwnerDetails } from '../owner-details/owner-details.schema';
+import { OwnerDetailsService } from '../owner-details/owner-details.service';
 import { Payment } from '../payments/payment.schema';
 import { Plot } from '../plots/plot.schema';
 import { SubscriptionPayment } from '../tenants/subscription-payment.schema';
@@ -61,6 +63,7 @@ export class SuperAdminService {
     @InjectRepository(BugReport) private readonly bugs: Repository<BugReport>,
     private readonly adminsService: AdminsService,
     private readonly tenantsService: TenantsService,
+    private readonly ownerDetails: OwnerDetailsService,
     private readonly mail: MailService,
   ) {}
 
@@ -70,17 +73,20 @@ export class SuperAdminService {
   async onboardOwner(dto: CreateOwnerDto): Promise<OnboardOwnerResult> {
     const password = dto.password?.trim() || generatePassword();
     const owner = await this.adminsService.createOwner(dto.email, password, dto.name, dto.phone);
-    await this.tenantsService.createForOwner(owner, {
-      verifiedPhone: dto.phone,
-      state: dto.state,
-      district: dto.district,
-    });
+    await this.tenantsService.createForOwner(owner, { verifiedPhone: dto.phone });
+    await this.ownerDetails.upsert(owner.id, { state: dto.state, district: dto.district });
     const emailed = await this.mail.sendOwnerWelcome(owner.email, owner.name, password);
     return { owner: await this.ownerDetail(owner.id), password, emailed };
   }
 
   async updateOwner(id: string, dto: UpdateOwnerDto): Promise<OwnerDetail> {
-    await this.tenantsService.updateProfile(id, dto);
+    // Business/billing fields live on the tenant; state & district on the
+    // owner's additional-details row.
+    const { state, district, ...tenantPatch } = dto;
+    await this.tenantsService.updateProfile(id, tenantPatch);
+    if (state !== undefined || district !== undefined) {
+      await this.ownerDetails.upsert(id, { state, district });
+    }
     return this.ownerDetail(id);
   }
 
@@ -143,11 +149,8 @@ export class SuperAdminService {
       request.fullName,
       request.mobile,
     );
-    await this.tenantsService.createForOwner(owner, {
-      verifiedPhone: request.mobile,
-      state: request.state,
-      district: request.district,
-    });
+    await this.tenantsService.createForOwner(owner, { verifiedPhone: request.mobile });
+    await this.ownerDetails.upsert(owner.id, { state: request.state, district: request.district });
     request.status = AccountRequestStatus.APPROVED;
     await this.accountRequests.save(request);
     return this.ownerDetail(owner.id);
@@ -282,8 +285,11 @@ export class SuperAdminService {
     const owners = ids.length ? await this.admins.find({ where: { id: In(ids) } }) : [];
     const ownerById = new Map(owners.map((o) => [o.id, o]));
     const usage = await this.usageFor(ids);
+    const detailsById = await this.ownerDetails.getMany(ids);
 
-    const items = tenants.map((t) => this.toListItem(t, ownerById.get(t.id), usage.get(t.id)!));
+    const items = tenants.map((t) =>
+      this.toListItem(t, ownerById.get(t.id), usage.get(t.id)!, detailsById.get(t.id)),
+    );
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
 
@@ -295,6 +301,7 @@ export class SuperAdminService {
 
     const owner = await this.admins.findOne({ where: { id } });
     const usage = (await this.usageFor([id])).get(id)!;
+    const details = await this.ownerDetails.get(id);
     const users = await this.admins.find({
       where: { tenantId: id, role: Role.STAFF_ADMIN },
       order: { createdAt: 'DESC' },
@@ -302,7 +309,7 @@ export class SuperAdminService {
     const payments = await this.subPayments.find({ where: { tenantId: id }, order: { paidAt: 'DESC' } });
 
     return {
-      ...this.toListItem(tenant, owner ?? undefined, usage),
+      ...this.toListItem(tenant, owner ?? undefined, usage, details),
       createdAt: new Date(tenant.createdAt).toISOString(),
       verifiedPhone: tenant.verifiedPhone ?? null,
       machineNumber: tenant.machineNumber ?? null,
@@ -423,7 +430,12 @@ export class SuperAdminService {
     return map;
   }
 
-  private toListItem(tenant: Tenant, owner: Admin | undefined, usage: TenantUsage): OwnerListItem {
+  private toListItem(
+    tenant: Tenant,
+    owner: Admin | undefined,
+    usage: TenantUsage,
+    details?: OwnerDetails | null,
+  ): OwnerListItem {
     const end = tenant.currentPeriodEndsAt ?? tenant.trialEndsAt ?? null;
     const daysRemaining = end ? Math.ceil((new Date(end).getTime() - Date.now()) / DAY_MS) : null;
     return {
@@ -433,8 +445,8 @@ export class SuperAdminService {
       phone: owner?.phone ?? null,
       businessName: tenant.businessName,
       region: tenant.region ?? null,
-      state: tenant.state ?? null,
-      district: tenant.district ?? null,
+      state: details?.state ?? null,
+      district: details?.district ?? null,
       plan: tenant.plan,
       status: tenant.status,
       daysRemaining,

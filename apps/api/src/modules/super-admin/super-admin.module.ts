@@ -7,6 +7,7 @@ import { BugReport } from '../bug-reports/bug-report.schema';
 import { Customer } from '../customers/customer.schema';
 import { Expense } from '../expenses/expense.schema';
 import { Harvester } from '../harvesters/harvester.schema';
+import { OwnerDetailsModule } from '../owner-details/owner-details.module';
 import { Payment } from '../payments/payment.schema';
 import { Plot } from '../plots/plot.schema';
 import { SubscriptionPayment } from '../tenants/subscription-payment.schema';
@@ -20,6 +21,7 @@ import { SuperAdminService } from './super-admin.service';
   imports: [
     AdminsModule,
     TenantsModule,
+    OwnerDetailsModule,
     TypeOrmModule.forFeature([
       Tenant,
       SubscriptionPayment,
