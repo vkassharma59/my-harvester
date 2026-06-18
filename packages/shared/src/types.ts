@@ -265,6 +265,10 @@ export interface Tenant {
   businessName: string;
   /** Village / mandi — used for filtering and abuse clustering. */
   region?: string | null;
+  /** Indian State / UT the owner operates from. */
+  state?: string | null;
+  /** District within `state`. */
+  district?: string | null;
   /** OTP-verified mobile — the anti-abuse identity anchor. */
   verifiedPhone?: string | null;
   /** Harvester registration number; duplicates flag likely repeat free trials. */
@@ -330,6 +334,10 @@ export interface OwnerListItem {
   phone?: string | null;
   businessName: string;
   region?: string | null;
+  /** Indian State / UT the owner operates from. */
+  state?: string | null;
+  /** District within `state`. */
+  district?: string | null;
   plan: Plan;
   status: SubscriptionStatus;
   /** Days until trial/period end; negative once expired, null if neither set. */
@@ -392,6 +400,10 @@ export interface AccountRequestItem {
   email: string;
   mobile: string;
   harvesterCount: number;
+  /** Indian State / UT the requester operates from. */
+  state?: string | null;
+  /** District within `state`. */
+  district?: string | null;
   status: AccountRequestStatus;
   createdAt: string;
 }

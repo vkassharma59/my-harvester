@@ -14,6 +14,16 @@ export class UpdateOwnerDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(80)
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  district?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(16)
   verifiedPhone?: string;
 

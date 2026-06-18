@@ -48,7 +48,7 @@ export class SuperAdminController {
 
   @Post('owners/:id/extend-trial')
   extendTrial(@Param('id') id: string, @Body() dto: ExtendTrialDto) {
-    return this.superAdmin.extendTrial(id, dto.days);
+    return this.superAdmin.extendTrial(id, dto.months);
   }
 
   @Post('owners/:id/payments')

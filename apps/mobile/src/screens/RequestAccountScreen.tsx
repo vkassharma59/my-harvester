@@ -1,17 +1,21 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { INDIAN_STATES, districtsForState } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { accountRequestsApi } from '@/api/endpoints';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
-import { Select } from '@/components/Select';
+import { Select, type SelectOption } from '@/components/Select';
 import { TextField } from '@/components/TextField';
 import { RootStackParamList } from '@/navigation/types';
 import { colors, font, radius, spacing } from '@/theme';
+
+const toOptions = (values: string[]): SelectOption[] => values.map((v) => ({ label: v, value: v }));
+const STATE_OPTIONS = toOptions(INDIAN_STATES);
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RequestAccount'>;
 
@@ -34,7 +38,11 @@ export function RequestAccountScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
   const [harvesterCount, setHarvesterCount] = useState('1');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
   const [password, setPassword] = useState('');
+
+  const districtOptions = useMemo(() => toOptions(districtsForState(state)), [state]);
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   // OTP gate: the request is only raised after the mobile number is "verified".
@@ -48,6 +56,8 @@ export function RequestAccountScreen({ navigation }: Props) {
         email: email.trim().toLowerCase(),
         mobile,
         harvesterCount: Number(harvesterCount),
+        state,
+        district,
         password,
       }),
     onSuccess: () => {
@@ -63,6 +73,8 @@ export function RequestAccountScreen({ navigation }: Props) {
     if (!fullName.trim()) return setError(t('requestAccount.errName'));
     if (!isEmail(email.trim())) return setError(t('requestAccount.errEmail'));
     if (!/^\d{10}$/.test(mobile)) return setError(t('requestAccount.errMobile'));
+    if (!state) return setError(t('requestAccount.errState'));
+    if (!district) return setError(t('requestAccount.errDistrict'));
     if (password.length < 6) return setError(t('requestAccount.errPassword'));
     if (password !== confirm) return setError(t('requestAccount.errMismatch'));
     // Fields are valid — gate the request behind mobile OTP verification.
@@ -119,6 +131,30 @@ export function RequestAccountScreen({ navigation }: Props) {
         value={harvesterCount}
         options={HARVESTER_COUNT_OPTIONS}
         onChange={setHarvesterCount}
+      />
+      <Select
+        label={t('requestAccount.state')}
+        value={state || undefined}
+        options={STATE_OPTIONS}
+        placeholder={t('requestAccount.statePlaceholder')}
+        searchable
+        searchPlaceholder={t('requestAccount.searchState')}
+        onChange={(v) => {
+          setState(v);
+          setDistrict(''); // districts depend on the state — clear the stale pick
+        }}
+      />
+      <Select
+        label={t('requestAccount.district')}
+        value={district || undefined}
+        options={districtOptions}
+        placeholder={
+          state ? t('requestAccount.districtPlaceholder') : t('requestAccount.districtSelectStateFirst')
+        }
+        searchable
+        searchPlaceholder={t('requestAccount.searchDistrict')}
+        emptyText={t('requestAccount.districtSelectStateFirst')}
+        onChange={setDistrict}
       />
       <TextField
         label={t('requestAccount.password')}

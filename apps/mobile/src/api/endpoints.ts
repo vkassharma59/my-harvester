@@ -58,6 +58,8 @@ export interface AccountRequestInput {
   email: string;
   mobile: string;
   harvesterCount: number;
+  state: string;
+  district: string;
   password: string;
 }
 export const accountRequestsApi = {

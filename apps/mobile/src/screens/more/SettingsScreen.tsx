@@ -16,10 +16,6 @@ import { LANGUAGES, LanguageCode, setLanguage, tEnum } from '@/i18n';
 import { useAuth } from '@/store/auth';
 import { colors, font, radius, spacing } from '@/theme';
 
-const CURRENCY_OPTIONS = [
-  { label: 'Indian Rupee (₹)', value: 'INR' },
-  { label: 'US Dollar ($)', value: 'USD' },
-];
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ label: l.label, value: l.code }));
 
 export function SettingsScreen() {
@@ -114,7 +110,6 @@ export function SettingsScreen() {
         onChangeText={setFirmName}
         placeholder={t('settings.firmNamePlaceholder')}
       />
-      <Select label={t('settings.currency')} value={currency} options={CURRENCY_OPTIONS} onChange={setCurrency} />
       <Select
         label={t('settings.defaultAreaUnit')}
         value={unit}

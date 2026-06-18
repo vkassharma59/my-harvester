@@ -12,6 +12,8 @@ import { Tenant } from './tenant.schema';
 export interface CreateTenantOptions {
   businessName?: string;
   region?: string | null;
+  state?: string | null;
+  district?: string | null;
   verifiedPhone?: string | null;
   machineNumber?: string | null;
   soldBy?: string | null;
@@ -23,6 +25,20 @@ export interface CreateTenantOptions {
 export function addDays(from: Date, n: number): Date {
   const r = new Date(from);
   r.setDate(r.getDate() + n);
+  return r;
+}
+
+/**
+ * Add `n` calendar months to a date without mutating the original. Clamps to
+ * the last day of the target month so e.g. Jan 31 + 1 month → Feb 28/29.
+ */
+export function addMonths(from: Date, n: number): Date {
+  const r = new Date(from);
+  const day = r.getDate();
+  r.setDate(1);
+  r.setMonth(r.getMonth() + n);
+  const lastDayOfMonth = new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate();
+  r.setDate(Math.min(day, lastDayOfMonth));
   return r;
 }
 
@@ -89,6 +105,8 @@ export class TenantsService implements OnApplicationBootstrap {
       id: owner.id,
       businessName: opts.businessName?.trim() || owner.name,
       region: opts.region ?? null,
+      state: opts.state ?? null,
+      district: opts.district ?? null,
       verifiedPhone: opts.verifiedPhone ?? owner.phone ?? null,
       machineNumber: opts.machineNumber ?? null,
       soldBy: opts.soldBy ?? null,
@@ -113,7 +131,19 @@ export class TenantsService implements OnApplicationBootstrap {
   /** Update business-profile fields (not subscription state). */
   async updateProfile(
     id: string,
-    patch: Partial<Pick<Tenant, 'businessName' | 'region' | 'verifiedPhone' | 'machineNumber' | 'soldBy' | 'notes'>>,
+    patch: Partial<
+      Pick<
+        Tenant,
+        | 'businessName'
+        | 'region'
+        | 'state'
+        | 'district'
+        | 'verifiedPhone'
+        | 'machineNumber'
+        | 'soldBy'
+        | 'notes'
+      >
+    >,
   ): Promise<Tenant> {
     const tenant = await this.getOrThrow(id);
     Object.assign(tenant, patch);
@@ -121,15 +151,15 @@ export class TenantsService implements OnApplicationBootstrap {
   }
 
   /**
-   * Extend the free trial. Adds days onto the later of (now, current trial end)
-   * so an active trial is lengthened and a lapsed one is reopened. Also lifts a
-   * manual suspension, since extending is an explicit reactivation.
+   * Extend the free trial. Adds months onto the later of (now, current trial
+   * end) so an active trial is lengthened and a lapsed one is reopened. Also
+   * lifts a manual suspension, since extending is an explicit reactivation.
    */
-  async extendTrial(id: string, days: number): Promise<Tenant> {
+  async extendTrial(id: string, months: number): Promise<Tenant> {
     const tenant = await this.getOrThrow(id);
     const current = tenant.trialEndsAt ? new Date(tenant.trialEndsAt) : null;
     const base = current && current.getTime() > Date.now() ? current : new Date();
-    tenant.trialEndsAt = addDays(base, days);
+    tenant.trialEndsAt = addMonths(base, months);
     if (!tenant.trialStartedAt) tenant.trialStartedAt = new Date();
     tenant.plan = Plan.FREE_TRIAL;
     tenant.status = deriveStatus(tenant);
@@ -139,15 +169,15 @@ export class TenantsService implements OnApplicationBootstrap {
   /** Record a manual cash/UPI payment and extend the paid period accordingly. */
   async recordPayment(
     id: string,
-    input: { amount: number; method: PaymentMethod; paidAt?: string; periodDays?: number },
+    input: { amount: number; method: PaymentMethod; paidAt?: string; periodMonths?: number },
     recordedBy: string,
   ): Promise<{ tenant: Tenant; payment: SubscriptionPayment }> {
     const tenant = await this.getOrThrow(id);
-    const periodDays = input.periodDays ?? this.trialDays;
+    const periodMonths = input.periodMonths ?? 12;
     // Stack onto an existing future paid period, otherwise start today.
     const currentEnd = tenant.currentPeriodEndsAt ? new Date(tenant.currentPeriodEndsAt) : null;
     const periodStart = currentEnd && currentEnd.getTime() > Date.now() ? currentEnd : new Date();
-    const periodEnd = addDays(periodStart, periodDays);
+    const periodEnd = addMonths(periodStart, periodMonths);
 
     const payment = await this.payments.save(
       this.payments.create({

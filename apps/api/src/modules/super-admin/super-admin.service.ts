@@ -70,7 +70,11 @@ export class SuperAdminService {
   async onboardOwner(dto: CreateOwnerDto): Promise<OnboardOwnerResult> {
     const password = dto.password?.trim() || generatePassword();
     const owner = await this.adminsService.createOwner(dto.email, password, dto.name, dto.phone);
-    await this.tenantsService.createForOwner(owner, { verifiedPhone: dto.phone });
+    await this.tenantsService.createForOwner(owner, {
+      verifiedPhone: dto.phone,
+      state: dto.state,
+      district: dto.district,
+    });
     const emailed = await this.mail.sendOwnerWelcome(owner.email, owner.name, password);
     return { owner: await this.ownerDetail(owner.id), password, emailed };
   }
@@ -80,8 +84,8 @@ export class SuperAdminService {
     return this.ownerDetail(id);
   }
 
-  async extendTrial(id: string, days: number): Promise<OwnerDetail> {
-    await this.tenantsService.extendTrial(id, days);
+  async extendTrial(id: string, months: number): Promise<OwnerDetail> {
+    await this.tenantsService.extendTrial(id, months);
     return this.ownerDetail(id);
   }
 
@@ -139,7 +143,11 @@ export class SuperAdminService {
       request.fullName,
       request.mobile,
     );
-    await this.tenantsService.createForOwner(owner, { verifiedPhone: request.mobile });
+    await this.tenantsService.createForOwner(owner, {
+      verifiedPhone: request.mobile,
+      state: request.state,
+      district: request.district,
+    });
     request.status = AccountRequestStatus.APPROVED;
     await this.accountRequests.save(request);
     return this.ownerDetail(owner.id);
@@ -162,6 +170,8 @@ export class SuperAdminService {
       email: r.email,
       mobile: r.mobile,
       harvesterCount: r.harvesterCount,
+      state: r.state ?? null,
+      district: r.district ?? null,
       status: r.status,
       createdAt: new Date(r.createdAt).toISOString(),
     };
@@ -423,6 +433,8 @@ export class SuperAdminService {
       phone: owner?.phone ?? null,
       businessName: tenant.businessName,
       region: tenant.region ?? null,
+      state: tenant.state ?? null,
+      district: tenant.district ?? null,
       plan: tenant.plan,
       status: tenant.status,
       daysRemaining,

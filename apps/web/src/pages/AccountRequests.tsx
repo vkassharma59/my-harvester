@@ -101,7 +101,9 @@ function Row({ r, children }: { r: AccountRequestItem; children: ReactNode }) {
       <div>
         <div className="font-medium text-slate-800">{r.fullName}</div>
         <div className="text-xs text-slate-500">
-          {r.email} · {r.mobile} · {r.harvesterCount} harvester(s) · {fmtDate(r.createdAt)}
+          {r.email} · {r.mobile} · {r.harvesterCount} harvester(s)
+          {r.district || r.state ? ` · ${[r.district, r.state].filter(Boolean).join(', ')}` : ''} ·{' '}
+          {fmtDate(r.createdAt)}
         </div>
       </div>
       <div className="flex items-center gap-2">{children}</div>

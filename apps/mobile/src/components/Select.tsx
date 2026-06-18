@@ -28,6 +28,10 @@ interface SelectProps {
   error?: string;
   /** Show a search box at the top of the sheet (matches label + description). */
   searchable?: boolean;
+  /** Placeholder for the search box (when `searchable`). */
+  searchPlaceholder?: string;
+  /** Message shown when the option list is empty (e.g. "Select a state first"). */
+  emptyText?: string;
 }
 
 /**
@@ -42,6 +46,8 @@ export function Select({
   placeholder = 'Select…',
   error,
   searchable,
+  searchPlaceholder = 'Search by name or mobile',
+  emptyText = 'No matches',
 }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -92,7 +98,7 @@ export function Select({
                 style={styles.search}
                 value={query}
                 onChangeText={setQuery}
-                placeholder="Search by name or mobile"
+                placeholder={searchPlaceholder}
                 placeholderTextColor={colors.textMuted}
                 autoCorrect={false}
               />
@@ -103,7 +109,7 @@ export function Select({
               keyExtractor={(o) => o.value}
               style={styles.list}
               keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={<Text style={styles.empty}>No matches</Text>}
+              ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>}
               renderItem={({ item }) => {
                 const active = item.value === value;
                 return (

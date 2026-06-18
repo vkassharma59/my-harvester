@@ -98,6 +98,8 @@ export interface OnboardInput {
   name: string;
   email: string;
   phone: string;
+  state: string;
+  district: string;
   password: string;
 }
 export const onboardOwner = (dto: OnboardInput) =>
@@ -106,6 +108,8 @@ export const onboardOwner = (dto: OnboardInput) =>
 export interface UpdateOwnerInput {
   businessName?: string;
   region?: string;
+  state?: string;
+  district?: string;
   verifiedPhone?: string;
   machineNumber?: string;
   soldBy?: string;
@@ -114,13 +118,13 @@ export interface UpdateOwnerInput {
 export const updateOwner = (id: string, dto: UpdateOwnerInput) =>
   request<OwnerDetail>('PATCH', `/admin/owners/${id}`, dto);
 
-export const extendTrial = (id: string, days: number) =>
-  request<OwnerDetail>('POST', `/admin/owners/${id}/extend-trial`, { days });
+export const extendTrial = (id: string, months: number) =>
+  request<OwnerDetail>('POST', `/admin/owners/${id}/extend-trial`, { months });
 
 export interface RecordPaymentInput {
   amount: number;
   method: PaymentMethod;
-  periodDays?: number;
+  periodMonths?: number;
   paidAt?: string;
 }
 export const recordPayment = (id: string, dto: RecordPaymentInput) =>

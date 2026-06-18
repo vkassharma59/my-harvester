@@ -19,4 +19,16 @@ export class CreateOwnerDto {
   @MinLength(6)
   @MaxLength(72)
   password!: string;
+
+  /** Indian State / UT (selected from the picker). */
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  state!: string;
+
+  /** District within `state` (selected from the picker). */
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  district!: string;
 }
