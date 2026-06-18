@@ -6,9 +6,11 @@ import { colors, font, radius, spacing } from '@/theme';
 interface TextFieldProps extends TextInputProps {
   label: string;
   error?: string;
+  /** Show the red error border without an inline message (shown elsewhere). */
+  invalid?: boolean;
 }
 
-export function TextField({ label, error, style, secureTextEntry, ...props }: TextFieldProps) {
+export function TextField({ label, error, invalid, style, secureTextEntry, ...props }: TextFieldProps) {
   const isPassword = !!secureTextEntry;
   const [hidden, setHidden] = useState(true);
 
@@ -29,7 +31,7 @@ export function TextField({ label, error, style, secureTextEntry, ...props }: Te
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
-      <View style={[styles.inputRow, error ? styles.inputError : null]}>
+      <View style={[styles.inputRow, error || invalid ? styles.inputError : null]}>
         <TextInput
           placeholderTextColor={colors.textMuted}
           style={[styles.input, style]}
