@@ -58,7 +58,7 @@ export function AgentsScreen({ navigation }: Props) {
                 </Text>
               </View>
               <View style={styles.right}>
-                <Text style={styles.amountLabel}>{t('agents.outstanding')}</Text>
+                <Text style={styles.amountLabel}>{t('agentLedger.outstanding')}</Text>
                 <Text
                   style={[styles.amount, item.outstanding > 0 ? styles.due : styles.clear]}
                   numberOfLines={1}
@@ -66,7 +66,7 @@ export function AgentsScreen({ navigation }: Props) {
                   {formatCurrency(item.outstanding)}
                 </Text>
                 <Text style={styles.billLabel}>
-                  {t('agents.billLabel', { amount: formatCurrency(item.totalCommission) })}
+                  {t('agentLedger.billLabel', { amount: formatCurrency(item.totalCommission) })}
                 </Text>
               </View>
             </View>
