@@ -2,9 +2,11 @@ import {
   Admin,
   Agent,
   AgentLedger,
+  AgentListItem,
   AppSettings,
   AreaUnit,
   BhusaBuyer,
+  BugReport,
   Customer,
   CustomerLedger,
   DashboardSummary,
@@ -13,6 +15,7 @@ import {
   ExpenseType,
   FuelPump,
   FuelPumpLedger,
+  FuelPumpListItem,
   Harvester,
   HarvesterStatus,
   HarvesterType,
@@ -226,7 +229,7 @@ export interface FuelPumpInput {
 }
 export const fuelPumpsApi = {
   list: (harvesterId?: string) =>
-    api.get<FuelPump[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
+    api.get<FuelPumpListItem[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
   create: (body: FuelPumpInput) => api.post<FuelPump>('/fuel-pumps', body).then((r) => r.data),
   update: (id: string, body: Partial<FuelPumpInput>) =>
     api.patch<FuelPump>(`/fuel-pumps/${id}`, body).then((r) => r.data),
@@ -244,7 +247,7 @@ export interface AgentInput {
 }
 export const agentsApi = {
   list: (harvesterId?: string) =>
-    api.get<Agent[]>('/agents', { params: { harvesterId } }).then((r) => r.data),
+    api.get<AgentListItem[]>('/agents', { params: { harvesterId } }).then((r) => r.data),
   create: (body: AgentInput) => api.post<Agent>('/agents', body).then((r) => r.data),
   update: (id: string, body: Partial<AgentInput>) =>
     api.patch<Agent>(`/agents/${id}`, body).then((r) => r.data),
@@ -330,6 +333,7 @@ export interface BugReportInput {
   screenshotUrl?: string;
 }
 export const bugReportsApi = {
+  list: () => api.get<BugReport[]>('/bug-reports').then((r) => r.data),
   create: (input: BugReportInput) => api.post('/bug-reports', input).then((r) => r.data),
 };
 

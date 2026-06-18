@@ -102,6 +102,13 @@ export interface FuelPumpLedger {
   payments: Payment[];
 }
 
+/** A fuel pump row enriched with its diesel bill / paid / remaining (list view). */
+export interface FuelPumpListItem extends FuelPump {
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
+}
+
 export interface Labour extends AuditFields {
   name: string;
   mobile: string;
@@ -253,6 +260,13 @@ export interface AgentLedger {
   amountPaid: number;
   outstanding: number;
   payments: Payment[];
+}
+
+/** An agent row enriched with commission earned / paid / outstanding (list view). */
+export interface AgentListItem extends Agent {
+  totalCommission: number;
+  amountPaid: number;
+  outstanding: number;
 }
 
 // ---------- Tenant / subscription (super-admin domain) ----------
