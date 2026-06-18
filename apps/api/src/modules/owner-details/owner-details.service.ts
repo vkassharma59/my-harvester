@@ -28,6 +28,20 @@ export class OwnerDetailsService {
     return new Map(rows.map((r) => [r.id, r]));
   }
 
+  /** Owner counts grouped by state + district (skips rows without a state). */
+  async distribution(): Promise<{ state: string; district: string | null; count: number }[]> {
+    const rows = await this.repo
+      .createQueryBuilder('d')
+      .select('d.state', 'state')
+      .addSelect('d.district', 'district')
+      .addSelect('COUNT(*)', 'count')
+      .where('d.state IS NOT NULL')
+      .groupBy('d.state')
+      .addGroupBy('d.district')
+      .getRawMany<{ state: string; district: string | null; count: string }>();
+    return rows.map((r) => ({ state: r.state, district: r.district, count: Number(r.count) }));
+  }
+
   /**
    * Create or update an owner's details row. Only the keys present in `patch`
    * are written, so partial edits never wipe other fields.

@@ -26,6 +26,11 @@ export class SuperAdminController {
     return this.superAdmin.overview();
   }
 
+  @Get('owner-distribution')
+  ownerDistribution() {
+    return this.superAdmin.ownerDistribution();
+  }
+
   @Get('owners')
   owners(@Query() query: OwnersQueryDto) {
     return this.superAdmin.listOwners(query);

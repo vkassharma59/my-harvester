@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { getOverview } from '../lib/api';
+import { OwnerMap } from '../components/OwnerMap';
 import { Card, Spinner, Stat } from '../components/ui';
 import { inr } from '../lib/format';
 
@@ -29,6 +30,8 @@ export function Overview() {
             <Stat label="Platform volume" value={inr(data.platformVolume)} hint="Across all tenants" />
             <Stat label="Active bugs" value={data.activeBugs} hint="Open reports from the app" />
           </div>
+
+          <OwnerMap />
 
           {(data.trials.expiringIn30Days > 0 || data.pendingAccountRequests > 0) && (
             <Card className="p-5">

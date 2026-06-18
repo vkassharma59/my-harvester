@@ -405,6 +405,26 @@ export interface AccountRequestItem {
   createdAt: string;
 }
 
+/** Owner count for a single district. */
+export interface OwnerDistrictCount {
+  district: string;
+  count: number;
+}
+
+/** Owner counts for one state, with its district breakdown (desc by count). */
+export interface OwnerStateDistribution {
+  state: string;
+  count: number;
+  districts: OwnerDistrictCount[];
+}
+
+/** Owners grouped by state → district, for the overview map. */
+export interface OwnerDistribution {
+  states: OwnerStateDistribution[];
+  /** Total owners that have a recorded state (sum of states[].count). */
+  total: number;
+}
+
 /** KPI snapshot for the super-admin overview screen. */
 export interface AdminOverview {
   owners: {

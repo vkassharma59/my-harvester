@@ -11,6 +11,7 @@ import {
   HarvesterStatus,
   OnboardOwnerResult,
   OwnerDetail,
+  OwnerDistribution,
   OwnerListItem,
   Paginated,
   Role,
@@ -263,6 +264,24 @@ export class SuperAdminService {
       pendingAccountRequests,
       activeBugs,
     };
+  }
+
+  /** Owners grouped by state → district (desc by count) for the overview map. */
+  async ownerDistribution(): Promise<OwnerDistribution> {
+    const rows = await this.ownerDetails.distribution();
+    const byState = new Map<string, OwnerDistribution['states'][number]>();
+    for (const r of rows) {
+      let s = byState.get(r.state);
+      if (!s) {
+        s = { state: r.state, count: 0, districts: [] };
+        byState.set(r.state, s);
+      }
+      s.count += r.count;
+      if (r.district) s.districts.push({ district: r.district, count: r.count });
+    }
+    const states = [...byState.values()].sort((a, b) => b.count - a.count);
+    for (const s of states) s.districts.sort((a, b) => b.count - a.count);
+    return { states, total: states.reduce((sum, s) => sum + s.count, 0) };
   }
 
   // ---------- owners list ----------

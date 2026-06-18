@@ -5,6 +5,7 @@ import type {
   BugStatus,
   OnboardOwnerResult,
   OwnerDetail,
+  OwnerDistribution,
   OwnerListItem,
   Paginated,
   PaymentMethod,
@@ -76,6 +77,9 @@ export const login = (identifier: string, password: string) =>
 // ---------- super-admin ----------
 
 export const getOverview = () => request<AdminOverview>('GET', '/admin/overview');
+
+export const getOwnerDistribution = () =>
+  request<OwnerDistribution>('GET', '/admin/owner-distribution');
 
 export interface OwnersParams {
   page?: number;
