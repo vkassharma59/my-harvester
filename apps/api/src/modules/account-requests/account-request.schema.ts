@@ -37,6 +37,14 @@ export class AccountRequest {
   @Column({ type: 'smallint', unsigned: true, default: 1 })
   harvesterCount!: number;
 
+  /** Indian State / UT the requester operates from. */
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  state?: string | null;
+
+  /** District within `state`. */
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  district?: string | null;
+
   /** Never selected by default so it can't leak through generic queries. */
   @Column({ type: 'varchar', length: 255, select: false })
   passwordHash!: string;

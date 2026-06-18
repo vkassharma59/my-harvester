@@ -31,7 +31,8 @@ export interface AuditFields {
 
 export interface Admin extends AuditFields {
   name: string;
-  email: string;
+  /** Optional for staff admins (they can log in by mobile); owners always have one. */
+  email?: string;
   phone?: string;
   role: Role;
   isActive: boolean;
@@ -99,6 +100,13 @@ export interface FuelPumpLedger {
   amountPaid: number;
   remaining: number;
   payments: Payment[];
+}
+
+/** A fuel pump row enriched with its diesel bill / paid / remaining (list view). */
+export interface FuelPumpListItem extends FuelPump {
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
 }
 
 export interface Labour extends AuditFields {
@@ -254,6 +262,13 @@ export interface AgentLedger {
   payments: Payment[];
 }
 
+/** An agent row enriched with commission earned / paid / outstanding (list view). */
+export interface AgentListItem extends Agent {
+  totalCommission: number;
+  amountPaid: number;
+  outstanding: number;
+}
+
 // ---------- Tenant / subscription (super-admin domain) ----------
 
 /** A tenant — one harvester business. The billing & profile record for an OWNER,
@@ -330,6 +345,10 @@ export interface OwnerListItem {
   phone?: string | null;
   businessName: string;
   region?: string | null;
+  /** Indian State / UT the owner operates from. */
+  state?: string | null;
+  /** District within `state`. */
+  district?: string | null;
   plan: Plan;
   status: SubscriptionStatus;
   /** Days until trial/period end; negative once expired, null if neither set. */
@@ -339,9 +358,26 @@ export interface OwnerListItem {
   usage: TenantUsage;
 }
 
+/** A harvester option for the owner-detail usage filter. */
+export interface OwnerHarvesterOption {
+  id: string;
+  name: string;
+}
+
+/** Per-harvester (or all) usage metrics for the owner-detail usage card. */
+export interface OwnerUsageSummary {
+  totalEarnings: number;
+  netProfit: number;
+  pendingReceivables: number;
+  customers: number;
+  plots: number;
+}
+
 /** Full 360 view of one owner for the detail screen. */
 export interface OwnerDetail extends OwnerListItem {
   createdAt: string;
+  /** Active harvesters (for the usage filter dropdown). */
+  harvesters: OwnerHarvesterOption[];
   verifiedPhone?: string | null;
   machineNumber?: string | null;
   soldBy?: string | null;
@@ -392,8 +428,32 @@ export interface AccountRequestItem {
   email: string;
   mobile: string;
   harvesterCount: number;
+  /** Indian State / UT the requester operates from. */
+  state?: string | null;
+  /** District within `state`. */
+  district?: string | null;
   status: AccountRequestStatus;
   createdAt: string;
+}
+
+/** Owner count for a single district. */
+export interface OwnerDistrictCount {
+  district: string;
+  count: number;
+}
+
+/** Owner counts for one state, with its district breakdown (desc by count). */
+export interface OwnerStateDistribution {
+  state: string;
+  count: number;
+  districts: OwnerDistrictCount[];
+}
+
+/** Owners grouped by state → district, for the overview map. */
+export interface OwnerDistribution {
+  states: OwnerStateDistribution[];
+  /** Total owners that have a recorded state (sum of states[].count). */
+  total: number;
 }
 
 /** KPI snapshot for the super-admin overview screen. */

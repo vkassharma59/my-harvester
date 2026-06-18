@@ -7,8 +7,10 @@ export class Admin extends AuditedEntity {
   @Column({ type: 'varchar', length: 120 })
   name!: string;
 
-  @Column({ type: 'varchar', length: 160, unique: true })
-  email!: string;
+  /** Optional for staff admins (they can log in by mobile); unique when present.
+   *  MySQL allows multiple NULLs in a unique index. */
+  @Column({ type: 'varchar', length: 160, nullable: true, unique: true })
+  email?: string | null;
 
   /** Mobile number — a unique login identity (nullable so seeded owners may omit it). */
   @Column({ type: 'varchar', length: 16, nullable: true, unique: true })

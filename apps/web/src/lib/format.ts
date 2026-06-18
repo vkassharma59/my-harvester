@@ -15,11 +15,21 @@ export const fmtDateTime = (iso?: string | null) =>
       })
     : '—';
 
-/** "in 12 days" / "5 days ago" / "today" from a day count (negative = past). */
-export const daysLabel = (days: number | null) => {
+/**
+ * Renewal countdown from a day count (negative = past), broken into months and
+ * days: "in 12 months 10 days" / "1 month 2 days ago" / "in 5 days" / "today".
+ * Months are counted as 30 days for this rough breakdown.
+ */
+export const renewLabel = (days: number | null) => {
   if (days === null) return '—';
   if (days === 0) return 'today';
-  if (days > 0) return `in ${days} day${days === 1 ? '' : 's'}`;
+  const past = days < 0;
   const n = Math.abs(days);
-  return `${n} day${n === 1 ? '' : 's'} ago`;
+  const months = Math.floor(n / 30);
+  const remDays = n % 30;
+  const parts: string[] = [];
+  if (months >= 1) parts.push(`${months} month${months === 1 ? '' : 's'}`);
+  if (remDays >= 1) parts.push(`${remDays} day${remDays === 1 ? '' : 's'}`);
+  const unit = parts.join(' ');
+  return past ? `${unit} ago` : `in ${unit}`;
 };

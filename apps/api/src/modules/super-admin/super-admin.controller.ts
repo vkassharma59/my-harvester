@@ -26,6 +26,11 @@ export class SuperAdminController {
     return this.superAdmin.overview();
   }
 
+  @Get('owner-distribution')
+  ownerDistribution() {
+    return this.superAdmin.ownerDistribution();
+  }
+
   @Get('owners')
   owners(@Query() query: OwnersQueryDto) {
     return this.superAdmin.listOwners(query);
@@ -34,6 +39,11 @@ export class SuperAdminController {
   @Get('owners/:id')
   owner(@Param('id') id: string) {
     return this.superAdmin.ownerDetail(id);
+  }
+
+  @Get('owners/:id/usage')
+  ownerUsage(@Param('id') id: string, @Query('harvesterId') harvesterId?: string) {
+    return this.superAdmin.ownerUsage(id, harvesterId);
   }
 
   @Post('owners')
@@ -48,7 +58,7 @@ export class SuperAdminController {
 
   @Post('owners/:id/extend-trial')
   extendTrial(@Param('id') id: string, @Body() dto: ExtendTrialDto) {
-    return this.superAdmin.extendTrial(id, dto.days);
+    return this.superAdmin.extendTrial(id, dto.months);
   }
 
   @Post('owners/:id/payments')

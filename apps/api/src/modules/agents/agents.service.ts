@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AgentLedger, PartyType } from '@wh/shared';
+import { In, Repository } from 'typeorm';
+import { AgentLedger, AgentListItem, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
 import { HarvesterScopeService } from '../../common/harvester-scope.service';
@@ -38,11 +38,37 @@ export class AgentsService {
     );
   }
 
-  async findAll(user: AuthUser, harvesterId?: string): Promise<Agent[]> {
-    return this.repo.find({
-      where: { tenantId: user.tenantId, ...(await this.hscope.where(user, harvesterId)) },
+  async findAll(user: AuthUser, harvesterId?: string): Promise<AgentListItem[]> {
+    const tenantId = user.tenantId;
+    const agents = await this.repo.find({
+      where: { tenantId, ...(await this.hscope.where(user, harvesterId)) },
       order: { createdAt: 'DESC' },
     });
+    if (!agents.length) return [];
+
+    const ids = agents.map((a) => a.id);
+    // Commission earned per agent (from jobs on active harvesters the user sees).
+    const plots = await this.plots.find({
+      where: { tenantId, agentId: In(ids), ...(await this.hscope.where(user)) },
+      select: { agentId: true, commissionAmount: true },
+    });
+    const earned = new Map<string, number>();
+    for (const p of plots) {
+      if (p.agentId) earned.set(p.agentId, (earned.get(p.agentId) ?? 0) + (p.commissionAmount ?? 0));
+    }
+    // Commission paid per agent.
+    const pays = await this.payments.find({
+      where: { tenantId, partyType: PartyType.AGENT, partyId: In(ids) },
+      select: { partyId: true, amount: true },
+    });
+    const paid = new Map<string, number>();
+    for (const p of pays) paid.set(p.partyId, (paid.get(p.partyId) ?? 0) + p.amount);
+
+    return agents.map((a) => {
+      const totalCommission = earned.get(a.id) ?? 0;
+      const amountPaid = paid.get(a.id) ?? 0;
+      return { ...a, totalCommission, amountPaid, outstanding: totalCommission - amountPaid };
+    }) as unknown as AgentListItem[];
   }
 
   async findOne(id: string, user: AuthUser): Promise<Agent> {

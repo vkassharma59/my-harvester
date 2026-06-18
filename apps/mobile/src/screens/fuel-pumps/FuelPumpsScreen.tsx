@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, Loading } from '@/components/States';
 import { MoreStackParamList } from '@/navigation/types';
 import { scopedHarvesterId, useSelectedHarvester } from '@/store/harvester';
 import { colors, font, radius, spacing } from '@/theme';
+import { formatCurrency } from '@/utils/format';
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'FuelPumps'>;
 
@@ -43,18 +44,34 @@ export function FuelPumpsScreen({ navigation }: Props) {
         }
         renderItem={({ item }) => (
           <Card onPress={() => navigation.navigate('FuelPumpLedger', { pumpId: item.id, name: item.name })}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.name}>{item.name}</Text>
-              {!item.isActive ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{t('fuelPumps.inactive')}</Text>
+            <View style={styles.row}>
+              <View style={styles.left}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  {!item.isActive ? (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{t('fuelPumps.inactive')}</Text>
+                    </View>
+                  ) : null}
                 </View>
-              ) : null}
+                {item.phone ? <Text style={styles.sub}>{item.phone}</Text> : null}
+                <Text style={styles.sub}>
+                  {t('fuelPumps.harvestersServed', { count: item.harvesterIds.length })}
+                </Text>
+              </View>
+              <View style={styles.right}>
+                <Text style={styles.amountLabel}>{t('fuelPumps.remaining')}</Text>
+                <Text
+                  style={[styles.amount, item.remaining > 0 ? styles.due : styles.clear]}
+                  numberOfLines={1}
+                >
+                  {formatCurrency(item.remaining)}
+                </Text>
+                <Text style={styles.billLabel}>
+                  {t('fuelPumps.billLabel', { amount: formatCurrency(item.totalBill) })}
+                </Text>
+              </View>
             </View>
-            {item.phone ? <Text style={styles.sub}>{item.phone}</Text> : null}
-            <Text style={styles.sub}>
-              {t('fuelPumps.harvestersServed', { count: item.harvesterIds.length })}
-            </Text>
           </Card>
         )}
       />
@@ -68,9 +85,17 @@ export function FuelPumpsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.lg, flexGrow: 1 },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  row: { flexDirection: 'row', alignItems: 'flex-start' },
+  left: { flex: 1, paddingRight: spacing.sm },
+  right: { alignItems: 'flex-end' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   name: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
   sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+  amountLabel: { fontSize: font.size.xs, color: colors.textMuted },
+  amount: { fontSize: font.size.md, fontWeight: font.weight.bold },
+  due: { color: colors.danger },
+  clear: { color: colors.success },
+  billLabel: { fontSize: font.size.xs, color: colors.textMuted, marginTop: 2 },
   badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: '#FDECEA' },
   badgeText: { fontSize: font.size.xs, fontWeight: font.weight.semibold, color: colors.danger },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },

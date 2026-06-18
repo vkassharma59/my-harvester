@@ -1,4 +1,4 @@
-import { IsEmail, IsInt, IsString, Max, Min, MinLength } from 'class-validator';
+import { IsEmail, IsInt, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 export class CreateAccountRequestDto {
   @IsString()
@@ -16,6 +16,18 @@ export class CreateAccountRequestDto {
   @Min(1)
   @Max(1000)
   harvesterCount!: number;
+
+  /** Indian State / UT (selected from the picker). */
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  state!: string;
+
+  /** District within `state` (selected from the picker). */
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  district!: string;
 
   @IsString()
   @MinLength(6)

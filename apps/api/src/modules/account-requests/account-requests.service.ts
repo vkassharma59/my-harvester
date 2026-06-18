@@ -53,6 +53,8 @@ export class AccountRequestsService {
         email,
         mobile,
         harvesterCount: dto.harvesterCount,
+        state: dto.state.trim(),
+        district: dto.district.trim(),
         passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
         status: AccountRequestStatus.PENDING,
       }),

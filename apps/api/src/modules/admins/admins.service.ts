@@ -142,6 +142,18 @@ export class AdminsService implements OnModuleInit {
     return admin;
   }
 
+  /** True if `password` matches the admin's stored hash (used to re-confirm
+   *  the owner before destructive actions). */
+  async verifyPassword(userId: string, password: string): Promise<boolean> {
+    const admin = await this.admins
+      .createQueryBuilder('a')
+      .addSelect('a.passwordHash')
+      .where('a.id = :id', { id: userId })
+      .getOne();
+    if (!admin) return false;
+    return bcrypt.compare(password, admin.passwordHash);
+  }
+
   /** Auth lookup by id (unscoped) — used by the JWT strategy to validate a token. */
   async findAuthById(id: string): Promise<Admin | null> {
     const admin = await this.admins.findOneBy({ id });
@@ -151,8 +163,10 @@ export class AdminsService implements OnModuleInit {
 
   /** Creates a staff admin within the actor's tenant (owners are seeded only). */
   async create(dto: CreateAdminDto, actor: AuthUser): Promise<Admin> {
+    // Email is optional for staff admins (they can sign in by mobile).
+    const email = dto.email?.trim().toLowerCase() || null;
     const clash = await this.admins.findOne({
-      where: [{ email: dto.email.toLowerCase() }, ...(dto.phone ? [{ phone: dto.phone }] : [])],
+      where: [...(email ? [{ email }] : []), { phone: dto.phone }],
     });
     if (clash) {
       throw new ConflictException(
@@ -165,7 +179,7 @@ export class AdminsService implements OnModuleInit {
       id: newObjectId(),
       tenantId: actor.tenantId,
       name: dto.name,
-      email: dto.email.toLowerCase(),
+      email,
       phone: dto.phone ?? null,
       passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
       role: Role.STAFF_ADMIN,

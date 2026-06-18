@@ -1,26 +1,43 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { PaymentMethod, SubscriptionStatus } from '@wh/shared';
+import {
+  ALL_HARVESTERS,
+  INDIAN_STATES,
+  PaymentMethod,
+  SubscriptionStatus,
+  districtsForState,
+  type OwnerDetail as OwnerDetailDto,
+} from '@wh/shared';
 import {
   extendTrial,
   getOwner,
+  getOwnerUsage,
   reactivateOwner,
   recordPayment,
   resetPassword,
   suspendOwner,
+  updateOwner,
 } from '../lib/api';
+import { Combobox } from '../components/Combobox';
 import { Modal } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button, Card, CardHeader, Field, Input, Select, Spinner } from '../components/ui';
-import { daysLabel, fmtDate, inr } from '../lib/format';
+import { fmtDate, inr, renewLabel } from '../lib/format';
 
 export function OwnerDetail() {
   const { id = '' } = useParams();
   const qc = useQueryClient();
   const { data: owner, isLoading, error } = useQuery({ queryKey: ['owner', id], queryFn: () => getOwner(id) });
 
-  const [modal, setModal] = useState<'payment' | 'extend' | null>(null);
+  // Usage metrics, filtered by harvester (or all).
+  const [usageHarvester, setUsageHarvester] = useState<string>(ALL_HARVESTERS);
+  const usage = useQuery({
+    queryKey: ['owner-usage', id, usageHarvester],
+    queryFn: () => getOwnerUsage(id, usageHarvester),
+  });
+
+  const [modal, setModal] = useState<'payment' | 'extend' | 'edit' | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
 
   const invalidate = () => {
@@ -40,6 +57,11 @@ export function OwnerDetail() {
   if (error || !owner) return <p className="text-sm text-red-600">Failed to load owner.</p>;
 
   const suspended = owner.status === SubscriptionStatus.SUSPENDED;
+  // Staff scoped to the selected harvester (assigned via harvesterIds), or all.
+  const staffCount =
+    usageHarvester === ALL_HARVESTERS
+      ? owner.users.length
+      : owner.users.filter((u) => (u.harvesterIds ?? []).includes(usageHarvester)).length;
 
   return (
     <div>
@@ -57,29 +79,52 @@ export function OwnerDetail() {
         <div className="space-y-6 lg:col-span-2">
           {/* Usage */}
           <Card>
-            <CardHeader title="Usage" subtitle="Across this owner's data" />
+            <CardHeader
+              title="Usage"
+              action={
+                <Select
+                  value={usageHarvester}
+                  onChange={(e) => setUsageHarvester(e.target.value)}
+                  className="w-44"
+                >
+                  <option value={ALL_HARVESTERS}>All harvesters</option>
+                  {owner.harvesters.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+                </Select>
+              }
+            />
             <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-3">
-              <Metric label="Harvesters" value={`${owner.usage.activeHarvesters}/${owner.usage.harvesters}`} />
-              <Metric label="Staff users" value={owner.usage.users} />
-              <Metric label="Customers" value={owner.usage.customers} />
-              <Metric label="Plots" value={owner.usage.plots} />
-              <Metric label="Business volume" value={inr(owner.usage.businessVolume)} />
-              <Metric label="Last active" value={fmtDate(owner.usage.lastActiveAt)} />
+              <Metric label="Total earnings" value={usage.data ? inr(usage.data.totalEarnings) : '…'} />
+              <Metric label="Net profit" value={usage.data ? inr(usage.data.netProfit) : '…'} />
+              <Metric
+                label="Pending receivable"
+                value={usage.data ? inr(usage.data.pendingReceivables) : '…'}
+              />
+              <Metric label="Staff users" value={staffCount} />
+              <Metric label="Customers" value={usage.data ? usage.data.customers : '…'} />
+              <Metric label="Plots harvested" value={usage.data ? usage.data.plots : '…'} />
             </div>
           </Card>
 
           {/* Profile */}
           <Card>
-            <CardHeader title="Profile" />
+            <CardHeader
+              title="Profile"
+              action={
+                <Button size="sm" variant="outline" onClick={() => setModal('edit')}>
+                  Edit
+                </Button>
+              }
+            />
             <dl className="divide-y divide-slate-50 text-sm">
               <Row label="Owner" value={`${owner.name} · ${owner.email}`} />
-              <Row label="Login mobile" value={owner.phone || '—'} />
-              <Row label="Verified phone" value={owner.verifiedPhone || '—'} />
-              <Row label="Region" value={owner.region || '—'} />
-              <Row label="Machine number" value={owner.machineNumber || '—'} />
-              <Row label="Sold by" value={owner.soldBy || '—'} />
+              <Row label="Mobile" value={owner.phone || '—'} />
+              <Row label="State" value={owner.state || '—'} />
+              <Row label="District" value={owner.district || '—'} />
               <Row label="Joined" value={fmtDate(owner.createdAt)} />
-              <Row label="Notes" value={owner.notes || '—'} />
             </dl>
           </Card>
 
@@ -87,8 +132,8 @@ export function OwnerDetail() {
           <Card>
             <CardHeader title={`Staff users (${owner.users.length})`} />
             <SimpleTable
-              cols={['Name', 'Email', 'Active']}
-              rows={owner.users.map((u) => [u.name, u.email, u.isActive ? 'Yes' : 'No'])}
+              cols={['Name', 'Mobile', 'Active']}
+              rows={owner.users.map((u) => [u.name, u.phone || '—', u.isActive ? 'Yes' : 'No'])}
               empty="No staff users."
             />
           </Card>
@@ -111,7 +156,7 @@ export function OwnerDetail() {
             <dl className="divide-y divide-slate-50 text-sm">
               <Row label="Plan" value={owner.plan} />
               <Row label="Status" value={<StatusBadge status={owner.status} />} />
-              <Row label="Renews" value={daysLabel(owner.daysRemaining)} />
+              <Row label="Renews" value={renewLabel(owner.daysRemaining)} />
               <Row label="Trial ends" value={fmtDate(owner.trialEndsAt)} />
               <Row label="Paid until" value={fmtDate(owner.currentPeriodEndsAt)} />
             </dl>
@@ -144,6 +189,9 @@ export function OwnerDetail() {
         </div>
       </div>
 
+      {modal === 'edit' && (
+        <EditProfileModal owner={owner} onClose={() => setModal(null)} onDone={invalidate} />
+      )}
       {modal === 'payment' && (
         <PaymentModal id={id} onClose={() => setModal(null)} onDone={invalidate} />
       )}
@@ -204,13 +252,93 @@ function SimpleTable({ cols, rows, empty }: { cols: string[]; rows: ReactNode[][
   );
 }
 
+function EditProfileModal({
+  owner,
+  onClose,
+  onDone,
+}: {
+  owner: OwnerDetailDto;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [businessName, setBusinessName] = useState(owner.businessName);
+  const [state, setState] = useState(owner.state ?? '');
+  const [district, setDistrict] = useState(owner.district ?? '');
+  const [error, setError] = useState<string | null>(null);
+
+  const m = useMutation({
+    mutationFn: () =>
+      updateOwner(owner.id, {
+        businessName: businessName.trim(),
+        // Send only what's set so an empty field never clears existing data.
+        state: state || undefined,
+        district: district || undefined,
+      }),
+    onSuccess: () => {
+      onDone();
+      onClose();
+    },
+    onError: () => setError('Could not save changes. Please try again.'),
+  });
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!businessName.trim()) return setError('Enter the business name.');
+    setError(null);
+    m.mutate();
+  };
+
+  return (
+    <Modal title="Edit profile" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-3">
+        <Field label="Business name *">
+          <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} autoFocus />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="State">
+            <Combobox
+              value={state}
+              options={INDIAN_STATES}
+              placeholder="Select state"
+              // changing state invalidates the chosen district
+              onChange={(s) => {
+                setState(s);
+                setDistrict('');
+              }}
+            />
+          </Field>
+          <Field label="District">
+            <Combobox
+              value={district}
+              options={districtsForState(state)}
+              placeholder={state ? 'Select district' : 'Select a state first'}
+              disabled={!state}
+              emptyText="No districts"
+              onChange={setDistrict}
+            />
+          </Field>
+        </div>
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={m.isPending}>
+            {m.isPending ? 'Saving…' : 'Save changes'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 function PaymentModal({ id, onClose, onDone }: { id: string; onClose: () => void; onDone: () => void }) {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.UPI);
-  const [periodDays, setPeriodDays] = useState('365');
+  const [periodMonths, setPeriodMonths] = useState('12');
   const m = useMutation({
     mutationFn: () =>
-      recordPayment(id, { amount: parseFloat(amount), method, periodDays: parseInt(periodDays, 10) }),
+      recordPayment(id, { amount: parseFloat(amount), method, periodMonths: parseInt(periodMonths, 10) }),
     onSuccess: () => {
       onDone();
       onClose();
@@ -236,8 +364,8 @@ function PaymentModal({ id, onClose, onDone }: { id: string; onClose: () => void
               ))}
             </Select>
           </Field>
-          <Field label="Covers (days)">
-            <Input type="number" min="1" value={periodDays} onChange={(e) => setPeriodDays(e.target.value)} />
+          <Field label="Covers (months)">
+            <Input type="number" min="1" value={periodMonths} onChange={(e) => setPeriodMonths(e.target.value)} />
           </Field>
         </div>
         {m.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">Could not record payment.</p>}
@@ -255,9 +383,9 @@ function PaymentModal({ id, onClose, onDone }: { id: string; onClose: () => void
 }
 
 function ExtendModal({ id, onClose, onDone }: { id: string; onClose: () => void; onDone: () => void }) {
-  const [days, setDays] = useState('30');
+  const [months, setMonths] = useState('1');
   const m = useMutation({
-    mutationFn: () => extendTrial(id, parseInt(days, 10)),
+    mutationFn: () => extendTrial(id, parseInt(months, 10)),
     onSuccess: () => {
       onDone();
       onClose();
@@ -272,14 +400,14 @@ function ExtendModal({ id, onClose, onDone }: { id: string; onClose: () => void;
         }}
         className="space-y-3"
       >
-        <Field label="Extend by (days)">
-          <Input type="number" min="1" value={days} onChange={(e) => setDays(e.target.value)} autoFocus />
+        <Field label="Extend by (months)">
+          <Input type="number" min="1" value={months} onChange={(e) => setMonths(e.target.value)} autoFocus />
         </Field>
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={m.isPending || !days}>
+          <Button type="submit" disabled={m.isPending || !months}>
             {m.isPending ? 'Extending…' : 'Extend trial'}
           </Button>
         </div>

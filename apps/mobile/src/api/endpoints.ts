@@ -2,9 +2,11 @@ import {
   Admin,
   Agent,
   AgentLedger,
+  AgentListItem,
   AppSettings,
   AreaUnit,
   BhusaBuyer,
+  BugReport,
   Customer,
   CustomerLedger,
   DashboardSummary,
@@ -13,6 +15,7 @@ import {
   ExpenseType,
   FuelPump,
   FuelPumpLedger,
+  FuelPumpListItem,
   Harvester,
   HarvesterStatus,
   HarvesterType,
@@ -58,6 +61,8 @@ export interface AccountRequestInput {
   email: string;
   mobile: string;
   harvesterCount: number;
+  state: string;
+  district: string;
   password: string;
 }
 export const accountRequestsApi = {
@@ -68,7 +73,8 @@ export const accountRequestsApi = {
 // ---------- Admins (OWNER only) ----------
 export interface CreateAdminInput {
   name: string;
-  email: string;
+  /** Optional — staff admins can sign in by mobile instead. */
+  email?: string;
   password: string;
   phone: string;
   harvesterIds?: string[];
@@ -223,7 +229,7 @@ export interface FuelPumpInput {
 }
 export const fuelPumpsApi = {
   list: (harvesterId?: string) =>
-    api.get<FuelPump[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
+    api.get<FuelPumpListItem[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
   create: (body: FuelPumpInput) => api.post<FuelPump>('/fuel-pumps', body).then((r) => r.data),
   update: (id: string, body: Partial<FuelPumpInput>) =>
     api.patch<FuelPump>(`/fuel-pumps/${id}`, body).then((r) => r.data),
@@ -241,7 +247,7 @@ export interface AgentInput {
 }
 export const agentsApi = {
   list: (harvesterId?: string) =>
-    api.get<Agent[]>('/agents', { params: { harvesterId } }).then((r) => r.data),
+    api.get<AgentListItem[]>('/agents', { params: { harvesterId } }).then((r) => r.data),
   create: (body: AgentInput) => api.post<Agent>('/agents', body).then((r) => r.data),
   update: (id: string, body: Partial<AgentInput>) =>
     api.patch<Agent>(`/agents/${id}`, body).then((r) => r.data),
@@ -327,6 +333,7 @@ export interface BugReportInput {
   screenshotUrl?: string;
 }
 export const bugReportsApi = {
+  list: () => api.get<BugReport[]>('/bug-reports').then((r) => r.data),
   create: (input: BugReportInput) => api.post('/bug-reports', input).then((r) => r.data),
 };
 
@@ -338,6 +345,8 @@ export const dashboardApi = {
 
 // ---------- Maintenance (OWNER only) ----------
 export const maintenanceApi = {
-  clearData: () =>
-    api.delete<{ deleted: Record<string, number> }>('/maintenance/data').then((r) => r.data),
+  clearData: (password: string) =>
+    api
+      .delete<{ deleted: Record<string, number> }>('/maintenance/data', { data: { password } })
+      .then((r) => r.data),
 };

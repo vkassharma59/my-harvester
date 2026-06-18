@@ -6,7 +6,7 @@ import { listOwners } from '../lib/api';
 import { CreateOwnerModal } from '../components/CreateOwnerModal';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button, Card, Input, Select, Spinner } from '../components/ui';
-import { daysLabel, inr } from '../lib/format';
+import { renewLabel } from '../lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -80,10 +80,10 @@ export function Owners() {
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-5 py-3 font-medium">Business / Owner</th>
+                  <th className="px-5 py-3 font-medium">District</th>
+                  <th className="px-5 py-3 font-medium">State</th>
                   <th className="px-5 py-3 font-medium">Status</th>
                   <th className="px-5 py-3 font-medium">Renews</th>
-                  <th className="px-5 py-3 font-medium text-right">Plots</th>
-                  <th className="px-5 py-3 font-medium text-right">Volume</th>
                 </tr>
               </thead>
               <tbody>
@@ -100,12 +100,12 @@ export function Owners() {
                         {o.region ? ` · ${o.region}` : ''}
                       </div>
                     </td>
+                    <td className="px-5 py-3 text-slate-600">{o.district || '—'}</td>
+                    <td className="px-5 py-3 text-slate-600">{o.state || '—'}</td>
                     <td className="px-5 py-3">
                       <StatusBadge status={o.status} />
                     </td>
-                    <td className="px-5 py-3 text-slate-600">{daysLabel(o.daysRemaining)}</td>
-                    <td className="px-5 py-3 text-right text-slate-600">{o.usage.plots}</td>
-                    <td className="px-5 py-3 text-right font-medium text-slate-700">{inr(o.usage.businessVolume)}</td>
+                    <td className="px-5 py-3 text-slate-600">{renewLabel(o.daysRemaining)}</td>
                   </tr>
                 ))}
                 {data.items.length === 0 && (

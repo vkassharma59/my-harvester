@@ -11,15 +11,20 @@ import {
   HarvesterStatus,
   OnboardOwnerResult,
   OwnerDetail,
+  OwnerDistribution,
   OwnerListItem,
+  OwnerUsageSummary,
   Paginated,
   Role,
   SubscriptionPayment as SubscriptionPaymentDto,
   SubscriptionStatus,
   TenantUsage,
 } from '@wh/shared';
+import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { LinksService } from '../../common/links.service';
 import { MailService } from '../../common/mail/mail.service';
 import { generatePassword } from '../../common/password';
+import { DashboardService } from '../dashboard/dashboard.service';
 import { AccountRequest } from '../account-requests/account-request.schema';
 import { Admin } from '../admins/admin.schema';
 import { BugReport } from '../bug-reports/bug-report.schema';
@@ -27,6 +32,8 @@ import { AdminsService } from '../admins/admins.service';
 import { Customer } from '../customers/customer.schema';
 import { Expense } from '../expenses/expense.schema';
 import { Harvester } from '../harvesters/harvester.schema';
+import { OwnerDetails } from '../owner-details/owner-details.schema';
+import { OwnerDetailsService } from '../owner-details/owner-details.service';
 import { Payment } from '../payments/payment.schema';
 import { Plot } from '../plots/plot.schema';
 import { SubscriptionPayment } from '../tenants/subscription-payment.schema';
@@ -61,6 +68,9 @@ export class SuperAdminService {
     @InjectRepository(BugReport) private readonly bugs: Repository<BugReport>,
     private readonly adminsService: AdminsService,
     private readonly tenantsService: TenantsService,
+    private readonly ownerDetails: OwnerDetailsService,
+    private readonly dashboard: DashboardService,
+    private readonly links: LinksService,
     private readonly mail: MailService,
   ) {}
 
@@ -71,17 +81,24 @@ export class SuperAdminService {
     const password = dto.password?.trim() || generatePassword();
     const owner = await this.adminsService.createOwner(dto.email, password, dto.name, dto.phone);
     await this.tenantsService.createForOwner(owner, { verifiedPhone: dto.phone });
-    const emailed = await this.mail.sendOwnerWelcome(owner.email, owner.name, password);
+    await this.ownerDetails.upsert(owner.id, { state: dto.state, district: dto.district });
+    const emailed = await this.mail.sendOwnerWelcome(owner.email ?? dto.email, owner.name, password);
     return { owner: await this.ownerDetail(owner.id), password, emailed };
   }
 
   async updateOwner(id: string, dto: UpdateOwnerDto): Promise<OwnerDetail> {
-    await this.tenantsService.updateProfile(id, dto);
+    // Business/billing fields live on the tenant; state & district on the
+    // owner's additional-details row.
+    const { state, district, ...tenantPatch } = dto;
+    await this.tenantsService.updateProfile(id, tenantPatch);
+    if (state !== undefined || district !== undefined) {
+      await this.ownerDetails.upsert(id, { state, district });
+    }
     return this.ownerDetail(id);
   }
 
-  async extendTrial(id: string, days: number): Promise<OwnerDetail> {
-    await this.tenantsService.extendTrial(id, days);
+  async extendTrial(id: string, months: number): Promise<OwnerDetail> {
+    await this.tenantsService.extendTrial(id, months);
     return this.ownerDetail(id);
   }
 
@@ -140,6 +157,7 @@ export class SuperAdminService {
       request.mobile,
     );
     await this.tenantsService.createForOwner(owner, { verifiedPhone: request.mobile });
+    await this.ownerDetails.upsert(owner.id, { state: request.state, district: request.district });
     request.status = AccountRequestStatus.APPROVED;
     await this.accountRequests.save(request);
     return this.ownerDetail(owner.id);
@@ -162,6 +180,8 @@ export class SuperAdminService {
       email: r.email,
       mobile: r.mobile,
       harvesterCount: r.harvesterCount,
+      state: r.state ?? null,
+      district: r.district ?? null,
       status: r.status,
       createdAt: new Date(r.createdAt).toISOString(),
     };
@@ -252,6 +272,24 @@ export class SuperAdminService {
     };
   }
 
+  /** Owners grouped by state → district (desc by count) for the overview map. */
+  async ownerDistribution(): Promise<OwnerDistribution> {
+    const rows = await this.ownerDetails.distribution();
+    const byState = new Map<string, OwnerDistribution['states'][number]>();
+    for (const r of rows) {
+      let s = byState.get(r.state);
+      if (!s) {
+        s = { state: r.state, count: 0, districts: [] };
+        byState.set(r.state, s);
+      }
+      s.count += r.count;
+      if (r.district) s.districts.push({ district: r.district, count: r.count });
+    }
+    const states = [...byState.values()].sort((a, b) => b.count - a.count);
+    for (const s of states) s.districts.sort((a, b) => b.count - a.count);
+    return { states, total: states.reduce((sum, s) => sum + s.count, 0) };
+  }
+
   // ---------- owners list ----------
 
   async listOwners(query: OwnersQueryDto): Promise<Paginated<OwnerListItem>> {
@@ -272,8 +310,11 @@ export class SuperAdminService {
     const owners = ids.length ? await this.admins.find({ where: { id: In(ids) } }) : [];
     const ownerById = new Map(owners.map((o) => [o.id, o]));
     const usage = await this.usageFor(ids);
+    const detailsById = await this.ownerDetails.getMany(ids);
 
-    const items = tenants.map((t) => this.toListItem(t, ownerById.get(t.id), usage.get(t.id)!));
+    const items = tenants.map((t) =>
+      this.toListItem(t, ownerById.get(t.id), usage.get(t.id)!, detailsById.get(t.id)),
+    );
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
 
@@ -285,21 +326,51 @@ export class SuperAdminService {
 
     const owner = await this.admins.findOne({ where: { id } });
     const usage = (await this.usageFor([id])).get(id)!;
+    const details = await this.ownerDetails.get(id);
     const users = await this.admins.find({
       where: { tenantId: id, role: Role.STAFF_ADMIN },
       order: { createdAt: 'DESC' },
     });
+    // harvesterIds isn't a column — hydrate it so the usage card can scope staff
+    // to a harvester (otherwise every staff member looks unassigned).
+    await this.links.attachAdminHarvesters(users);
+    const harvesters = await this.harvesters.find({
+      where: { tenantId: id, status: HarvesterStatus.ACTIVE },
+      order: { name: 'ASC' },
+      select: { id: true, name: true },
+    });
     const payments = await this.subPayments.find({ where: { tenantId: id }, order: { paidAt: 'DESC' } });
 
     return {
-      ...this.toListItem(tenant, owner ?? undefined, usage),
+      ...this.toListItem(tenant, owner ?? undefined, usage, details),
       createdAt: new Date(tenant.createdAt).toISOString(),
+      harvesters: harvesters.map((h) => ({ id: h.id, name: h.name })),
       verifiedPhone: tenant.verifiedPhone ?? null,
       machineNumber: tenant.machineNumber ?? null,
       soldBy: tenant.soldBy ?? null,
       notes: tenant.notes ?? null,
       users: users.map((u) => this.adminToDto(u)),
       payments: payments.map((p) => this.paymentToDto(p)),
+    };
+  }
+
+  /**
+   * Financial + harvesting usage for one owner, optionally scoped to a single
+   * harvester. Reuses the owner-facing dashboard computation by impersonating
+   * the owner (cross-tenant read for the platform operator).
+   */
+  async ownerUsage(id: string, harvesterId?: string): Promise<OwnerUsageSummary> {
+    if (!(await this.tenants.exists({ where: { id } }))) {
+      throw new NotFoundException('Owner not found');
+    }
+    const asOwner: AuthUser = { id, tenantId: id, role: Role.OWNER, harvesterIds: [] };
+    const s = await this.dashboard.summary(asOwner, harvesterId);
+    return {
+      totalEarnings: s.financial.totalEarnings,
+      netProfit: s.financial.netProfit,
+      pendingReceivables: s.financial.pendingReceivables,
+      customers: s.harvesting.totalCustomers,
+      plots: s.harvesting.totalPlots,
     };
   }
 
@@ -413,7 +484,12 @@ export class SuperAdminService {
     return map;
   }
 
-  private toListItem(tenant: Tenant, owner: Admin | undefined, usage: TenantUsage): OwnerListItem {
+  private toListItem(
+    tenant: Tenant,
+    owner: Admin | undefined,
+    usage: TenantUsage,
+    details?: OwnerDetails | null,
+  ): OwnerListItem {
     const end = tenant.currentPeriodEndsAt ?? tenant.trialEndsAt ?? null;
     const daysRemaining = end ? Math.ceil((new Date(end).getTime() - Date.now()) / DAY_MS) : null;
     return {
@@ -423,6 +499,8 @@ export class SuperAdminService {
       phone: owner?.phone ?? null,
       businessName: tenant.businessName,
       region: tenant.region ?? null,
+      state: details?.state ?? null,
+      district: details?.district ?? null,
       plan: tenant.plan,
       status: tenant.status,
       daysRemaining,
@@ -441,7 +519,7 @@ export class SuperAdminService {
       createdAt: new Date(a.createdAt).toISOString(),
       updatedAt: new Date(a.updatedAt).toISOString(),
       name: a.name,
-      email: a.email,
+      email: a.email ?? undefined,
       phone: a.phone ?? undefined,
       role: a.role,
       isActive: a.isActive,

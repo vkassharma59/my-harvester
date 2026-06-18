@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, In, Repository } from 'typeorm';
-import { ALL_HARVESTERS, ExpenseType, FuelPumpLedger, PartyType } from '@wh/shared';
+import { ALL_HARVESTERS, ExpenseType, FuelPumpLedger, FuelPumpListItem, PartyType } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { createMaybeWithId } from '../../common/idempotent';
@@ -49,13 +49,42 @@ export class FuelPumpsService {
     return pump;
   }
 
-  async findAll(user: AuthUser, harvesterId?: string): Promise<FuelPump[]> {
+  async findAll(user: AuthUser, harvesterId?: string): Promise<FuelPumpListItem[]> {
+    const tenantId = user.tenantId;
     const ids = await this.visiblePumpIds(user, harvesterId);
-    const where: FindOptionsWhere<FuelPump> = { tenantId: user.tenantId };
+    const where: FindOptionsWhere<FuelPump> = { tenantId };
     if (ids !== null) where.id = In(ids);
     const pumps = await this.repo.find({ where, order: { createdAt: 'DESC' } });
     await this.links.attachPumpHarvesters(pumps);
-    return pumps;
+    if (!pumps.length) return [];
+
+    const pumpIds = pumps.map((p) => p.id);
+    // Diesel bought per pump (active harvesters the user sees) vs paid.
+    const expenses = await this.expenses.find({
+      where: {
+        tenantId,
+        type: ExpenseType.DIESEL,
+        pumpId: In(pumpIds),
+        ...(await this.hscope.where(user)),
+      },
+      select: { pumpId: true, amount: true },
+    });
+    const bill = new Map<string, number>();
+    for (const e of expenses) {
+      if (e.pumpId) bill.set(e.pumpId, (bill.get(e.pumpId) ?? 0) + e.amount);
+    }
+    const pays = await this.payments.find({
+      where: { tenantId, partyType: PartyType.FUEL_PUMP, partyId: In(pumpIds) },
+      select: { partyId: true, amount: true },
+    });
+    const paid = new Map<string, number>();
+    for (const p of pays) paid.set(p.partyId, (paid.get(p.partyId) ?? 0) + p.amount);
+
+    return pumps.map((p) => {
+      const totalBill = bill.get(p.id) ?? 0;
+      const amountPaid = paid.get(p.id) ?? 0;
+      return { ...p, totalBill, amountPaid, remaining: totalBill - amountPaid };
+    }) as unknown as FuelPumpListItem[];
   }
 
   async findOne(id: string, user: AuthUser): Promise<FuelPump> {
