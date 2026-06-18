@@ -7,6 +7,7 @@ import type {
   OwnerDetail,
   OwnerDistribution,
   OwnerListItem,
+  OwnerUsageSummary,
   Paginated,
   PaymentMethod,
   Plan,
@@ -97,6 +98,12 @@ export const listOwners = (p: OwnersParams) => {
 };
 
 export const getOwner = (id: string) => request<OwnerDetail>('GET', `/admin/owners/${id}`);
+
+/** Owner usage metrics, optionally scoped to one harvester ('ALL'/undefined = all). */
+export const getOwnerUsage = (id: string, harvesterId?: string) => {
+  const q = harvesterId && harvesterId !== 'ALL' ? `?harvesterId=${encodeURIComponent(harvesterId)}` : '';
+  return request<OwnerUsageSummary>('GET', `/admin/owners/${id}/usage${q}`);
+};
 
 export interface OnboardInput {
   name: string;

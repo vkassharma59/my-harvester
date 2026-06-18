@@ -344,9 +344,26 @@ export interface OwnerListItem {
   usage: TenantUsage;
 }
 
+/** A harvester option for the owner-detail usage filter. */
+export interface OwnerHarvesterOption {
+  id: string;
+  name: string;
+}
+
+/** Per-harvester (or all) usage metrics for the owner-detail usage card. */
+export interface OwnerUsageSummary {
+  totalEarnings: number;
+  netProfit: number;
+  pendingReceivables: number;
+  customers: number;
+  plots: number;
+}
+
 /** Full 360 view of one owner for the detail screen. */
 export interface OwnerDetail extends OwnerListItem {
   createdAt: string;
+  /** Active harvesters (for the usage filter dropdown). */
+  harvesters: OwnerHarvesterOption[];
   verifiedPhone?: string | null;
   machineNumber?: string | null;
   soldBy?: string | null;

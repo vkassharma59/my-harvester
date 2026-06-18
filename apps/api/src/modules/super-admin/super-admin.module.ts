@@ -5,6 +5,7 @@ import { Admin } from '../admins/admin.schema';
 import { AdminsModule } from '../admins/admins.module';
 import { BugReport } from '../bug-reports/bug-report.schema';
 import { Customer } from '../customers/customer.schema';
+import { DashboardModule } from '../dashboard/dashboard.module';
 import { Expense } from '../expenses/expense.schema';
 import { Harvester } from '../harvesters/harvester.schema';
 import { OwnerDetailsModule } from '../owner-details/owner-details.module';
@@ -22,6 +23,7 @@ import { SuperAdminService } from './super-admin.service';
     AdminsModule,
     TenantsModule,
     OwnerDetailsModule,
+    DashboardModule,
     TypeOrmModule.forFeature([
       Tenant,
       SubscriptionPayment,

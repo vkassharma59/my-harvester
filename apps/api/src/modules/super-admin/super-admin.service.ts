@@ -13,14 +13,17 @@ import {
   OwnerDetail,
   OwnerDistribution,
   OwnerListItem,
+  OwnerUsageSummary,
   Paginated,
   Role,
   SubscriptionPayment as SubscriptionPaymentDto,
   SubscriptionStatus,
   TenantUsage,
 } from '@wh/shared';
+import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { MailService } from '../../common/mail/mail.service';
 import { generatePassword } from '../../common/password';
+import { DashboardService } from '../dashboard/dashboard.service';
 import { AccountRequest } from '../account-requests/account-request.schema';
 import { Admin } from '../admins/admin.schema';
 import { BugReport } from '../bug-reports/bug-report.schema';
@@ -65,6 +68,7 @@ export class SuperAdminService {
     private readonly adminsService: AdminsService,
     private readonly tenantsService: TenantsService,
     private readonly ownerDetails: OwnerDetailsService,
+    private readonly dashboard: DashboardService,
     private readonly mail: MailService,
   ) {}
 
@@ -325,17 +329,43 @@ export class SuperAdminService {
       where: { tenantId: id, role: Role.STAFF_ADMIN },
       order: { createdAt: 'DESC' },
     });
+    const harvesters = await this.harvesters.find({
+      where: { tenantId: id, status: HarvesterStatus.ACTIVE },
+      order: { name: 'ASC' },
+      select: { id: true, name: true },
+    });
     const payments = await this.subPayments.find({ where: { tenantId: id }, order: { paidAt: 'DESC' } });
 
     return {
       ...this.toListItem(tenant, owner ?? undefined, usage, details),
       createdAt: new Date(tenant.createdAt).toISOString(),
+      harvesters: harvesters.map((h) => ({ id: h.id, name: h.name })),
       verifiedPhone: tenant.verifiedPhone ?? null,
       machineNumber: tenant.machineNumber ?? null,
       soldBy: tenant.soldBy ?? null,
       notes: tenant.notes ?? null,
       users: users.map((u) => this.adminToDto(u)),
       payments: payments.map((p) => this.paymentToDto(p)),
+    };
+  }
+
+  /**
+   * Financial + harvesting usage for one owner, optionally scoped to a single
+   * harvester. Reuses the owner-facing dashboard computation by impersonating
+   * the owner (cross-tenant read for the platform operator).
+   */
+  async ownerUsage(id: string, harvesterId?: string): Promise<OwnerUsageSummary> {
+    if (!(await this.tenants.exists({ where: { id } }))) {
+      throw new NotFoundException('Owner not found');
+    }
+    const asOwner: AuthUser = { id, tenantId: id, role: Role.OWNER, harvesterIds: [] };
+    const s = await this.dashboard.summary(asOwner, harvesterId);
+    return {
+      totalEarnings: s.financial.totalEarnings,
+      netProfit: s.financial.netProfit,
+      pendingReceivables: s.financial.pendingReceivables,
+      customers: s.harvesting.totalCustomers,
+      plots: s.harvesting.totalPlots,
     };
   }
 

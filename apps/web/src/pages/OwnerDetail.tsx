@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import {
+  ALL_HARVESTERS,
   INDIAN_STATES,
   PaymentMethod,
   SubscriptionStatus,
@@ -11,6 +12,7 @@ import {
 import {
   extendTrial,
   getOwner,
+  getOwnerUsage,
   reactivateOwner,
   recordPayment,
   resetPassword,
@@ -27,6 +29,13 @@ export function OwnerDetail() {
   const { id = '' } = useParams();
   const qc = useQueryClient();
   const { data: owner, isLoading, error } = useQuery({ queryKey: ['owner', id], queryFn: () => getOwner(id) });
+
+  // Usage metrics, filtered by harvester (or all).
+  const [usageHarvester, setUsageHarvester] = useState<string>(ALL_HARVESTERS);
+  const usage = useQuery({
+    queryKey: ['owner-usage', id, usageHarvester],
+    queryFn: () => getOwnerUsage(id, usageHarvester),
+  });
 
   const [modal, setModal] = useState<'payment' | 'extend' | 'edit' | null>(null);
   const [newPassword, setNewPassword] = useState<string | null>(null);
@@ -48,6 +57,11 @@ export function OwnerDetail() {
   if (error || !owner) return <p className="text-sm text-red-600">Failed to load owner.</p>;
 
   const suspended = owner.status === SubscriptionStatus.SUSPENDED;
+  // Staff scoped to the selected harvester (assigned via harvesterIds), or all.
+  const staffCount =
+    usageHarvester === ALL_HARVESTERS
+      ? owner.users.length
+      : owner.users.filter((u) => (u.harvesterIds ?? []).includes(usageHarvester)).length;
 
   return (
     <div>
@@ -65,14 +79,33 @@ export function OwnerDetail() {
         <div className="space-y-6 lg:col-span-2">
           {/* Usage */}
           <Card>
-            <CardHeader title="Usage" subtitle="Across this owner's data" />
+            <CardHeader
+              title="Usage"
+              action={
+                <Select
+                  value={usageHarvester}
+                  onChange={(e) => setUsageHarvester(e.target.value)}
+                  className="w-44"
+                >
+                  <option value={ALL_HARVESTERS}>All harvesters</option>
+                  {owner.harvesters.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+                </Select>
+              }
+            />
             <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-3">
-              <Metric label="Harvesters" value={`${owner.usage.activeHarvesters}/${owner.usage.harvesters}`} />
-              <Metric label="Staff users" value={owner.usage.users} />
-              <Metric label="Customers" value={owner.usage.customers} />
-              <Metric label="Plots" value={owner.usage.plots} />
-              <Metric label="Business volume" value={inr(owner.usage.businessVolume)} />
-              <Metric label="Last active" value={fmtDate(owner.usage.lastActiveAt)} />
+              <Metric label="Total earnings" value={usage.data ? inr(usage.data.totalEarnings) : '…'} />
+              <Metric label="Net profit" value={usage.data ? inr(usage.data.netProfit) : '…'} />
+              <Metric
+                label="Pending receivable"
+                value={usage.data ? inr(usage.data.pendingReceivables) : '…'}
+              />
+              <Metric label="Staff users" value={staffCount} />
+              <Metric label="Customers" value={usage.data ? usage.data.customers : '…'} />
+              <Metric label="Plots harvested" value={usage.data ? usage.data.plots : '…'} />
             </div>
           </Card>
 

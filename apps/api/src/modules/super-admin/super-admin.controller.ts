@@ -41,6 +41,11 @@ export class SuperAdminController {
     return this.superAdmin.ownerDetail(id);
   }
 
+  @Get('owners/:id/usage')
+  ownerUsage(@Param('id') id: string, @Query('harvesterId') harvesterId?: string) {
+    return this.superAdmin.ownerUsage(id, harvesterId);
+  }
+
   @Post('owners')
   onboard(@Body() dto: CreateOwnerDto) {
     return this.superAdmin.onboardOwner(dto);
