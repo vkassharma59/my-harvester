@@ -39,6 +39,7 @@ export function SettingsScreen() {
   const [currency, setCurrency] = useState('INR');
   const [unit, setUnit] = useState<AreaUnit>(AreaUnit.BIGHA);
   const [firmName, setFirmName] = useState('');
+  const [upiId, setUpiId] = useState('');
   // Language is staged locally and only applied when Save is pressed.
   const [language, setLanguageChoice] = useState<LanguageCode>(i18n.language as LanguageCode);
   // Password gate for the destructive clear-all-data action.
@@ -50,13 +51,19 @@ export function SettingsScreen() {
       setCurrency(data.currency);
       setUnit(data.defaultAreaUnit);
       setFirmName(data.firmName || defaultFirm);
+      setUpiId(data.upiId ?? '');
     }
   }, [data, defaultFirm]);
 
   const save = useMutation({
     mutationFn: async () => {
       if (language !== i18n.language) await setLanguage(language);
-      return settingsApi.update({ currency, defaultAreaUnit: unit, firmName: firmName.trim() });
+      return settingsApi.update({
+        currency,
+        defaultAreaUnit: unit,
+        firmName: firmName.trim(),
+        upiId: upiId.trim(),
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['settings'] });
@@ -109,6 +116,14 @@ export function SettingsScreen() {
         value={firmName}
         onChangeText={setFirmName}
         placeholder={t('settings.firmNamePlaceholder')}
+      />
+      <TextField
+        label={t('settings.upiId')}
+        value={upiId}
+        onChangeText={setUpiId}
+        placeholder={t('settings.upiIdPlaceholder')}
+        autoCapitalize="none"
+        autoCorrect={false}
       />
       <Select
         label={t('settings.defaultAreaUnit')}

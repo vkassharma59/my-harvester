@@ -14,4 +14,8 @@ export class AppSettings extends AuditedEntity {
   /** Business/firm name shown in payment reminders. */
   @Column({ type: 'varchar', length: 120, default: '' })
   firmName!: string;
+
+  /** Owner's UPI ID (VPA) for collecting payments via QR / link. */
+  @Column({ type: 'varchar', length: 120, default: '' })
+  upiId!: string;
 }

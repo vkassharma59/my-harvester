@@ -3,8 +3,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, KeyboardAvoidingView, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import QRCode from 'react-native-qrcode-svg';
 import { PartyType } from '@wh/shared';
 import { apiErrorMessage } from '@/api/client';
 import { customersApi, settingsApi } from '@/api/endpoints';
@@ -23,6 +24,7 @@ import { tEnum } from '@/i18n';
 import { CustomersStackParamList } from '@/navigation/types';
 import { colors, font, radius, spacing } from '@/theme';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { buildUpiUri } from '@/utils/upi';
 
 type Props = NativeStackScreenProps<CustomersStackParamList, 'CustomerLedger'>;
 
@@ -34,6 +36,8 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const [payOpen, setPayOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
+  const [upiOpen, setUpiOpen] = useState(false);
+  const [upiAmount, setUpiAmount] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date());
@@ -61,11 +65,20 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     const signoff = firm
       ? t('customerLedger.reminderSignoffFirm', { firm })
       : t('customerLedger.reminderSignoff');
+    const upi = settings?.upiId?.trim();
+    const link = upi
+      ? buildUpiUri({
+          vpa: upi,
+          payeeName: firm,
+          amount: data.outstanding,
+          note: firm ? `${firm} - ${data.customer.name}` : data.customer.name,
+        })
+      : t('customerLedger.paymentLinkPlaceholder');
     setReminder(
       t('customerLedger.reminderTemplate', {
         name: data.customer.name,
         amount: formatCurrency(data.outstanding),
-        link: t('customerLedger.paymentLinkPlaceholder'),
+        link,
         signoff,
       }),
     );
@@ -161,6 +174,30 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
     );
   };
 
+  const upiId = settings?.upiId?.trim();
+  const upiUri = upiId
+    ? buildUpiUri({
+        vpa: upiId,
+        payeeName: settings?.firmName?.trim(),
+        amount: Number(upiAmount) || undefined,
+        note: settings?.firmName?.trim()
+          ? `${settings.firmName.trim()} - ${data.customer.name}`
+          : data.customer.name,
+      })
+    : '';
+  const openUpi = () => {
+    setUpiAmount(data.outstanding > 0 ? String(data.outstanding) : '');
+    setUpiOpen(true);
+  };
+  const shareUpi = () =>
+    void Share.share({
+      message: t('customerLedger.upiShareMessage', {
+        amount: formatCurrency(Number(upiAmount) || 0),
+        upi: upiId,
+        link: upiUri,
+      }),
+    }).catch(() => {});
+
   return (
     <Screen refreshing={isRefetching} onRefresh={refetch}>
       <Card>
@@ -195,7 +232,15 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         />
       </View>
 
-      <Button title={t('customerLedger.recordPayment')} onPress={openRecord} style={{ marginVertical: spacing.md }} />
+      <View style={styles.actionRow}>
+        <Button title={t('customerLedger.recordPayment')} onPress={openRecord} style={styles.actionBtn} />
+        <Button
+          title={t('customerLedger.collectUpi')}
+          variant="secondary"
+          onPress={openUpi}
+          style={styles.actionBtn}
+        />
+      </View>
 
       <Text style={styles.sectionTitle}>{t('customerLedger.harvestingRecords', { count: data.plots.length })}</Text>
       {data.plots.map((p) => {
@@ -268,6 +313,32 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         </KeyboardAvoidingView>
       </Modal>
 
+      <Modal visible={upiOpen} transparent animationType="slide" onRequestClose={() => setUpiOpen(false)}>
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setUpiOpen(false)} />
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xxl }]}>
+            <Text style={styles.sheetTitle}>{t('customerLedger.upiTitle')}</Text>
+            {!upiId ? (
+              <Text style={styles.sub}>{t('customerLedger.upiNotConfigured')}</Text>
+            ) : (
+              <>
+                <AmountField
+                  label={t('customerLedger.upiAmount')}
+                  value={upiAmount}
+                  onChangeText={setUpiAmount}
+                  placeholder="0"
+                />
+                <View style={styles.qrWrap}>
+                  <QRCode value={upiUri} size={200} />
+                </View>
+                <Text style={styles.upiVpa}>{t('customerLedger.upiPayTo', { upi: upiId })}</Text>
+                <Button title={t('customerLedger.upiShare')} onPress={shareUpi} />
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <Modal visible={payOpen} transparent animationType="slide" onRequestClose={closeSheet}>
         <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
           <Pressable style={styles.backdrop} onPress={closeSheet} />
@@ -315,6 +386,21 @@ const styles = StyleSheet.create({
   },
   reminderInput: { minHeight: 150, textAlignVertical: 'top' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  actionRow: { flexDirection: 'row', gap: spacing.sm, marginVertical: spacing.md },
+  actionBtn: { flex: 1 },
+  qrWrap: {
+    alignSelf: 'center',
+    backgroundColor: colors.white,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginVertical: spacing.md,
+  },
+  upiVpa: {
+    fontSize: font.size.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
     fontSize: font.size.md,
     fontWeight: font.weight.bold,

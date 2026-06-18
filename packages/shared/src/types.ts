@@ -210,6 +210,8 @@ export interface AppSettings extends AuditFields {
   defaultAreaUnit: AreaUnit;
   /** Business/firm name shown in payment reminders. */
   firmName?: string;
+  /** Owner's UPI ID (VPA) for collecting payments. */
+  upiId?: string;
 }
 
 // ---------- Aggregated read models (dashboard / ledger) ----------

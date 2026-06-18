@@ -67,6 +67,8 @@ export const hi = {
     language: 'भाषा',
     firmName: 'फर्म का नाम',
     firmNamePlaceholder: 'आपकी फर्म / व्यवसाय का नाम',
+    upiId: 'UPI आईडी (भुगतान प्राप्त करने के लिए)',
+    upiIdPlaceholder: 'yourname@bank',
     currency: 'मुद्रा',
     defaultAreaUnit: 'डिफ़ॉल्ट क्षेत्रफल इकाई',
     rateHint:

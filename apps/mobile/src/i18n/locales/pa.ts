@@ -67,6 +67,8 @@ export const pa = {
     language: 'ਭਾਸ਼ਾ',
     firmName: 'ਫਰਮ ਦਾ ਨਾਮ',
     firmNamePlaceholder: 'ਤੁਹਾਡੀ ਫਰਮ / ਕਾਰੋਬਾਰ ਦਾ ਨਾਮ',
+    upiId: 'UPI ਆਈਡੀ (ਭੁਗਤਾਨ ਇਕੱਠਾ ਕਰਨ ਲਈ)',
+    upiIdPlaceholder: 'yourname@bank',
     currency: 'ਮੁਦਰਾ',
     defaultAreaUnit: 'ਮੂਲ ਖੇਤਰ ਇਕਾਈ',
     rateHint:

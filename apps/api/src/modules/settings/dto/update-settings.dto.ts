@@ -13,4 +13,8 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   firmName?: string;
+
+  @IsOptional()
+  @IsString()
+  upiId?: string;
 }

@@ -67,6 +67,8 @@ export const en = {
     language: 'Language',
     firmName: 'Firm name',
     firmNamePlaceholder: 'Your firm / business name',
+    upiId: 'UPI ID (to collect payments)',
+    upiIdPlaceholder: 'yourname@bank',
     currency: 'Currency',
     defaultAreaUnit: 'Default area unit',
     rateHint:
