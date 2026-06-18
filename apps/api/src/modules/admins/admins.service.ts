@@ -142,6 +142,18 @@ export class AdminsService implements OnModuleInit {
     return admin;
   }
 
+  /** True if `password` matches the admin's stored hash (used to re-confirm
+   *  the owner before destructive actions). */
+  async verifyPassword(userId: string, password: string): Promise<boolean> {
+    const admin = await this.admins
+      .createQueryBuilder('a')
+      .addSelect('a.passwordHash')
+      .where('a.id = :id', { id: userId })
+      .getOne();
+    if (!admin) return false;
+    return bcrypt.compare(password, admin.passwordHash);
+  }
+
   /** Auth lookup by id (unscoped) — used by the JWT strategy to validate a token. */
   async findAuthById(id: string): Promise<Admin | null> {
     const admin = await this.admins.findOneBy({ id });

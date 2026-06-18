@@ -345,6 +345,8 @@ export const dashboardApi = {
 
 // ---------- Maintenance (OWNER only) ----------
 export const maintenanceApi = {
-  clearData: () =>
-    api.delete<{ deleted: Record<string, number> }>('/maintenance/data').then((r) => r.data),
+  clearData: (password: string) =>
+    api
+      .delete<{ deleted: Record<string, number> }>('/maintenance/data', { data: { password } })
+      .then((r) => r.data),
 };

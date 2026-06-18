@@ -41,9 +41,9 @@ export function SettingsScreen() {
   const [firmName, setFirmName] = useState('');
   // Language is staged locally and only applied when Save is pressed.
   const [language, setLanguageChoice] = useState<LanguageCode>(i18n.language as LanguageCode);
-  // OTP gate for the destructive clear-all-data action.
-  const [otpOpen, setOtpOpen] = useState(false);
-  const [otp, setOtp] = useState('');
+  // Password gate for the destructive clear-all-data action.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     if (data) {
@@ -66,31 +66,31 @@ export function SettingsScreen() {
   });
 
   const clearData = useMutation({
-    mutationFn: () => maintenanceApi.clearData(),
+    mutationFn: () => maintenanceApi.clearData(password),
     onSuccess: (res) => {
+      setConfirmOpen(false);
+      setPassword('');
       qc.invalidateQueries();
       const total = Object.values(res.deleted).reduce((a, b) => a + b, 0);
       Alert.alert(t('settings.dataCleared'), t('settings.dataClearedBody', { count: total }));
     },
+    // Wrong password returns 401 with "Incorrect password." — keep the sheet open.
     onError: (e) => Alert.alert(t('common.error'), apiErrorMessage(e)),
   });
 
-  const openOtp = () => {
-    setOtp('');
-    setOtpOpen(true);
+  const openConfirm = () => {
+    setPassword('');
+    setConfirmOpen(true);
   };
-  const closeOtp = () => {
-    setOtpOpen(false);
-    setOtp('');
+  const closeConfirm = () => {
+    setConfirmOpen(false);
+    setPassword('');
   };
   const verifyAndClear = () => {
-    // No SMS provider yet — accept any 6-digit code, but enforce the format.
-    if (!/^\d{6}$/.test(otp)) {
-      Alert.alert(t('settings.otpInvalidTitle'), t('settings.otpInvalidBody'));
+    if (!password.trim()) {
+      Alert.alert(t('settings.passwordRequiredTitle'), t('settings.passwordRequiredBody'));
       return;
     }
-    setOtpOpen(false);
-    setOtp('');
     clearData.mutate();
   };
 
@@ -140,28 +140,26 @@ export function SettingsScreen() {
             <Button
               title={t('settings.clearData')}
               variant="danger"
-              onPress={openOtp}
+              onPress={openConfirm}
               loading={clearData.isPending}
             />
           </View>
 
-          <Modal visible={otpOpen} transparent animationType="slide" onRequestClose={closeOtp}>
+          <Modal visible={confirmOpen} transparent animationType="slide" onRequestClose={closeConfirm}>
             <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
-              <Pressable style={styles.backdrop} onPress={closeOtp} />
+              <Pressable style={styles.backdrop} onPress={closeConfirm} />
               <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xxl }]}>
-                <Text style={styles.sheetTitle}>{t('settings.otpTitle')}</Text>
-                <Text style={styles.hint}>{t('settings.otpSent')}</Text>
+                <Text style={styles.sheetTitle}>{t('settings.confirmClearTitle')}</Text>
+                <Text style={styles.hint}>{t('settings.confirmClearBody')}</Text>
                 <TextField
-                  label={t('settings.otpLabel')}
-                  value={otp}
-                  onChangeText={(v) => setOtp(v.replace(/[^0-9]/g, '').slice(0, 6))}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  placeholder={t('settings.otpPlaceholder')}
+                  label={t('settings.passwordLabel')}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  placeholder={t('settings.passwordPlaceholder')}
                 />
-                <Text style={styles.otpNote}>{t('settings.otpDevNote')}</Text>
                 <Button
-                  title={t('settings.otpVerifyClear')}
+                  title={t('settings.confirmClearBtn')}
                   variant="danger"
                   onPress={verifyAndClear}
                   loading={clearData.isPending}
@@ -218,12 +216,5 @@ const styles = StyleSheet.create({
     fontWeight: font.weight.bold,
     color: colors.text,
     marginBottom: spacing.xs,
-  },
-  otpNote: {
-    fontSize: font.size.xs,
-    color: colors.textMuted,
-    fontStyle: 'italic',
-    marginBottom: spacing.md,
-    lineHeight: 18,
   },
 });
