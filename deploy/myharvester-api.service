@@ -1,0 +1,28 @@
+# systemd alternative to PM2 for running the API.
+# Use EITHER this OR PM2 — not both.
+#
+# Install:
+#   sudo cp deploy/myharvester-api.service /etc/systemd/system/myharvester-api.service
+#   # edit User / WorkingDirectory below to match your box, then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now myharvester-api
+#   sudo systemctl status myharvester-api
+#
+# After a deploy (git pull + npm run api:build):  sudo systemctl restart myharvester-api
+
+[Unit]
+Description=Wheat Harvester API (NestJS)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=ubuntu
+# Point at the API package dir so it loads .env and serves ./uploads from here.
+WorkingDirectory=/home/ubuntu/my-harvester/apps/api
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/main.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
