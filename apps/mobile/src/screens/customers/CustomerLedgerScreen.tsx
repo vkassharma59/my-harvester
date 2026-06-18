@@ -232,15 +232,17 @@ export function CustomerLedgerScreen({ navigation, route }: Props) {
         />
       </View>
 
-      <View style={styles.actionRow}>
-        <Button title={t('customerLedger.recordPayment')} onPress={openRecord} style={styles.actionBtn} />
-        <Button
-          title={t('customerLedger.collectUpi')}
-          variant="secondary"
-          onPress={openUpi}
-          style={styles.actionBtn}
-        />
-      </View>
+      <Button
+        title={t('customerLedger.recordPayment')}
+        onPress={openRecord}
+        style={{ marginTop: spacing.md }}
+      />
+      <Button
+        title={t('customerLedger.collectUpi')}
+        variant="secondary"
+        onPress={openUpi}
+        style={{ marginTop: spacing.sm, marginBottom: spacing.md }}
+      />
 
       <Text style={styles.sectionTitle}>{t('customerLedger.harvestingRecords', { count: data.plots.length })}</Text>
       {data.plots.map((p) => {
@@ -386,8 +388,6 @@ const styles = StyleSheet.create({
   },
   reminderInput: { minHeight: 150, textAlignVertical: 'top' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  actionRow: { flexDirection: 'row', gap: spacing.sm, marginVertical: spacing.md },
-  actionBtn: { flex: 1 },
   qrWrap: {
     alignSelf: 'center',
     backgroundColor: colors.white,
