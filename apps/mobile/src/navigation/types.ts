@@ -37,6 +37,8 @@ export type MoreStackParamList = {
   FuelPumpForm: { pumpId?: string } | undefined;
   FuelPumpLedger: { pumpId: string; name: string };
   Reports: undefined;
+  ReportBug: undefined;
+  EditProfile: undefined;
   Settings: undefined;
 };
 
@@ -45,6 +47,7 @@ export type RootStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;
   ResetPassword: { identifier: string };
+  RequestAccount: undefined;
 };
 
 export type DashboardStackParamList = {

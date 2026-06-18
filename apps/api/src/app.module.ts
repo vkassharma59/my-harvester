@@ -1,13 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CommonModule } from './common/common.module';
+import { ensureDatabase } from './common/ensure-database';
+import { MailModule } from './common/mail/mail.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from './common/guards/subscription.guard';
 import configuration, { AppConfig } from './config/configuration';
+import { AccountRequestsModule } from './modules/account-requests/account-requests.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BugReportsModule } from './modules/bug-reports/bug-reports.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ExpenseCategoriesModule } from './modules/expense-categories/expense-categories.module';
@@ -20,19 +26,40 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PlotsModule } from './modules/plots/plots.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { SuperAdminModule } from './modules/super-admin/super-admin.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
-    MongooseModule.forRootAsync({
+    TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService<AppConfig, true>) => ({
-        uri: config.get('mongoUri', { infer: true }),
-      }),
+      useFactory: async (config: ConfigService<AppConfig, true>) => {
+        const mysql = config.get('mysql', { infer: true });
+        // Provision the database itself before connecting; `synchronize` then
+        // creates/updates all tables from the entities on startup.
+        await ensureDatabase(mysql);
+        return {
+          type: 'mysql' as const,
+          host: mysql.host,
+          port: mysql.port,
+          username: mysql.username,
+          password: mysql.password,
+          database: mysql.database,
+          autoLoadEntities: true,
+          synchronize: true,
+        };
+      },
     }),
+    CommonModule,
+    MailModule,
     AuthModule,
+    AccountRequestsModule,
     AdminsModule,
+    TenantsModule,
+    SuperAdminModule,
+    BugReportsModule,
     HarvestersModule,
     CustomersModule,
     SettingsModule,
@@ -52,6 +79,9 @@ import { UploadsModule } from './modules/uploads/uploads.module';
   providers: [
     // Every route requires a valid JWT unless marked @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Then: an EXPIRED/SUSPENDED tenant is read-only (writes → 402). Runs after
+    // JwtAuthGuard so req.user is set.
+    { provide: APP_GUARD, useClass: SubscriptionGuard },
   ],
 })
 export class AppModule {}

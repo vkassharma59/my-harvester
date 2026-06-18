@@ -31,7 +31,9 @@ export function AdminsScreen({ navigation }: Props) {
     (ids ?? []).map((id) => nameById.get(id)).filter(Boolean).join(', ');
 
   if (isLoading) return <Loading />;
-  if (isError) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
+  // Keep showing cached data when a refetch fails (e.g. offline); only show the
+  // error screen when there's nothing cached to fall back on.
+  if (isError && !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   return (
     <View style={styles.root}>
@@ -53,7 +55,7 @@ export function AdminsScreen({ navigation }: Props) {
                     {item.name}
                     {item.id === meId ? `  ${t('admins.youSuffix')}` : ''}
                   </Text>
-                  <Text style={styles.sub}>{item.email}</Text>
+                  {item.email ? <Text style={styles.sub}>{item.email}</Text> : null}
                   {item.phone ? <Text style={styles.sub}>{item.phone}</Text> : null}
                   {isOwner ? (
                     <Text style={styles.harvesters}>{t('admins.adminOfAll')}</Text>

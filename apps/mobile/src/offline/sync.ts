@@ -94,6 +94,11 @@ export async function flushOutbox(): Promise<void> {
             didWork = true;
             continue;
           }
+          // 402 = subscription expired/suspended. The op is valid and must NOT
+          // be parked to `failed` (that would drop it after a few retries) — keep
+          // it pending so it flushes once the owner renews. The response
+          // interceptor has already raised the paywall banner; just stop here.
+          if (status === 402) break;
           // Any other server response means this op won't succeed by retrying
           // right now; record it and stop so we preserve order.
           useOutbox.getState().recordError(op.opId, apiErrorMessage(e));

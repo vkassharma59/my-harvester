@@ -1,42 +1,62 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { ExpenseType } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { idColumn, idColumnNullable, money } from '../../common/columns';
+import { AuditedEntity } from '../../common/entities/audited.entity';
+import { ExpenseCategory } from '../expense-categories/expense-category.schema';
+import { FuelPump } from '../fuel-pumps/fuel-pump.schema';
+import { Harvester } from '../harvesters/harvester.schema';
+import { Labour } from '../labour/labour.schema';
 
-export type ExpenseDocument = HydratedDocument<Expense>;
+@Entity('expenses')
+@Index(['tenantId', 'harvesterId', 'date'])
+@Index(['tenantId', 'categoryId'])
+@Index(['tenantId', 'pumpId'])
+@Index(['tenantId', 'labourId'])
+export class Expense extends AuditedEntity {
+  @Column(idColumn)
+  harvesterId!: string;
 
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Expense extends AuditedDocument {
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
-  harvesterId!: Types.ObjectId;
-
-  @Prop({ required: true })
+  @Column({ type: 'datetime' })
   date!: Date;
 
-  @Prop({ type: String, enum: ExpenseType, required: true, index: true })
+  @Column({ type: 'enum', enum: ExpenseType })
   type!: ExpenseType;
 
-  /** A super-admin-defined custom category; null for the built-in types. */
-  @Prop({ type: Types.ObjectId, ref: 'ExpenseCategory', default: null, index: true })
-  categoryId?: Types.ObjectId | null;
+  /** A custom category; null for the built-in types. */
+  @Column(idColumnNullable)
+  categoryId?: string | null;
 
   /** Set only for DIESEL expenses: the fuel pump the diesel was bought from. */
-  @Prop({ type: Types.ObjectId, ref: 'FuelPump', default: null, index: true })
-  pumpId?: Types.ObjectId | null;
+  @Column(idColumnNullable)
+  pumpId?: string | null;
 
   /** Set only for LABOUR expenses: the labourer this payment is for. */
-  @Prop({ type: Types.ObjectId, ref: 'Labour', default: null, index: true })
-  labourId?: Types.ObjectId | null;
+  @Column(idColumnNullable)
+  labourId?: string | null;
 
-  @Prop({ required: true, min: 0 })
+  @Column(money())
   amount!: number;
 
-  @Prop({ trim: true })
-  notes?: string;
+  @Column({ type: 'text', nullable: true })
+  notes?: string | null;
 
-  @Prop({ trim: true })
-  attachmentUrl?: string;
+  @Column({ type: 'varchar', length: 512, nullable: true })
+  attachmentUrl?: string | null;
+
+  // --- Foreign keys (the id columns above are the FK columns) ---
+  @ManyToOne(() => Harvester, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester;
+
+  @ManyToOne(() => ExpenseCategory, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'categoryId' })
+  category?: ExpenseCategory | null;
+
+  @ManyToOne(() => FuelPump, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'pumpId' })
+  pump?: FuelPump | null;
+
+  @ManyToOne(() => Labour, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'labourId' })
+  labour?: Labour | null;
 }
-
-export const ExpenseSchema = SchemaFactory.createForClass(Expense);
-ExpenseSchema.index({ harvesterId: 1, date: -1 });

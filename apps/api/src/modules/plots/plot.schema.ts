@@ -1,72 +1,78 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { AreaUnit, HarvestType } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
-
-export type PlotDocument = HydratedDocument<Plot>;
+import { idColumn, idColumnNullable, money } from '../../common/columns';
+import { AuditedEntity } from '../../common/entities/audited.entity';
+import { Agent } from '../agents/agent.schema';
+import { Customer } from '../customers/customer.schema';
+import { Harvester } from '../harvesters/harvester.schema';
 
 /** A harvesting job on a plot of land, carrying its commercial terms. */
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Plot extends AuditedDocument {
-  @Prop({ type: Types.ObjectId, ref: 'Customer', required: true, index: true })
-  customerId!: Types.ObjectId;
+@Entity('plots')
+@Index(['tenantId', 'harvesterId', 'harvestDate'])
+@Index(['tenantId', 'customerId', 'harvestDate'])
+@Index(['tenantId', 'agentId'])
+export class Plot extends AuditedEntity {
+  @Column(idColumn)
+  customerId!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
-  harvesterId!: Types.ObjectId;
+  @Column(idColumn)
+  harvesterId!: string;
 
-  @Prop({ required: true, trim: true })
+  @Column({ type: 'varchar', length: 120 })
   plotName!: string;
 
-  @Prop({ trim: true })
-  village?: string;
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  village?: string | null;
 
-  @Prop({ required: true, min: 0 })
+  @Column(money())
   area!: number;
 
-  @Prop({ type: String, enum: AreaUnit, default: AreaUnit.BIGHA })
+  @Column({ type: 'enum', enum: AreaUnit, default: AreaUnit.BIGHA })
   areaUnit!: AreaUnit;
 
-  @Prop({ required: true })
+  @Column({ type: 'datetime' })
   harvestDate!: Date;
 
-  @Prop({ trim: true })
-  remarks?: string;
+  @Column({ type: 'text', nullable: true })
+  remarks?: string | null;
 
-  @Prop({ type: String, enum: HarvestType, required: true })
+  @Column({ type: 'enum', enum: HarvestType })
   harvestType!: HarvestType;
 
   // Harvesting charge to the landowner (both types)
-  @Prop({ required: true, min: 0 })
+  @Column(money())
   ratePerBigha!: number;
 
-  @Prop({ required: true, min: 0 })
+  @Column(money())
   harvestingAmount!: number;
 
-  // Type 2 only: Bhusa sold to a separate buyer
-  @Prop({ type: Types.ObjectId, ref: 'Customer', default: null })
-  bhusaBuyerId?: Types.ObjectId | null;
-
-  @Prop({ min: 0, default: 0 })
-  bhusaAmount?: number;
-
-  // One or more Bhusa buyers, each owing their own amount (Type 2).
-  @Prop({
-    type: [{ customerId: { type: Types.ObjectId, ref: 'Customer' }, amount: { type: Number, min: 0 } }],
-    default: [],
-  })
-  bhusaBuyers?: { customerId: Types.ObjectId; amount: number }[];
-
-  @Prop({ required: true, min: 0 })
+  @Column(money())
   totalAmount!: number;
 
   // Optional commission agent for this job.
-  @Prop({ type: Types.ObjectId, ref: 'Agent', default: null })
-  agentId?: Types.ObjectId | null;
+  @Column(idColumnNullable)
+  agentId?: string | null;
 
-  @Prop({ min: 0, default: 0 })
+  @Column(money({ default: 0 }))
   commissionAmount?: number;
-}
 
-export const PlotSchema = SchemaFactory.createForClass(Plot);
-PlotSchema.index({ customerId: 1, harvestDate: -1 });
-PlotSchema.index({ harvesterId: 1, harvestDate: -1 });
+  // --- Foreign keys (the id columns above are the FK columns) ---
+  @ManyToOne(() => Customer, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'customerId' })
+  customer?: Customer;
+
+  @ManyToOne(() => Harvester, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester;
+
+  @ManyToOne(() => Agent, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'agentId' })
+  agent?: Agent | null;
+
+  // --- Bhusa buyers (Type 2) live in the plot_bhusa_buyers join table. These
+  // are NOT columns; LinksService hydrates them for the API response, keeping
+  // the legacy bhusaBuyerId/bhusaAmount fields the mobile app still reads. ---
+  bhusaBuyers?: { customerId: string; amount: number }[];
+  bhusaBuyerId?: string | null;
+  bhusaAmount?: number;
+}

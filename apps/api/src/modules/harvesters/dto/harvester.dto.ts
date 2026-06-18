@@ -12,16 +12,8 @@ export class CreateHarvesterDto {
   registrationNo?: string;
 
   @IsOptional()
-  @IsString()
-  model?: string;
-
-  @IsOptional()
   @IsEnum(HarvesterStatus)
   status?: HarvesterStatus;
-
-  @IsOptional()
-  @IsString()
-  notes?: string;
 
   @IsEnum(HarvesterType)
   type!: HarvesterType;

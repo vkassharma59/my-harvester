@@ -36,7 +36,9 @@ export function ExpenseCategoriesScreen({ navigation }: Props) {
     ]);
 
   if (isLoading) return <Loading />;
-  if (isError) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
+  // Keep showing cached data when a refetch fails (e.g. offline); only show the
+  // error screen when there's nothing cached to fall back on.
+  if (isError && !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   const active = (data ?? []).filter((c) => c.isActive);
 

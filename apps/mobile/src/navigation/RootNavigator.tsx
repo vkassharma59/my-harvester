@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { Loading } from '@/components/States';
 import { ForgotPasswordScreen } from '@/screens/ForgotPasswordScreen';
 import { LoginScreen } from '@/screens/LoginScreen';
+import { RequestAccountScreen } from '@/screens/RequestAccountScreen';
 import { ResetPasswordScreen } from '@/screens/ResetPasswordScreen';
 import { useAuth } from '@/store/auth';
 import { colors } from '@/theme';
@@ -36,6 +37,11 @@ export function RootNavigator() {
       ) : (
         <>
           <RootStack.Screen name="Login" component={LoginScreen} />
+          <RootStack.Screen
+            name="RequestAccount"
+            component={RequestAccountScreen}
+            options={{ headerShown: true, title: t('requestAccount.title') }}
+          />
           <RootStack.Screen
             name="ForgotPassword"
             component={ForgotPasswordScreen}

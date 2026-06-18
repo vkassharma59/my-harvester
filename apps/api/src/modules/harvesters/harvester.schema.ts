@@ -1,40 +1,31 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { Column, Entity, Index } from 'typeorm';
 import { HarvesterStatus, HarvesterType } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { money } from '../../common/columns';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type HarvesterDocument = HydratedDocument<Harvester>;
-
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Harvester extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+@Entity('harvesters')
+@Index(['tenantId', 'status'])
+export class Harvester extends AuditedEntity {
+  @Column({ type: 'varchar', length: 120 })
   name!: string;
 
-  @Prop({ trim: true })
-  registrationNo?: string;
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  registrationNo?: string | null;
 
-  @Prop({ trim: true })
-  model?: string;
-
-  @Prop({ type: String, enum: HarvesterStatus, default: HarvesterStatus.ACTIVE })
+  @Column({ type: 'enum', enum: HarvesterStatus, default: HarvesterStatus.ACTIVE })
   status!: HarvesterStatus;
 
-  @Prop({ trim: true })
-  notes?: string;
-
-  @Prop({ type: String, enum: HarvesterType, required: true, default: HarvesterType.COMBINE })
+  @Column({ type: 'enum', enum: HarvesterType, default: HarvesterType.COMBINE })
   type!: HarvesterType;
 
   // COMBINE: a single per-unit rate.
-  @Prop({ min: 0 })
-  ratePerUnit?: number;
+  @Column(money({ nullable: true }))
+  ratePerUnit?: number | null;
 
   // BHUSA: separate per-unit rates.
-  @Prop({ min: 0 })
-  rateWithBhusa?: number;
+  @Column(money({ nullable: true }))
+  rateWithBhusa?: number | null;
 
-  @Prop({ min: 0 })
-  rateWithoutBhusa?: number;
+  @Column(money({ nullable: true }))
+  rateWithoutBhusa?: number | null;
 }
-
-export const HarvesterSchema = SchemaFactory.createForClass(Harvester);

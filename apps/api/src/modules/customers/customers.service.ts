@@ -1,14 +1,15 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { PartyType, Role } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
-import { harvesterFilter } from '../../common/scope';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
+import { LinksService } from '../../common/links.service';
 import { Paginated, PaginationDto } from '../../common/dto/pagination.dto';
-import { Payment, PaymentDocument } from '../payments/payment.schema';
-import { Plot, PlotDocument } from '../plots/plot.schema';
-import { Customer, CustomerDocument } from './customer.schema';
+import { Payment } from '../payments/payment.schema';
+import { Plot } from '../plots/plot.schema';
+import { Customer } from './customer.schema';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 
 /** A customer plus their running bill / paid / outstanding totals. */
@@ -24,187 +25,133 @@ function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '');
 }
 
+/** Effective Bhusa buyers on a plot: the array if present, else the legacy single field. */
+function effectiveBuyers(p: Plot): { customerId: string; amount: number }[] {
+  if (p.bhusaBuyers && p.bhusaBuyers.length) return p.bhusaBuyers;
+  if (p.bhusaBuyerId) return [{ customerId: p.bhusaBuyerId, amount: p.bhusaAmount ?? 0 }];
+  return [];
+}
+
 @Injectable()
 export class CustomersService {
   constructor(
-    @InjectModel(Customer.name) private readonly model: Model<CustomerDocument>,
-    @InjectModel(Plot.name) private readonly plots: Model<PlotDocument>,
-    @InjectModel(Payment.name) private readonly payments: Model<PaymentDocument>,
+    @InjectRepository(Customer) private readonly repo: Repository<Customer>,
+    @InjectRepository(Plot) private readonly plots: Repository<Plot>,
+    @InjectRepository(Payment) private readonly payments: Repository<Payment>,
+    private readonly hscope: HarvesterScopeService,
+    private readonly links: LinksService,
   ) {}
 
   /** Rejects a customer whose phone already exists in this tenant. */
-  private async assertPhoneUnique(
-    tenantId: Types.ObjectId,
-    phone: string,
-    excludeId?: string,
-  ): Promise<void> {
-    const filter: FilterQuery<CustomerDocument> = { tenantId, phone };
-    if (excludeId) filter._id = { $ne: excludeId };
-    const existing = await this.model.findOne(filter).exec();
+  private async assertPhoneUnique(tenantId: string, phone: string, excludeId?: string): Promise<void> {
+    const existing = await this.repo.findOne({
+      where: { tenantId, phone, ...(excludeId ? { id: Not(excludeId) } : {}) },
+    });
     if (existing) {
-      throw new ConflictException(
-        `A customer with this phone number already exists (${existing.name}).`,
-      );
+      throw new ConflictException(`A customer with this phone number already exists (${existing.name}).`);
     }
   }
 
-  async create(dto: CreateCustomerDto, user: AuthUser): Promise<CustomerDocument> {
-    const tenantId = new Types.ObjectId(user.tenantId);
+  async create(dto: CreateCustomerDto, user: AuthUser): Promise<Customer> {
     const phone = normalizePhone(dto.phone);
-    await this.assertPhoneUnique(tenantId, phone);
+    await this.assertPhoneUnique(user.tenantId, phone);
     const { id, ...rest } = dto;
     return createMaybeWithId(
-      this.model,
-      {
-        ...rest,
-        phone,
-        tenantId,
-        createdBy: new Types.ObjectId(user.id),
-        updatedBy: new Types.ObjectId(user.id),
-      },
+      this.repo,
+      { ...rest, phone, tenantId: user.tenantId, createdBy: user.id, updatedBy: user.id },
       id,
     );
   }
 
   async findAll(query: PaginationDto, user: AuthUser): Promise<Paginated<CustomerWithTotals>> {
-    const tenant = new Types.ObjectId(user.tenantId);
-    const hFilter = harvesterFilter(user);
-    const filter: FilterQuery<CustomerDocument> = { tenantId: tenant };
-    const and: FilterQuery<CustomerDocument>[] = [];
+    const tenantId = user.tenantId;
+    // Plots on ACTIVE harvesters the user can see — drives both staff visibility
+    // and the bill totals, so deactivating a harvester drops its jobs/bills.
+    const hWhere = await this.hscope.where(user);
+    const scopedPlots = await this.plots.find({ where: { tenantId, ...hWhere } });
+    await this.links.attachPlotBhusa(scopedPlots); // hydrate bhusaBuyers for billing
 
-    // Staff see customers who have a job on their harvester(s) OR that they
-    // added themselves (so a newly added customer is visible/selectable).
+    const qb = this.repo.createQueryBuilder('c').where('c.tenantId = :tenantId', { tenantId });
+
+    // Staff see customers linked to their jobs (owner or Bhusa buyer) OR ones
+    // they added themselves (so a newly added customer is visible/selectable).
     if (user.role !== Role.OWNER) {
-      // Customers linked to the staff's jobs: plot owners AND Bhusa buyers.
-      const rows = await this.plots.aggregate<{ _id: Types.ObjectId }>([
-        { $match: { tenantId: tenant, ...hFilter } },
-        {
-          $project: {
-            ids: {
-              $concatArrays: [
-                ['$customerId'],
-                { $cond: [{ $ifNull: ['$bhusaBuyerId', false] }, ['$bhusaBuyerId'], []] },
-                {
-                  $map: {
-                    input: { $ifNull: ['$bhusaBuyers', []] },
-                    as: 'b',
-                    in: '$$b.customerId',
-                  },
-                },
-              ],
-            },
-          },
-        },
-        { $unwind: '$ids' },
-        { $group: { _id: '$ids' } },
-      ]);
-      and.push({
-        $or: [
-          { _id: { $in: rows.map((r) => r._id) } },
-          { createdBy: new Types.ObjectId(user.id) },
-        ],
-      });
+      const visible = new Set<string>();
+      for (const p of scopedPlots) {
+        visible.add(p.customerId);
+        if (p.bhusaBuyerId) visible.add(p.bhusaBuyerId);
+        for (const b of p.bhusaBuyers ?? []) visible.add(b.customerId);
+      }
+      const ids = [...visible];
+      if (ids.length) qb.andWhere('(c.id IN (:...ids) OR c.createdBy = :uid)', { ids, uid: user.id });
+      else qb.andWhere('c.createdBy = :uid', { uid: user.id });
     }
 
     if (query.search) {
-      const rx = new RegExp(query.search.trim(), 'i');
-      and.push({ $or: [{ name: rx }, { phone: rx }, { village: rx }] });
+      const s = `%${query.search.trim()}%`;
+      qb.andWhere('(c.name LIKE :s OR c.phone LIKE :s OR c.village LIKE :s)', { s });
     }
-    if (and.length) filter.$and = and;
+
     const { page, limit } = query;
-    const [docs, total] = await Promise.all([
-      this.model
-        .find(filter)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .exec(),
-      this.model.countDocuments(filter).exec(),
-    ]);
+    qb.orderBy('c.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+    const [docs, total] = await qb.getManyAndCount();
 
     // Bill = harvesting charges on plots the customer OWNS + Bhusa charges on
-    // plots where they are the Bhusa BUYER (scoped to the user's harvesters);
-    // amount paid is customer-level (covers both roles).
-    const ids = docs.map((d) => d._id);
-    const [harvestBillRows, bhusaBillRows, paidRows] = await Promise.all([
-      this.plots.aggregate<{ _id: Types.ObjectId; bill: number }>([
-        { $match: { tenantId: tenant, ...hFilter, customerId: { $in: ids } } },
-        { $group: { _id: '$customerId', bill: { $sum: '$harvestingAmount' } } },
-      ]),
-      this.plots.aggregate<{ _id: Types.ObjectId; bill: number }>([
-        { $match: { tenantId: tenant, ...hFilter } },
-        {
-          // Effective buyers: the array if present, else the legacy single field.
-          $project: {
-            buyers: {
-              $cond: [
-                { $gt: [{ $size: { $ifNull: ['$bhusaBuyers', []] } }, 0] },
-                '$bhusaBuyers',
-                {
-                  $cond: [
-                    { $ifNull: ['$bhusaBuyerId', false] },
-                    [{ customerId: '$bhusaBuyerId', amount: { $ifNull: ['$bhusaAmount', 0] } }],
-                    [],
-                  ],
-                },
-              ],
-            },
-          },
+    // plots where they are the Bhusa BUYER; amount paid is customer-level.
+    const idSet = new Set(docs.map((d) => d.id));
+    const harvestBill = new Map<string, number>();
+    const bhusaBill = new Map<string, number>();
+    for (const p of scopedPlots) {
+      if (idSet.has(p.customerId)) {
+        harvestBill.set(p.customerId, (harvestBill.get(p.customerId) ?? 0) + (p.harvestingAmount ?? 0));
+      }
+      for (const b of effectiveBuyers(p)) {
+        if (idSet.has(b.customerId)) {
+          bhusaBill.set(b.customerId, (bhusaBill.get(b.customerId) ?? 0) + (b.amount ?? 0));
+        }
+      }
+    }
+
+    const paid = new Map<string, number>();
+    const ids = docs.map((d) => d.id);
+    if (ids.length) {
+      const pays = await this.payments.find({
+        where: {
+          tenantId,
+          partyType: In([PartyType.CUSTOMER, PartyType.BHUSA_BUYER]),
+          partyId: In(ids),
         },
-        { $unwind: '$buyers' },
-        { $match: { 'buyers.customerId': { $in: ids } } },
-        { $group: { _id: '$buyers.customerId', bill: { $sum: '$buyers.amount' } } },
-      ]),
-      this.payments.aggregate<{ _id: Types.ObjectId; paid: number }>([
-        {
-          $match: {
-            tenantId: tenant,
-            partyType: { $in: [PartyType.CUSTOMER, PartyType.BHUSA_BUYER] },
-            partyId: { $in: ids },
-          },
-        },
-        { $group: { _id: '$partyId', paid: { $sum: '$amount' } } },
-      ]),
-    ]);
-    const harvestBillMap = new Map(harvestBillRows.map((r) => [r._id.toString(), r.bill]));
-    const bhusaBillMap = new Map(bhusaBillRows.map((r) => [r._id.toString(), r.bill]));
-    const paidMap = new Map(paidRows.map((r) => [r._id.toString(), r.paid]));
+      });
+      for (const pay of pays) paid.set(pay.partyId, (paid.get(pay.partyId) ?? 0) + pay.amount);
+    }
 
     const items: CustomerWithTotals[] = docs.map((d) => {
-      const totalBill = (harvestBillMap.get(d.id) ?? 0) + (bhusaBillMap.get(d.id) ?? 0);
-      const amountPaid = paidMap.get(d.id) ?? 0;
-      return {
-        ...(d.toJSON() as Record<string, unknown>),
-        id: d.id,
-        totalBill,
-        amountPaid,
-        outstanding: totalBill - amountPaid,
-      };
+      const totalBill = (harvestBill.get(d.id) ?? 0) + (bhusaBill.get(d.id) ?? 0);
+      const amountPaid = paid.get(d.id) ?? 0;
+      return { ...d, id: d.id, totalBill, amountPaid, outstanding: totalBill - amountPaid };
     });
 
     return { items, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
-  async findOne(id: string, tenantId: string): Promise<CustomerDocument> {
-    const doc = await this.model
-      .findOne({ _id: id, tenantId: new Types.ObjectId(tenantId) })
-      .exec();
+  async findOne(id: string, tenantId: string): Promise<Customer> {
+    const doc = await this.repo.findOne({ where: { id, tenantId } });
     if (!doc) throw new NotFoundException('Customer not found');
     return doc;
   }
 
-  async update(id: string, dto: UpdateCustomerDto, user: AuthUser): Promise<CustomerDocument> {
-    const tenantId = new Types.ObjectId(user.tenantId);
-    const update: Record<string, unknown> = { ...dto, updatedBy: new Types.ObjectId(user.id) };
+  async update(id: string, dto: UpdateCustomerDto, user: AuthUser): Promise<Customer> {
+    const doc = await this.repo.findOne({ where: { id, tenantId: user.tenantId } });
+    if (!doc) throw new NotFoundException('Customer not found');
     if (dto.phone !== undefined) {
       const phone = normalizePhone(dto.phone);
-      await this.assertPhoneUnique(tenantId, phone, id);
-      update.phone = phone;
+      await this.assertPhoneUnique(user.tenantId, phone, id);
+      dto = { ...dto, phone };
     }
-    const doc = await this.model
-      .findOneAndUpdate({ _id: id, tenantId }, update, { new: true, runValidators: true })
-      .exec();
-    if (!doc) throw new NotFoundException('Customer not found');
-    return doc;
+    Object.assign(doc, dto);
+    doc.updatedBy = user.id;
+    return this.repo.save(doc);
   }
 }

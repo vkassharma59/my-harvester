@@ -1,29 +1,24 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
+import { Column, Entity, Index } from 'typeorm';
+import { AuditedEntity } from '../../common/entities/audited.entity';
 
-export type CustomerDocument = HydratedDocument<Customer>;
-
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Customer extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+// Mobile number is a unique identity per tenant (enforced at the DB level).
+// The composite (tenantId, phone) index also serves tenant-scoped lookups.
+@Entity('customers')
+@Index(['tenantId', 'phone'], { unique: true })
+export class Customer extends AuditedEntity {
+  @Column({ type: 'varchar', length: 120 })
   name!: string;
 
-  @Prop({ required: true, trim: true })
+  @Column({ type: 'varchar', length: 16 })
   phone!: string;
 
-  @Prop({ trim: true })
-  village?: string;
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  village?: string | null;
 
-  @Prop({ trim: true })
-  address?: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  address?: string | null;
 
   /** Source contact id from the device's contact list, if imported. */
-  @Prop({ trim: true })
-  deviceContactId?: string;
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  deviceContactId?: string | null;
 }
-
-export const CustomerSchema = SchemaFactory.createForClass(Customer);
-CustomerSchema.index({ name: 'text', village: 'text' });
-// Mobile number is a unique identity per tenant (enforced at the DB level).
-CustomerSchema.index({ tenantId: 1, phone: 1 }, { unique: true });

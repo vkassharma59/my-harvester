@@ -12,7 +12,9 @@ interface AuthState {
   /** True until we've checked SecureStore on app launch. */
   bootstrapping: boolean;
   restore: () => Promise<void>;
-  login: (token: string, admin: Admin) => Promise<void>;
+  /** `remember` (default true) persists the session across app restarts; when
+   *  false the token is kept only in memory for this run. */
+  login: (token: string, admin: Admin, remember?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   setAdmin: (admin: Admin) => void;
 }
@@ -40,9 +42,12 @@ export const useAuth = create<AuthState>((set) => ({
     }
   },
 
-  login: async (token, admin) => {
+  login: async (token, admin, remember = true) => {
     tokenHolder.set(token);
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    // Remembered → persist for auto-login next launch; otherwise drop any stored
+    // token so the session lives only in memory for this run.
+    if (remember) await SecureStore.setItemAsync(TOKEN_KEY, token);
+    else await SecureStore.deleteItemAsync(TOKEN_KEY);
     set({ token, admin });
   },
 

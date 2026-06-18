@@ -2,9 +2,11 @@ import {
   Admin,
   Agent,
   AgentLedger,
+  AgentListItem,
   AppSettings,
   AreaUnit,
   BhusaBuyer,
+  BugReport,
   Customer,
   CustomerLedger,
   DashboardSummary,
@@ -13,6 +15,7 @@ import {
   ExpenseType,
   FuelPump,
   FuelPumpLedger,
+  FuelPumpListItem,
   Harvester,
   HarvesterStatus,
   HarvesterType,
@@ -47,12 +50,31 @@ export const authApi = {
   login: (identifier: string, password: string) =>
     api.post<LoginResult>('/auth/login', { identifier, password }).then((r) => r.data),
   me: () => api.get<Admin>('/auth/me').then((r) => r.data),
+  /** Update your own profile: name and/or password (verifies the current one). */
+  updateProfile: (input: { name?: string; currentPassword?: string; newPassword?: string }) =>
+    api.patch<Admin>('/auth/profile', input).then((r) => r.data),
+};
+
+// ---------- Account requests (public self-service owner signup) ----------
+export interface AccountRequestInput {
+  fullName: string;
+  email: string;
+  mobile: string;
+  harvesterCount: number;
+  state: string;
+  district: string;
+  password: string;
+}
+export const accountRequestsApi = {
+  create: (body: AccountRequestInput) =>
+    api.post<{ id: string; status: string }>('/account-requests', body).then((r) => r.data),
 };
 
 // ---------- Admins (OWNER only) ----------
 export interface CreateAdminInput {
   name: string;
-  email: string;
+  /** Optional — staff admins can sign in by mobile instead. */
+  email?: string;
   password: string;
   phone: string;
   harvesterIds?: string[];
@@ -78,8 +100,6 @@ export const adminsApi = {
 export interface HarvesterInput {
   name: string;
   registrationNo?: string;
-  model?: string;
-  notes?: string;
   type: HarvesterType;
   ratePerUnit?: number;
   rateWithBhusa?: number;
@@ -209,7 +229,7 @@ export interface FuelPumpInput {
 }
 export const fuelPumpsApi = {
   list: (harvesterId?: string) =>
-    api.get<FuelPump[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
+    api.get<FuelPumpListItem[]>('/fuel-pumps', { params: { harvesterId } }).then((r) => r.data),
   create: (body: FuelPumpInput) => api.post<FuelPump>('/fuel-pumps', body).then((r) => r.data),
   update: (id: string, body: Partial<FuelPumpInput>) =>
     api.patch<FuelPump>(`/fuel-pumps/${id}`, body).then((r) => r.data),
@@ -227,7 +247,7 @@ export interface AgentInput {
 }
 export const agentsApi = {
   list: (harvesterId?: string) =>
-    api.get<Agent[]>('/agents', { params: { harvesterId } }).then((r) => r.data),
+    api.get<AgentListItem[]>('/agents', { params: { harvesterId } }).then((r) => r.data),
   create: (body: AgentInput) => api.post<Agent>('/agents', body).then((r) => r.data),
   update: (id: string, body: Partial<AgentInput>) =>
     api.patch<Agent>(`/agents/${id}`, body).then((r) => r.data),
@@ -306,6 +326,17 @@ export const uploadsApi = {
   },
 };
 
+// ---------- Bug reports ----------
+export interface BugReportInput {
+  title: string;
+  description: string;
+  screenshotUrl?: string;
+}
+export const bugReportsApi = {
+  list: () => api.get<BugReport[]>('/bug-reports').then((r) => r.data),
+  create: (input: BugReportInput) => api.post('/bug-reports', input).then((r) => r.data),
+};
+
 // ---------- Dashboard ----------
 export const dashboardApi = {
   summary: (harvesterId?: string) =>
@@ -314,6 +345,8 @@ export const dashboardApi = {
 
 // ---------- Maintenance (OWNER only) ----------
 export const maintenanceApi = {
-  clearData: () =>
-    api.delete<{ deleted: Record<string, number> }>('/maintenance/data').then((r) => r.data),
+  clearData: (password: string) =>
+    api
+      .delete<{ deleted: Record<string, number> }>('/maintenance/data', { data: { password } })
+      .then((r) => r.data),
 };

@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Between, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { ExpenseType, PaymentStatus } from '@wh/shared';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { createMaybeWithId } from '../../common/idempotent';
+import { HarvesterScopeService } from '../../common/harvester-scope.service';
 import { assertCanUseHarvester, harvesterFilter } from '../../common/scope';
-import { Labour, LabourDocument } from '../labour/labour.schema';
-import { Expense, ExpenseDocument } from './expense.schema';
+import { Labour } from '../labour/labour.schema';
+import { Expense } from './expense.schema';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expense.dto';
 
 export interface ExpenseFilter {
@@ -19,99 +20,91 @@ export interface ExpenseFilter {
 @Injectable()
 export class ExpensesService {
   constructor(
-    @InjectModel(Expense.name) private readonly model: Model<ExpenseDocument>,
-    @InjectModel(Labour.name) private readonly labourModel: Model<LabourDocument>,
+    @InjectRepository(Expense) private readonly repo: Repository<Expense>,
+    @InjectRepository(Labour) private readonly labourRepo: Repository<Labour>,
+    private readonly hscope: HarvesterScopeService,
   ) {}
 
-  async create(dto: CreateExpenseDto, user: AuthUser): Promise<ExpenseDocument> {
+  async create(dto: CreateExpenseDto, user: AuthUser): Promise<Expense> {
     assertCanUseHarvester(user, dto.harvesterId);
-    const tenantId = new Types.ObjectId(user.tenantId);
-    const labourId =
-      dto.type === ExpenseType.LABOUR && dto.labourId ? new Types.ObjectId(dto.labourId) : null;
-    const categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : null;
-    const pumpId =
-      dto.type === ExpenseType.DIESEL && dto.pumpId ? new Types.ObjectId(dto.pumpId) : null;
+    const labourId = dto.type === ExpenseType.LABOUR && dto.labourId ? dto.labourId : null;
+    const categoryId = dto.categoryId ?? null;
+    const pumpId = dto.type === ExpenseType.DIESEL && dto.pumpId ? dto.pumpId : null;
 
     const { id, ...rest } = dto;
     const expense = await createMaybeWithId(
-      this.model,
+      this.repo,
       {
         ...rest,
-        tenantId,
-        harvesterId: new Types.ObjectId(dto.harvesterId),
+        tenantId: user.tenantId,
+        harvesterId: dto.harvesterId,
         categoryId,
         pumpId,
         labourId,
         date: dto.date ?? new Date(),
-        createdBy: new Types.ObjectId(user.id),
-        updatedBy: new Types.ObjectId(user.id),
+        createdBy: user.id,
+        updatedBy: user.id,
       },
       id,
     );
 
-    if (labourId) await this.recomputeLabourStatus(labourId, tenantId, user.id);
+    if (labourId) await this.recomputeLabourStatus(labourId, user.tenantId, user.id);
     return expense;
   }
 
-  findAll(filter: ExpenseFilter, user: AuthUser): Promise<ExpenseDocument[]> {
-    return this.model.find(this.buildFilter(filter, user)).sort({ date: -1 }).exec();
+  async findAll(filter: ExpenseFilter, user: AuthUser): Promise<Expense[]> {
+    const harvesterWhere = await this.hscope.where(user, filter.harvesterId);
+    return this.repo.find({
+      where: this.buildFilter(filter, user, harvesterWhere),
+      order: { date: 'DESC' },
+    });
   }
 
-  async findOne(id: string, user: AuthUser): Promise<ExpenseDocument> {
-    const doc = await this.model
-      .findOne({ _id: id, tenantId: new Types.ObjectId(user.tenantId), ...harvesterFilter(user) })
-      .exec();
+  async findOne(id: string, user: AuthUser): Promise<Expense> {
+    const doc = await this.repo.findOne({
+      where: { id, tenantId: user.tenantId, ...harvesterFilter(user) },
+    });
     if (!doc) throw new NotFoundException('Expense not found');
     return doc;
   }
 
-  async update(id: string, dto: UpdateExpenseDto, user: AuthUser): Promise<ExpenseDocument> {
-    const tenantId = new Types.ObjectId(user.tenantId);
+  async update(id: string, dto: UpdateExpenseDto, user: AuthUser): Promise<Expense> {
     if (dto.harvesterId) assertCanUseHarvester(user, dto.harvesterId);
-    const existing = await this.model
-      .findOne({ _id: id, tenantId, ...harvesterFilter(user) })
-      .exec();
+    const existing = await this.repo.findOne({
+      where: { id, tenantId: user.tenantId, ...harvesterFilter(user) },
+    });
     if (!existing) throw new NotFoundException('Expense not found');
     const previousLabourId = existing.labourId ?? null;
 
-    const update: Record<string, unknown> = { ...dto, updatedBy: new Types.ObjectId(user.id) };
-    if (dto.harvesterId) update.harvesterId = new Types.ObjectId(dto.harvesterId);
-    if (dto.categoryId !== undefined)
-      update.categoryId = dto.categoryId ? new Types.ObjectId(dto.categoryId) : null;
+    Object.assign(existing, dto);
+    if (dto.categoryId !== undefined) existing.categoryId = dto.categoryId || null;
 
     const resultingType = dto.type ?? existing.type;
     if (dto.type !== undefined || dto.labourId !== undefined) {
-      const linkId = dto.labourId ?? existing.labourId?.toString();
-      update.labourId =
-        resultingType === ExpenseType.LABOUR && linkId ? new Types.ObjectId(linkId) : null;
+      const linkId = dto.labourId ?? existing.labourId ?? null;
+      existing.labourId = resultingType === ExpenseType.LABOUR && linkId ? linkId : null;
     }
     if (dto.type !== undefined || dto.pumpId !== undefined) {
-      const pid = dto.pumpId ?? existing.pumpId?.toString();
-      update.pumpId =
-        resultingType === ExpenseType.DIESEL && pid ? new Types.ObjectId(pid) : null;
+      const pid = dto.pumpId ?? existing.pumpId ?? null;
+      existing.pumpId = resultingType === ExpenseType.DIESEL && pid ? pid : null;
     }
-
-    const doc = await this.model
-      .findOneAndUpdate({ _id: id, tenantId }, update, { new: true, runValidators: true })
-      .exec();
-    if (!doc) throw new NotFoundException('Expense not found');
+    existing.updatedBy = user.id;
+    const doc = await this.repo.save(existing);
 
     const affected = new Set<string>();
-    if (previousLabourId) affected.add(previousLabourId.toString());
-    if (doc.labourId) affected.add(doc.labourId.toString());
-    for (const lid of affected) {
-      await this.recomputeLabourStatus(new Types.ObjectId(lid), tenantId, user.id);
-    }
+    if (previousLabourId) affected.add(previousLabourId);
+    if (doc.labourId) affected.add(doc.labourId);
+    for (const lid of affected) await this.recomputeLabourStatus(lid, user.tenantId, user.id);
     return doc;
   }
 
   async remove(id: string, user: AuthUser): Promise<void> {
-    const tenantId = new Types.ObjectId(user.tenantId);
-    const doc = await this.model
-      .findOneAndDelete({ _id: id, tenantId, ...harvesterFilter(user) })
-      .exec();
+    const doc = await this.repo.findOne({
+      where: { id, tenantId: user.tenantId, ...harvesterFilter(user) },
+    });
     if (!doc) throw new NotFoundException('Expense not found');
-    if (doc.labourId) await this.recomputeLabourStatus(doc.labourId, tenantId, user.id);
+    await this.repo.remove(doc);
+    if (doc.labourId) await this.recomputeLabourStatus(doc.labourId, user.tenantId, user.id);
   }
 
   /**
@@ -120,40 +113,47 @@ export class ExpensesService {
    * something is paid, else PENDING.
    */
   private async recomputeLabourStatus(
-    labourId: Types.ObjectId,
-    tenantId: Types.ObjectId,
+    labourId: string,
+    tenantId: string,
     actorId?: string,
   ): Promise<void> {
-    const labour = await this.labourModel.findOne({ _id: labourId, tenantId }).exec();
+    const labour = await this.labourRepo.findOne({ where: { id: labourId, tenantId } });
     if (!labour) return;
 
     const agreed = labour.customAmount ?? labour.dailyWage ?? 0;
-    const [row] = await this.model.aggregate<{ paid: number }>([
-      { $match: { labourId, tenantId, type: ExpenseType.LABOUR } },
-      { $group: { _id: null, paid: { $sum: '$amount' } } },
-    ]);
-    const paid = row?.paid ?? 0;
+    const raw = await this.repo
+      .createQueryBuilder('e')
+      .select('COALESCE(SUM(e.amount), 0)', 'paid')
+      .where('e.labourId = :labourId AND e.tenantId = :tenantId AND e.type = :type', {
+        labourId,
+        tenantId,
+        type: ExpenseType.LABOUR,
+      })
+      .getRawOne<{ paid: string }>();
+    const paid = Number(raw?.paid ?? 0);
 
     let status = PaymentStatus.PENDING;
     if (agreed > 0 && paid >= agreed) status = PaymentStatus.PAID;
     else if (paid > 0) status = PaymentStatus.PARTIAL;
 
     labour.paymentStatus = status;
-    if (actorId) labour.updatedBy = new Types.ObjectId(actorId);
-    await labour.save();
+    if (actorId) labour.updatedBy = actorId;
+    await this.labourRepo.save(labour);
   }
 
-  private buildFilter(f: ExpenseFilter, user: AuthUser): FilterQuery<ExpenseDocument> {
-    const filter: FilterQuery<ExpenseDocument> = {
-      tenantId: new Types.ObjectId(user.tenantId),
-      ...harvesterFilter(user, f.harvesterId),
+  private buildFilter(
+    f: ExpenseFilter,
+    user: AuthUser,
+    harvesterWhere: Record<string, unknown>,
+  ): FindOptionsWhere<Expense> {
+    const where: FindOptionsWhere<Expense> = {
+      tenantId: user.tenantId,
+      ...harvesterWhere,
     };
-    if (f.type) filter.type = f.type;
-    if (f.from || f.to) {
-      filter.date = {};
-      if (f.from) filter.date.$gte = f.from;
-      if (f.to) filter.date.$lte = f.to;
-    }
-    return filter;
+    if (f.type) where.type = f.type;
+    if (f.from && f.to) where.date = Between(f.from, f.to);
+    else if (f.from) where.date = MoreThanOrEqual(f.from);
+    else if (f.to) where.date = LessThanOrEqual(f.to);
+    return where;
   }
 }

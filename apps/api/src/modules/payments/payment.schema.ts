@@ -1,42 +1,51 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { PartyType } from '@wh/shared';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
-
-export type PaymentDocument = HydratedDocument<Payment>;
+import { idColumn, idColumnNullable, money } from '../../common/columns';
+import { AuditedEntity } from '../../common/entities/audited.entity';
+import { Harvester } from '../harvesters/harvester.schema';
+import { Plot } from '../plots/plot.schema';
 
 /**
  * A money movement. `partyType` says whose ledger it belongs to; `partyId`
- * points at the customer / bhusa-buyer / labour accordingly. This single
- * collection lets the customer ledger and labour payment reports be rebuilt.
+ * points at the customer / bhusa-buyer / labour / agent / pump accordingly.
+ * `partyId` is polymorphic (it references different tables per `partyType`), so
+ * it intentionally has no foreign key.
  */
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Payment extends AuditedDocument {
-  @Prop({ type: String, enum: PartyType, required: true, index: true })
+@Entity('payments')
+@Index(['tenantId', 'partyType', 'partyId', 'date'])
+@Index(['tenantId', 'harvesterId'])
+export class Payment extends AuditedEntity {
+  @Column({ type: 'enum', enum: PartyType })
   partyType!: PartyType;
 
-  @Prop({ type: Types.ObjectId, required: true, index: true })
-  partyId!: Types.ObjectId;
+  @Column(idColumn)
+  partyId!: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Plot', default: null })
-  plotId?: Types.ObjectId | null;
+  @Column(idColumnNullable)
+  plotId?: string | null;
 
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', default: null, index: true })
-  harvesterId?: Types.ObjectId | null;
+  @Column(idColumnNullable)
+  harvesterId?: string | null;
 
-  @Prop({ required: true })
+  @Column({ type: 'datetime' })
   date!: Date;
 
-  @Prop({ required: true, min: 0 })
+  @Column(money())
   amount!: number;
 
-  @Prop({ trim: true })
-  notes?: string;
+  @Column({ type: 'text', nullable: true })
+  notes?: string | null;
 
   /** Optional receipt / proof file URL. */
-  @Prop({ trim: true })
-  attachmentUrl?: string;
-}
+  @Column({ type: 'varchar', length: 512, nullable: true })
+  attachmentUrl?: string | null;
 
-export const PaymentSchema = SchemaFactory.createForClass(Payment);
-PaymentSchema.index({ partyType: 1, partyId: 1, date: -1 });
+  // --- Foreign keys (partyId is polymorphic, so it has no FK) ---
+  @ManyToOne(() => Plot, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'plotId' })
+  plot?: Plot | null;
+
+  @ManyToOne(() => Harvester, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester | null;
+}

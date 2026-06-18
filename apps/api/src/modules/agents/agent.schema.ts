@@ -1,27 +1,29 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-import { AuditedDocument, AUDITED_SCHEMA_OPTIONS } from '../../common/schemas/audited.schema';
-
-export type AgentDocument = HydratedDocument<Agent>;
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { money, idColumn } from '../../common/columns';
+import { AuditedEntity } from '../../common/entities/audited.entity';
+import { Harvester } from '../harvesters/harvester.schema';
 
 /** A commission agent attached to a single harvester. */
-@Schema(AUDITED_SCHEMA_OPTIONS)
-export class Agent extends AuditedDocument {
-  @Prop({ required: true, trim: true })
+@Entity('agents')
+@Index(['tenantId', 'harvesterId'])
+export class Agent extends AuditedEntity {
+  @Column({ type: 'varchar', length: 120 })
   name!: string;
 
-  @Prop({ trim: true })
-  phone?: string;
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  phone?: string | null;
 
-  @Prop({ type: Types.ObjectId, ref: 'Harvester', required: true, index: true })
-  harvesterId!: Types.ObjectId;
+  @Column(idColumn)
+  harvesterId!: string;
 
   /** Commission amount per unit of area (e.g. 200 per bigha/acre). */
-  @Prop({ required: true, min: 0 })
+  @Column(money())
   commissionRate!: number;
 
-  @Prop({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
-}
 
-export const AgentSchema = SchemaFactory.createForClass(Agent);
+  @ManyToOne(() => Harvester, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'harvesterId' })
+  harvester?: Harvester;
+}

@@ -36,7 +36,7 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
   const [notes, setNotes] = useState('');
   const [attachment, setAttachment] = useState('');
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['fuel-pump-ledger', pumpId],
     queryFn: () => fuelPumpsApi.ledger(pumpId),
   });
@@ -114,7 +114,9 @@ export function FuelPumpLedgerScreen({ navigation, route }: Props) {
   };
 
   if (isLoading) return <Loading />;
-  if (isError || !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
+  // Show cached data even if the latest refetch failed (e.g. offline); only fall
+  // back to the error screen when there's genuinely nothing to show.
+  if (!data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   const p = data.pump;
   const call = () => p.phone && void Linking.openURL(`tel:${p.phone}`).catch(() => {});

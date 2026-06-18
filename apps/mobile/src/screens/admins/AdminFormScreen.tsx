@@ -72,7 +72,7 @@ export function AdminFormScreen({ route, navigation }: Props) {
   useEffect(() => {
     if (existing) {
       setName(existing.name);
-      setEmail(existing.email);
+      setEmail(existing.email ?? '');
       setPhone(existing.phone ?? '');
       setIsActive(existing.isActive);
       setHarvesterIds(existing.harvesterIds ?? []);
@@ -81,11 +81,13 @@ export function AdminFormScreen({ route, navigation }: Props) {
 
   const save = useMutation({
     mutationFn: async () => {
+      // Email is optional; send undefined (omit) rather than an empty string.
+      const emailValue = email.trim() || undefined;
       if (editing) {
-        await adminsApi.update(adminId, { name, email, phone, isActive, harvesterIds });
+        await adminsApi.update(adminId, { name, email: emailValue, phone, isActive, harvesterIds });
         if (newPassword.trim()) await adminsApi.changePassword(adminId, newPassword);
       } else {
-        await adminsApi.create({ name, email, password, phone, harvesterIds });
+        await adminsApi.create({ name, email: emailValue, password, phone, harvesterIds });
       }
     },
     onSuccess: () => {
@@ -97,7 +99,6 @@ export function AdminFormScreen({ route, navigation }: Props) {
 
   const onSave = () => {
     if (!name.trim()) return Alert.alert(t('adminForm.required'), t('adminForm.nameRequired'));
-    if (!email.trim()) return Alert.alert(t('adminForm.required'), t('adminForm.emailRequired'));
     if (!/^[0-9]{10}$/.test(phone))
       return Alert.alert(t('adminForm.required'), t('adminForm.phoneRequired'));
     if (!editing && password.length < 8)

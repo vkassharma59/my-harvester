@@ -5,8 +5,10 @@ export class CreateAdminDto {
   @MinLength(2)
   name!: string;
 
+  /** Optional — staff admins can log in by mobile number instead. */
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
   /** 10-digit mobile number — required and unique (used as a login identity). */
   @Matches(/^[0-9]{10}$/, { message: 'phone must be a 10-digit mobile number' })

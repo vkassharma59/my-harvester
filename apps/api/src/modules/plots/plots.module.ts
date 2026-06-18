@@ -1,19 +1,13 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Agent, AgentSchema } from '../agents/agent.schema';
-import { Harvester, HarvesterSchema } from '../harvesters/harvester.schema';
-import { Plot, PlotSchema } from './plot.schema';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Agent } from '../agents/agent.schema';
+import { Harvester } from '../harvesters/harvester.schema';
+import { Plot } from './plot.schema';
 import { PlotsController } from './plots.controller';
 import { PlotsService } from './plots.service';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: Plot.name, schema: PlotSchema },
-      { name: Harvester.name, schema: HarvesterSchema },
-      { name: Agent.name, schema: AgentSchema },
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Plot, Harvester, Agent])],
   controllers: [PlotsController],
   providers: [PlotsService],
   exports: [PlotsService],

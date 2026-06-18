@@ -23,7 +23,9 @@ export function HarvestersScreen({ navigation }: Props) {
   });
 
   if (isLoading) return <Loading />;
-  if (isError) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
+  // Keep showing cached data when a refetch fails (e.g. offline); only show the
+  // error screen when there's nothing cached to fall back on.
+  if (isError && !data) return <ErrorState message={apiErrorMessage(error)} onRetry={refetch} />;
 
   return (
     <View style={styles.root}>
@@ -43,7 +45,6 @@ export function HarvestersScreen({ navigation }: Props) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{item.name}</Text>
                   {item.registrationNo ? <Text style={styles.sub}>{item.registrationNo}</Text> : null}
-                  {item.model ? <Text style={styles.sub}>{item.model}</Text> : null}
                 </View>
                 <View style={styles.right}>
                   <View style={[styles.badge, active ? styles.badgeActive : styles.badgeInactive]}>

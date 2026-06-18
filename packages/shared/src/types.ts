@@ -1,13 +1,18 @@
 import {
+  AccountRequestStatus,
   AreaUnit,
+  BugStatus,
   ExpenseType,
   HarvestType,
   HarvesterStatus,
   HarvesterType,
   LabourType,
   PartyType,
+  PaymentMethod,
   PaymentStatus,
+  Plan,
   Role,
+  SubscriptionStatus,
   WageType,
 } from './enums';
 
@@ -26,7 +31,8 @@ export interface AuditFields {
 
 export interface Admin extends AuditFields {
   name: string;
-  email: string;
+  /** Optional for staff admins (they can log in by mobile); owners always have one. */
+  email?: string;
   phone?: string;
   role: Role;
   isActive: boolean;
@@ -38,9 +44,7 @@ export interface Admin extends AuditFields {
 export interface Harvester extends AuditFields {
   name: string; // e.g. "Harvester 1"
   registrationNo?: string;
-  model?: string;
   status: HarvesterStatus;
-  notes?: string;
 
   type: HarvesterType;
   /** COMBINE: the single per-unit harvesting rate. */
@@ -96,6 +100,13 @@ export interface FuelPumpLedger {
   amountPaid: number;
   remaining: number;
   payments: Payment[];
+}
+
+/** A fuel pump row enriched with its diesel bill / paid / remaining (list view). */
+export interface FuelPumpListItem extends FuelPump {
+  totalBill: number;
+  amountPaid: number;
+  remaining: number;
 }
 
 export interface Labour extends AuditFields {
@@ -249,4 +260,220 @@ export interface AgentLedger {
   amountPaid: number;
   outstanding: number;
   payments: Payment[];
+}
+
+/** An agent row enriched with commission earned / paid / outstanding (list view). */
+export interface AgentListItem extends Agent {
+  totalCommission: number;
+  amountPaid: number;
+  outstanding: number;
+}
+
+// ---------- Tenant / subscription (super-admin domain) ----------
+
+/** A tenant — one harvester business. The billing & profile record for an OWNER,
+ *  keyed by the owner's admin id (== `tenantId` on every other record). The
+ *  `admins` table stays auth-only; everything commercial lives here. */
+export interface Tenant {
+  /** == the owner admin id, which is the tenantId used to scope all data. */
+  id: string;
+  businessName: string;
+  /** Village / mandi — used for filtering and abuse clustering. */
+  region?: string | null;
+  /** OTP-verified mobile — the anti-abuse identity anchor. */
+  verifiedPhone?: string | null;
+  /** Harvester registration number; duplicates flag likely repeat free trials. */
+  machineNumber?: string | null;
+  plan: Plan;
+  status: SubscriptionStatus;
+  trialStartedAt?: string | null; // ISO date
+  trialEndsAt?: string | null; // ISO date
+  /** Paid period end (set once they convert from trial). */
+  currentPeriodEndsAt?: string | null; // ISO date
+  /** Reseller / referral source, if sold through an agent. */
+  soldBy?: string | null;
+  /** Private super-admin support notes. */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A manually-recorded subscription payment (cash/UPI), captured by the super
+ *  admin. Recording one extends the tenant's paid period. */
+export interface SubscriptionPayment {
+  id: string;
+  tenantId: string;
+  amount: number;
+  method: PaymentMethod;
+  paidAt: string; // ISO date
+  periodStart: string; // ISO date
+  periodEnd: string; // ISO date
+  recordedBy?: string | null; // super-admin id
+  createdAt: string;
+}
+
+// ---------- Super-admin console read models ----------
+
+/** A generic paginated response, used by the owners list and other admin tables. */
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** Usage rollup for one tenant, computed across their data. */
+export interface TenantUsage {
+  harvesters: number;
+  activeHarvesters: number;
+  /** Staff users the owner has created. */
+  users: number;
+  customers: number;
+  plots: number;
+  /** Sum of plot totalAmount — the owner's business volume (our "GMV"). */
+  businessVolume: number;
+  /** Last time any of the tenant's records was written, or null if none. */
+  lastActiveAt?: string | null;
+}
+
+/** A row in the super-admin "Owners" table. */
+export interface OwnerListItem {
+  /** Owner admin id == tenantId. */
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  businessName: string;
+  region?: string | null;
+  /** Indian State / UT the owner operates from. */
+  state?: string | null;
+  /** District within `state`. */
+  district?: string | null;
+  plan: Plan;
+  status: SubscriptionStatus;
+  /** Days until trial/period end; negative once expired, null if neither set. */
+  daysRemaining: number | null;
+  trialEndsAt?: string | null;
+  currentPeriodEndsAt?: string | null;
+  usage: TenantUsage;
+}
+
+/** A harvester option for the owner-detail usage filter. */
+export interface OwnerHarvesterOption {
+  id: string;
+  name: string;
+}
+
+/** Per-harvester (or all) usage metrics for the owner-detail usage card. */
+export interface OwnerUsageSummary {
+  totalEarnings: number;
+  netProfit: number;
+  pendingReceivables: number;
+  customers: number;
+  plots: number;
+}
+
+/** Full 360 view of one owner for the detail screen. */
+export interface OwnerDetail extends OwnerListItem {
+  createdAt: string;
+  /** Active harvesters (for the usage filter dropdown). */
+  harvesters: OwnerHarvesterOption[];
+  verifiedPhone?: string | null;
+  machineNumber?: string | null;
+  soldBy?: string | null;
+  notes?: string | null;
+  /** Staff users the owner has created. */
+  users: Admin[];
+  /** Subscription payment history (newest first). */
+  payments: SubscriptionPayment[];
+}
+
+/** Result of onboarding a new owner — includes the one-time plaintext password
+ *  so the super admin can hand it over (e.g. via WhatsApp) as a fallback. */
+export interface OnboardOwnerResult {
+  owner: OwnerDetail;
+  /** Plaintext login password, returned ONCE at creation and never again. */
+  password: string;
+  /** Whether the credentials email was actually sent (false if SMTP off / failed). */
+  emailed: boolean;
+}
+
+/** A bug reported from the mobile app by an owner/staff admin. */
+export interface BugReport extends AuditFields {
+  title: string;
+  description: string;
+  screenshotUrl?: string | null;
+  status: BugStatus;
+}
+
+/** A bug as shown to the super admin (enriched with reporter + business). */
+export interface BugReportItem {
+  id: string;
+  title: string;
+  description: string;
+  screenshotUrl?: string | null;
+  status: BugStatus;
+  /** Admin who filed it. */
+  reporterName: string;
+  /** The owner/tenant the reporter belongs to. */
+  businessName: string;
+  tenantId: string;
+  createdAt: string;
+}
+
+/** A self-service owner-account request, shown to the super admin for approval. */
+export interface AccountRequestItem {
+  id: string;
+  fullName: string;
+  email: string;
+  mobile: string;
+  harvesterCount: number;
+  /** Indian State / UT the requester operates from. */
+  state?: string | null;
+  /** District within `state`. */
+  district?: string | null;
+  status: AccountRequestStatus;
+  createdAt: string;
+}
+
+/** Owner count for a single district. */
+export interface OwnerDistrictCount {
+  district: string;
+  count: number;
+}
+
+/** Owner counts for one state, with its district breakdown (desc by count). */
+export interface OwnerStateDistribution {
+  state: string;
+  count: number;
+  districts: OwnerDistrictCount[];
+}
+
+/** Owners grouped by state → district, for the overview map. */
+export interface OwnerDistribution {
+  states: OwnerStateDistribution[];
+  /** Total owners that have a recorded state (sum of states[].count). */
+  total: number;
+}
+
+/** KPI snapshot for the super-admin overview screen. */
+export interface AdminOverview {
+  owners: {
+    total: number;
+    /** TRIAL or ACTIVE and not dormant. */
+    active: number;
+    /** No writes within the dormancy window. */
+    dormant: number;
+    newThisMonth: number;
+  };
+  trials: {
+    expiringIn7Days: number;
+    expiringIn30Days: number;
+  };
+  /** Sum of business volume across all tenants. */
+  platformVolume: number;
+  /** Account requests awaiting the super admin's action. */
+  pendingAccountRequests: number;
+  /** Open (unresolved) bug reports across all tenants. */
+  activeBugs: number;
 }
